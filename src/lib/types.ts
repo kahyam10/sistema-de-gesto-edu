@@ -55,3 +55,46 @@ export interface ProgressUpdate {
   description: string
   type: 'completed' | 'started' | 'milestone'
 }
+
+export interface Serie {
+  id: string
+  nome: string
+  ordem: number
+}
+
+export interface EtapaEnsino {
+  id: string
+  nome: string
+  descricao: string
+  series: Serie[]
+}
+
+export interface Escola {
+  id: string
+  nome: string
+  codigo: string
+  endereco: string
+  telefone: string
+  email: string
+  etapasVinculadas: string[]
+  ativa: boolean
+}
+
+export interface Matricula {
+  id: string
+  escolaId: string
+  etapaEnsinoId: string
+  serieId: string
+  nomeAluno: string
+  dataNascimento: string
+  cpfAluno: string
+  nomeResponsavel: string
+  cpfResponsavel: string
+  telefoneResponsavel: string
+  emailResponsavel: string
+  endereco: string
+  necessidadesEspeciais: boolean
+  descricaoNecessidades?: string
+  dataMatricula: string
+  status: 'ativa' | 'cancelada' | 'concluida'
+}

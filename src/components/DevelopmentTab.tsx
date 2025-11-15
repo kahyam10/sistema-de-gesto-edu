@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, GraduationCap, Users, BookOpen, Calendar, ListChecks, ArrowLeft } from '@phosphor-icons/react'
+import { Plus, GraduationCap, Users, BookOpen, Calendar, ListChecks, ArrowLeft, Buildings, ListNumbers } from '@phosphor-icons/react'
 import { Module } from '@/lib/types'
-import { EnrollmentForm } from '@/components/enrollment/EnrollmentForm'
+import { SeriesManager } from '@/components/enrollment/SeriesManager'
+import { EtapasManager } from '@/components/enrollment/EtapasManager'
+import { EscolasManager } from '@/components/enrollment/EscolasManager'
+import { MatriculasManager } from '@/components/enrollment/MatriculasManager'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface DevelopmentTabProps {
   modules: Module[]
@@ -24,7 +28,43 @@ export function DevelopmentTab({ modules }: DevelopmentTabProps) {
           <ArrowLeft size={18} />
           Voltar para Desenvolvimento
         </Button>
-        <EnrollmentForm />
+        
+        <Tabs defaultValue="series" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="series" className="gap-2">
+              <ListNumbers size={18} />
+              Séries
+            </TabsTrigger>
+            <TabsTrigger value="etapas" className="gap-2">
+              <GraduationCap size={18} />
+              Etapas
+            </TabsTrigger>
+            <TabsTrigger value="escolas" className="gap-2">
+              <Buildings size={18} />
+              Escolas
+            </TabsTrigger>
+            <TabsTrigger value="matriculas" className="gap-2">
+              <Users size={18} />
+              Matrículas
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="series">
+            <SeriesManager />
+          </TabsContent>
+          
+          <TabsContent value="etapas">
+            <EtapasManager />
+          </TabsContent>
+          
+          <TabsContent value="escolas">
+            <EscolasManager />
+          </TabsContent>
+          
+          <TabsContent value="matriculas">
+            <MatriculasManager />
+          </TabsContent>
+        </Tabs>
       </div>
     )
   }

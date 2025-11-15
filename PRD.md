@@ -17,12 +17,16 @@ Sistema completo de gestão educacional para o município de Ibirapitanga, integ
 
 ## Essential Features
 
-### Feature 1: Sistema de Matrículas (EM DESENVOLVIMENTO)
-- **Functionality**: Formulário completo de matrícula online com validação de dados, controle de vagas, regras especiais para PCD
-- **Purpose**: Digitalizar e agilizar o processo de matrícula eliminando filas e papel
-- **Trigger**: Usuário acessa aba Desenvolvimento → Clica em módulo de Matrículas → Clica em "Nova Matrícula"
-- **Progression**: Preenche dados do aluno → Dados do responsável → Endereço → Informações escolares → Marca necessidades especiais (se houver) → Submete formulário → Recebe confirmação → Matrícula aparece na lista
-- **Success criteria**: Formulário valida todos os campos obrigatórios, dados persistem no sistema, lista de matrículas atualiza em tempo real, interface responsiva
+### Feature 1: Sistema de Cadastro e Matrículas (EM DESENVOLVIMENTO)
+- **Functionality**: Sistema completo de cadastro de séries escolares, etapas de ensino, escolas e matrículas de alunos com validação hierárquica
+- **Purpose**: Estabelecer a estrutura base do sistema educacional antes de realizar matrículas, garantindo organização e consistência
+- **Trigger**: Usuário acessa aba Desenvolvimento → Clica em módulo de Matrículas → Acessa abas de Séries/Etapas/Escolas/Matrículas
+- **Progression**: 
+  - **Séries**: Cadastra séries escolares (1º Ano, 2º Ano...) com ordem → Edita ou remove séries
+  - **Etapas**: Cria etapas de ensino (Fundamental I, Fundamental II...) → Vincula séries à etapa → Gerencia etapas
+  - **Escolas**: Cadastra escola com dados completos → Vincula etapas oferecidas pela escola → Define escola como ativa/inativa
+  - **Matrículas**: Seleciona escola → Seleciona etapa (baseada nas etapas da escola) → Seleciona série (baseada nas séries da etapa) → Preenche dados do aluno e responsável → Marca necessidades especiais → Submete matrícula
+- **Success criteria**: Hierarquia de cadastros funciona corretamente (séries → etapas → escolas → matrículas), dados persistem entre sessões, validações impedem inconsistências, interface responsiva com feedback visual
 
 ### Feature 2: Dashboard de Progresso
 - **Functionality**: Visão geral do desenvolvimento do sistema com módulos, cronograma e KPIs
