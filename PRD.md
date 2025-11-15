@@ -1,18 +1,37 @@
-# Project Progress Dashboard - Sistema de Gestão Educacional de Ibirapitanga
+# Sistema de Gestão Educacional de Ibirapitanga
 
-Interactive dashboard and project roadmap for the comprehensive Educational Management System for the municipality of Ibirapitanga.
+Sistema completo de gestão educacional para o município de Ibirapitanga, integrando matrículas, gestão pedagógica, recursos humanos, programas especiais e muito mais.
+
+## Status do Projeto
+
+**Fase Atual**: Desenvolvimento Ativo - Fase 1 (Fundação)
+**Módulos em Desenvolvimento**: Gestão de Matrículas e Alunos
 
 **Experience Qualities**:
 1. **Professional** - Creates confidence and credibility for presenting to municipal stakeholders and education officials
 2. **Clear** - Complex information organized intuitively, making the ambitious project scope understandable at a glance
 3. **Interactive** - Engaging exploration of modules, timelines, and features that brings the vision to life
 
-**Complexity Level**: Light Application (multiple features with basic state)
-  - Multiple interactive views (modules, timeline, KPIs), filterable content, progress tracking with persistent state
+**Complexity Level**: Complex Application (advanced functionality, accounts)
+  - Sistema multi-módulo com autenticação, gestão de usuários, múltiplos perfis de acesso (Professor, Aluno, Diretor, SEMEC), persistência de dados, e integração com sistemas federais
 
 ## Essential Features
 
-### Feature 1: Module Explorer
+### Feature 1: Sistema de Matrículas (EM DESENVOLVIMENTO)
+- **Functionality**: Formulário completo de matrícula online com validação de dados, controle de vagas, regras especiais para PCD
+- **Purpose**: Digitalizar e agilizar o processo de matrícula eliminando filas e papel
+- **Trigger**: Usuário acessa aba Desenvolvimento → Clica em módulo de Matrículas → Clica em "Nova Matrícula"
+- **Progression**: Preenche dados do aluno → Dados do responsável → Endereço → Informações escolares → Marca necessidades especiais (se houver) → Submete formulário → Recebe confirmação → Matrícula aparece na lista
+- **Success criteria**: Formulário valida todos os campos obrigatórios, dados persistem no sistema, lista de matrículas atualiza em tempo real, interface responsiva
+
+### Feature 2: Dashboard de Progresso
+- **Functionality**: Visão geral do desenvolvimento do sistema com módulos, cronograma e KPIs
+- **Purpose**: Acompanhar evolução do projeto e comunicar progresso aos stakeholders
+- **Trigger**: Usuário acessa aplicação ou clica em abas Overview/Módulos/Timeline/KPIs
+- **Progression**: View overall stats → Drill into module progress → See completed features → Update progress → Export report
+- **Success criteria**: Métricas precisas, atualizações persistem, feedback visual imediato
+
+### Feature 3: Module Explorer
 - **Functionality**: Interactive cards displaying all 9 system modules with detailed sub-modules and features
 - **Purpose**: Help stakeholders understand the full scope and structure of the proposed system
 - **Trigger**: User lands on dashboard or clicks "Modules" tab

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { GraduationCap, ListChecks, Calendar, ChartBar, Code } from '@phosphor-icons/react'
+import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket } from '@phosphor-icons/react'
 import { Module, Phase, KPI, TechStack } from '@/lib/types'
 import { modules as initialModules, phases, kpis, techStack } from '@/lib/data'
 import { OverviewTab } from '@/components/OverviewTab'
@@ -9,6 +9,7 @@ import { ModulesTab } from '@/components/ModulesTab'
 import { TimelineTab } from '@/components/TimelineTab'
 import { KPITab } from '@/components/KPITab'
 import { TechStackTab } from '@/components/TechStackTab'
+import { DevelopmentTab } from '@/components/DevelopmentTab'
 import { toast, Toaster } from 'sonner'
 
 function App() {
@@ -78,10 +79,14 @@ function App() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-6 mb-8 h-auto">
             <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
               <ChartBar size={18} />
               <span className="hidden sm:inline">Visão Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="development" className="flex items-center gap-2 py-3">
+              <Rocket size={18} />
+              <span className="hidden sm:inline">Desenvolvimento</span>
             </TabsTrigger>
             <TabsTrigger value="modules" className="flex items-center gap-2 py-3">
               <ListChecks size={18} />
@@ -103,6 +108,10 @@ function App() {
 
           <TabsContent value="overview">
             <OverviewTab modules={modules || []} />
+          </TabsContent>
+
+          <TabsContent value="development">
+            <DevelopmentTab modules={modules || []} />
           </TabsContent>
 
           <TabsContent value="modules">
