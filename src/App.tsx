@@ -1,22 +1,36 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Database, Notebook } from '@phosphor-icons/react'
-import { Module, Phase, KPI, TechStack } from '@/lib/types'
+import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket } from '@phosphor-icons/react'
+import { Module, Escola, EtapaEnsino, Turma, Matricula } from '@/lib/types'
 import { modules as initialModules, phases, kpis, techStack } from '@/lib/data'
+import { escolasMockadas, etapasMockadas, turmasMockadas, matriculasMockadas } from '@/lib/mockData'
 import { OverviewTab } from '@/components/OverviewTab'
 import { ModulesTab } from '@/components/ModulesTab'
 import { TimelineTab } from '@/components/TimelineTab'
 import { KPITab } from '@/components/KPITab'
 import { TechStackTab } from '@/components/TechStackTab'
 import { DevelopmentTab } from '@/components/DevelopmentTab'
-import { MockDataTab } from '@/components/MockDataTab'
-import { CadastrosTab } from '@/components/CadastrosTab'
 import { toast, Toaster } from 'sonner'
 
 function App() {
   const [modules, setModules] = useKV<Module[]>('educational-system-modules', initialModules)
+  const [escolas, setEscolas] = useKV<Escola[]>('schools', escolasMockadas)
+  const [etapas, setEtapas] = useKV<EtapaEnsino[]>('school-etapas', etapasMockadas)
+  const [turmas, setTurmas] = useKV<Turma[]>('school-turmas', turmasMockadas)
+  const [matriculas, setMatriculas] = useKV<Matricula[]>('student-enrollments', matriculasMockadas)
   const [activeTab, setActiveTab] = useState('overview')
+  const [dataInitialized, setDataInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!dataInitialized && (escolas?.length === escolasMockadas.length)) {
+      toast.success('Dados carregados com sucesso!', {
+        description: `${escolas.length} escolas, ${turmas?.length || 0} turmas e ${matriculas?.length || 0} matrículas disponíveis no sistema.`,
+        duration: 4000
+      })
+      setDataInitialized(true)
+    }
+  }, [escolas, turmas, matriculas, dataInitialized])
 
   const handleToggleSubModule = (moduleId: string, subModuleId: string) => {
     setModules((currentModules) => {
@@ -81,22 +95,14 @@ function App() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-8 mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-6 mb-8 h-auto">
             <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
               <ChartBar size={18} />
               <span className="hidden sm:inline">Visão Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="cadastros" className="flex items-center gap-2 py-3">
-              <Notebook size={18} />
-              <span className="hidden sm:inline">Cadastros</span>
-            </TabsTrigger>
             <TabsTrigger value="development" className="flex items-center gap-2 py-3">
               <Rocket size={18} />
               <span className="hidden sm:inline">Desenvolvimento</span>
-            </TabsTrigger>
-            <TabsTrigger value="mockdata" className="flex items-center gap-2 py-3">
-              <Database size={18} />
-              <span className="hidden sm:inline">Dados Mock</span>
             </TabsTrigger>
             <TabsTrigger value="modules" className="flex items-center gap-2 py-3">
               <ListChecks size={18} />
@@ -120,16 +126,8 @@ function App() {
             <OverviewTab modules={modules || []} />
           </TabsContent>
 
-          <TabsContent value="cadastros">
-            <CadastrosTab />
-          </TabsContent>
-
           <TabsContent value="development">
             <DevelopmentTab modules={modules || []} />
-          </TabsContent>
-
-          <TabsContent value="mockdata">
-            <MockDataTab />
           </TabsContent>
 
           <TabsContent value="modules">
