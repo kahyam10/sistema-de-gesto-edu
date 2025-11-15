@@ -8,6 +8,7 @@ import { SeriesManager } from '@/components/enrollment/SeriesManager'
 import { EtapasManager } from '@/components/enrollment/EtapasManager'
 import { EscolasManager } from '@/components/enrollment/EscolasManager'
 import { MatriculasManager } from '@/components/enrollment/MatriculasManager'
+import { TurmasManager } from '@/components/enrollment/TurmasManager'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface DevelopmentTabProps {
@@ -30,7 +31,7 @@ export function DevelopmentTab({ modules }: DevelopmentTabProps) {
         </Button>
         
         <Tabs defaultValue="series" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="series" className="gap-2">
               <ListNumbers size={18} />
               Séries
@@ -42,6 +43,10 @@ export function DevelopmentTab({ modules }: DevelopmentTabProps) {
             <TabsTrigger value="escolas" className="gap-2">
               <Buildings size={18} />
               Escolas
+            </TabsTrigger>
+            <TabsTrigger value="turmas" className="gap-2">
+              <Users size={18} />
+              Turmas
             </TabsTrigger>
             <TabsTrigger value="matriculas" className="gap-2">
               <Users size={18} />
@@ -59,6 +64,10 @@ export function DevelopmentTab({ modules }: DevelopmentTabProps) {
           
           <TabsContent value="escolas">
             <EscolasManager />
+          </TabsContent>
+          
+          <TabsContent value="turmas">
+            <TurmasManager />
           </TabsContent>
           
           <TabsContent value="matriculas">

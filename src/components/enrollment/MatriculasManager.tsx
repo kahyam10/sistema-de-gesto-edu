@@ -146,8 +146,8 @@ export function MatriculasManager() {
       )}
 
       <Dialog open={isFormOpen} onOpenChange={(open) => !open && resetForm()}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="text-primary" size={24} weight="duotone" />
               Formulário de Matrícula
@@ -156,8 +156,8 @@ export function MatriculasManager() {
               Preencha os dados do aluno para realizar a matrícula
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <ScrollArea className="flex-1 pr-4 -mr-4">
+            <form id="enrollment-form" onSubmit={handleSubmit} className="space-y-6 pr-4">
               <div className="space-y-4">
                 <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                   <Buildings size={16} />
@@ -361,21 +361,25 @@ export function MatriculasManager() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={resetForm}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" className="gap-2">
-                  <UserPlus size={18} weight="bold" />
-                  Realizar Matrícula
-                </Button>
-              </div>
             </form>
           </ScrollArea>
+          <div className="flex justify-end gap-3 pt-4 border-t flex-shrink-0 bg-background">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={resetForm}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit"
+              form="enrollment-form"
+              className="gap-2"
+            >
+              <UserPlus size={18} weight="bold" />
+              Realizar Matrícula
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

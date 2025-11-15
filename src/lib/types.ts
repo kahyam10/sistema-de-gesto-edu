@@ -85,6 +85,7 @@ export interface Matricula {
   escolaId: string
   etapaEnsinoId: string
   serieId: string
+  turmaId?: string
   nomeAluno: string
   dataNascimento: string
   cpfAluno: string
@@ -97,4 +98,15 @@ export interface Matricula {
   descricaoNecessidades?: string
   dataMatricula: string
   status: 'ativa' | 'cancelada' | 'concluida'
+}
+
+export interface Turma {
+  id: string
+  escolaId: string
+  serieId: string
+  nome: string
+  turno: 'matutino' | 'vespertino' | 'noturno' | 'integral'
+  anoLetivo: string
+  capacidadeMaxima: number
+  ativa: boolean
 }
