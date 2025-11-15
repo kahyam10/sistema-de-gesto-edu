@@ -45,10 +45,10 @@ export function MockDataTab() {
   const dadosJaImportados = (escolas || []).length > 0 || (matriculas || []).length > 0
 
   const handleImportarDados = () => {
-    setEtapas(etapasMockadas)
-    setEscolas(escolasMockadas)
-    setTurmas(turmasMockadas)
-    setMatriculas(matriculasMockadas)
+    setEtapas(() => etapasMockadas)
+    setEscolas(() => escolasMockadas)
+    setTurmas(() => turmasMockadas)
+    setMatriculas(() => matriculasMockadas)
     
     toast.success('Dados importados com sucesso!', {
       description: `${escolasMockadas.length} escolas, ${turmasMockadas.length} turmas e ${matriculasMockadas.length} matrículas foram adicionadas ao sistema.`
@@ -56,10 +56,10 @@ export function MockDataTab() {
   }
 
   const handleLimparDados = () => {
-    setEscolas([])
-    setEtapas([])
-    setTurmas([])
-    setMatriculas([])
+    setEscolas(() => [])
+    setEtapas(() => [])
+    setTurmas(() => [])
+    setMatriculas(() => [])
     
     toast.success('Dados limpos com sucesso!', {
       description: 'Todos os dados foram removidos do sistema.'
