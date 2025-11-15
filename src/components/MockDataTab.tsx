@@ -55,8 +55,9 @@ export function MockDataTab() {
       
       await new Promise(resolve => setTimeout(resolve, 300))
       
-      toast.success('Dados importados com sucesso!', {
-        description: `${escolasMockadas.length} escolas, ${turmasMockadas.length} turmas e ${matriculasMockadas.length} matrículas foram adicionadas ao sistema.`
+      toast.success('Dados salvos no banco de dados!', {
+        description: `${escolasMockadas.length} escolas, ${turmasMockadas.length} turmas e ${matriculasMockadas.length} matrículas foram importadas. Acesse a aba "Cadastros" para editar os dados.`,
+        duration: 6000
       })
     } catch (error) {
       toast.error('Erro ao importar dados', {
@@ -112,7 +113,7 @@ export function MockDataTab() {
         </div>
       </div>
 
-      {!dadosJaImportados && (
+      {!dadosJaImportados ? (
         <Card className="border-primary bg-primary/5">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -121,6 +122,21 @@ export function MockDataTab() {
                 <CardTitle className="text-primary">Dados Prontos para Importação</CardTitle>
                 <CardDescription>
                   Clique no botão "Importar Dados" acima para adicionar 200 alunos, 6 escolas e turmas ao sistema
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      ) : (
+        <Card className="border-green-600 bg-green-50/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="text-green-600" size={24} weight="fill" />
+              <div>
+                <CardTitle className="text-green-700">Dados Importados com Sucesso!</CardTitle>
+                <CardDescription className="text-green-800">
+                  Os dados mockados foram salvos no banco de dados e agora podem ser editados na aba <strong>"Cadastros"</strong>. 
+                  Lá você pode gerenciar escolas, etapas, turmas e matrículas.
                 </CardDescription>
               </div>
             </div>
