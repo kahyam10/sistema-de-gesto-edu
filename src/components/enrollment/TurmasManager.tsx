@@ -600,10 +600,7 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
                               <Button
                                 variant="default"
                                 size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onViewDetails(turma)
-                                }}
+                                onClick={() => onViewDetails(turma)}
                                 className="gap-2"
                               >
                                 <Eye size={16} />

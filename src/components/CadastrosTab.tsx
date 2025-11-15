@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Buildings, GraduationCap, ChalkboardTeacher, UserPlus, ListNumbers, Users } from '@phosphor-icons/react'
 import { EscolasManager } from '@/components/enrollment/EscolasManager'
@@ -12,6 +12,10 @@ import { Turma } from '@/lib/types'
 export function CadastrosTab() {
   const [activeSubTab, setActiveSubTab] = useState('etapas')
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null)
+
+  useEffect(() => {
+    setSelectedTurma(null)
+  }, [activeSubTab])
 
   const handleViewTurmaDetails = (turma: Turma) => {
     setSelectedTurma(turma)
