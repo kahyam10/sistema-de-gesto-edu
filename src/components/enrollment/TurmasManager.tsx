@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,8 +31,23 @@ export function TurmasManager() {
     turno: 'matutino' as 'matutino' | 'vespertino' | 'noturno' | 'integral',
     anoLetivo: new Date().getFullYear().toString(),
     capacidadeMaxima: 30,
+    limitePCD: 2,
     ativa: true
   })
+
+  useEffect(() => {
+    if (turmas && turmas.length > 0) {
+      const needsMigration = turmas.some(t => t.limitePCD === undefined)
+      if (needsMigration) {
+        setTurmas((current) => 
+          (current || []).map(t => ({
+            ...t,
+            limitePCD: t.limitePCD ?? 2
+          }))
+        )
+      }
+    }
+  }, [])
 
   const escolasAtivas = (escolas || []).filter(e => e.ativa)
   const escolaSelecionada = escolasAtivas.find(e => e.id === formData.escolaId)
@@ -80,6 +95,7 @@ export function TurmasManager() {
       turno: 'matutino',
       anoLetivo: new Date().getFullYear().toString(),
       capacidadeMaxima: 30,
+      limitePCD: 2,
       ativa: true
     })
     setEditingTurma(null)
@@ -95,6 +111,7 @@ export function TurmasManager() {
       turno: turma.turno,
       anoLetivo: turma.anoLetivo,
       capacidadeMaxima: turma.capacidadeMaxima,
+      limitePCD: turma.limitePCD,
       ativa: turma.ativa
     })
     setIsFormOpen(true)
@@ -126,6 +143,10 @@ export function TurmasManager() {
     return (matriculas || []).filter(m => m.turmaId === turmaId && m.status === 'ativa')
   }
 
+  const getAlunosPCDNaTurma = (turmaId: string) => {
+    return (matriculas || []).filter(m => m.turmaId === turmaId && m.status === 'ativa' && m.necessidadesEspeciais)
+  }
+
   const getAlunosSemTurma = (turmaId: string) => {
     const turma = turmas?.find(t => t.id === turmaId)
     if (!turma) return []
@@ -146,6 +167,18 @@ export function TurmasManager() {
   const handleToggleAlunoNaTurma = (matriculaId: string) => {
     if (!selectedTurma) return
     
+    const matricula = matriculas?.find(m => m.id === matriculaId)
+    if (!matricula) return
+
+    const alunosPCDNaTurma = getAlunosPCDNaTurma(selectedTurma.id)
+    
+    if (matricula.necessidadesEspeciais && alunosPCDNaTurma.length >= selectedTurma.limitePCD) {
+      toast.error('Limite de alunos PCD atingido', {
+        description: `Esta turma permite no máximo ${selectedTurma.limitePCD} aluno(s) com necessidades especiais.`
+      })
+      return
+    }
+    
     setMatriculas((current) => 
       (current || []).map(m => 
         m.id === matriculaId 
@@ -153,6 +186,10 @@ export function TurmasManager() {
           : m
       )
     )
+    
+    if (matricula.turmaId !== selectedTurma.id) {
+      toast.success('Aluno adicionado à turma!')
+    }
   }
 
   const handleRemoveAlunoFromTurma = (matriculaId: string) => {
@@ -302,6 +339,22 @@ export function TurmasManager() {
                   onChange={(e) => setFormData(prev => ({ ...prev, capacidadeMaxima: parseInt(e.target.value) }))}
                 />
               </div>
+              {editingTurma && (
+                <div className="space-y-2">
+                  <Label htmlFor="limitePCD">Limite de Alunos PCD *</Label>
+                  <Input
+                    id="limitePCD"
+                    type="number"
+                    required
+                    min="0"
+                    value={formData.limitePCD}
+                    onChange={(e) => setFormData(prev => ({ ...prev, limitePCD: parseInt(e.target.value) }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Limite de alunos com necessidades especiais por turma
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -339,6 +392,11 @@ export function TurmasManager() {
             </DialogTitle>
             <DialogDescription>
               Atribua ou remova alunos da turma
+              {selectedTurma && (
+                <span className="block mt-1 text-sm">
+                  PCD na turma: {getAlunosPCDNaTurma(selectedTurma.id).length}/{selectedTurma.limitePCD}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {selectedTurma && (
@@ -370,7 +428,12 @@ export function TurmasManager() {
                               <GraduationCap className="text-primary" size={20} weight="duotone" />
                             </div>
                             <div>
-                              <h5 className="font-medium">{matricula.nomeAluno}</h5>
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-medium">{matricula.nomeAluno}</h5>
+                                {matricula.necessidadesEspeciais && (
+                                  <Badge variant="secondary" className="text-xs">PCD</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">
                                 Responsável: {matricula.nomeResponsavel}
                               </p>
@@ -411,7 +474,12 @@ export function TurmasManager() {
                               <GraduationCap className="text-primary" size={20} weight="duotone" />
                             </div>
                             <div>
-                              <h5 className="font-medium">{matricula.nomeAluno}</h5>
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-medium">{matricula.nomeAluno}</h5>
+                                {matricula.necessidadesEspeciais && (
+                                  <Badge variant="secondary" className="text-xs">PCD</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">
                                 Responsável: {matricula.nomeResponsavel}
                               </p>
@@ -513,6 +581,11 @@ export function TurmasManager() {
                                     'text-green-500'
                                   }`}>
                                     ({percentualOcupacao.toFixed(0)}% ocupado)
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs">
+                                    PCD: {getAlunosPCDNaTurma(turma.id).length}/{turma.limitePCD}
                                   </span>
                                 </div>
                               </div>

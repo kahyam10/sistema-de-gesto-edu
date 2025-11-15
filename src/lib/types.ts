@@ -108,5 +108,6 @@ export interface Turma {
   turno: 'matutino' | 'vespertino' | 'noturno' | 'integral'
   anoLetivo: string
   capacidadeMaxima: number
+  limitePCD: number
   ativa: boolean
 }
