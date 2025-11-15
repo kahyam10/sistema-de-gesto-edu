@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
-import { Plus, UsersThree, Pencil, Trash, Buildings, GraduationCap, UserPlus, X } from '@phosphor-icons/react'
+import { Plus, UsersThree, Pencil, Trash, Buildings, GraduationCap, UserPlus, X, Eye } from '@phosphor-icons/react'
 import { Turma, Escola, EtapaEnsino, Matricula } from '@/lib/types'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 
-export function TurmasManager() {
+interface TurmasManagerProps {
+  onViewDetails?: (turma: Turma) => void
+}
+
+export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
   const [turmas, setTurmas] = useKV<Turma[]>('school-turmas', [])
   const [escolas, _] = useKV<Escola[]>('schools', [])
   const [etapas, __] = useKV<EtapaEnsino[]>('school-etapas', [])
@@ -592,6 +596,17 @@ export function TurmasManager() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            {onViewDetails && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => onViewDetails(turma)}
+                                className="gap-2"
+                              >
+                                <Eye size={16} />
+                                Ver Detalhes
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"

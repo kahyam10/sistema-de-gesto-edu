@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Wrench } from '@phosphor-icons/react'
+import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Wrench, Notebook } from '@phosphor-icons/react'
 import { Module, Escola, EtapaEnsino, Turma, Matricula, Serie } from '@/lib/types'
 import { modules as initialModules, phases, kpis, techStack } from '@/lib/data'
 import { escolasMockadas, etapasMockadas, turmasMockadas, matriculasMockadas, seriesMockadas } from '@/lib/mockData'
@@ -11,6 +11,7 @@ import { TimelineTab } from '@/components/TimelineTab'
 import { KPITab } from '@/components/KPITab'
 import { TechStackTab } from '@/components/TechStackTab'
 import { DevelopmentTab } from '@/components/DevelopmentTab'
+import { CadastrosTab } from '@/components/CadastrosTab'
 import { toast, Toaster } from 'sonner'
 
 function App() {
@@ -120,7 +121,7 @@ function App() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6 mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-7 mb-8 h-auto">
             <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
               <ChartBar size={18} />
               <span className="hidden sm:inline">Visão Geral</span>
@@ -132,6 +133,10 @@ function App() {
             <TabsTrigger value="timeline" className="flex items-center gap-2 py-3">
               <Calendar size={18} />
               <span className="hidden sm:inline">Cronograma</span>
+            </TabsTrigger>
+            <TabsTrigger value="cadastros" className="flex items-center gap-2 py-3">
+              <Notebook size={18} />
+              <span className="hidden sm:inline">Cadastros</span>
             </TabsTrigger>
             <TabsTrigger value="development" className="flex items-center gap-2 py-3">
               <Wrench size={18} />
@@ -157,6 +162,10 @@ function App() {
 
           <TabsContent value="timeline">
             <TimelineTab phases={phases} modules={modules || []} />
+          </TabsContent>
+
+          <TabsContent value="cadastros">
+            <CadastrosTab />
           </TabsContent>
 
           <TabsContent value="development">

@@ -110,4 +110,20 @@ export interface Turma {
   capacidadeMaxima: number
   limitePCD: number
   ativa: boolean
+  professoresIds?: string[]
+  auxiliaresIds?: string[]
+}
+
+export interface ProfissionalEducacao {
+  id: string
+  nome: string
+  cpf: string
+  email: string
+  telefone: string
+  tipo: 'professor' | 'auxiliar'
+  especialidades?: string[]
+  formacao: string
+  dataAdmissao: string
+  escolasVinculadas: string[]
+  ativo: boolean
 }
