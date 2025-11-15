@@ -33,6 +33,7 @@ import { Escola, EtapaEnsino, Turma, Matricula } from '@/lib/types'
 
 export function MockDataTab() {
   const [activeSubTab, setActiveSubTab] = useState('resumo')
+  const [isImporting, setIsImporting] = useState(false)
   const [escolas, setEscolas] = useKV<Escola[]>('schools', [])
   const [etapas, setEtapas] = useKV<EtapaEnsino[]>('school-etapas', [])
   const [turmas, setTurmas] = useKV<Turma[]>('school-turmas', [])
@@ -44,26 +45,48 @@ export function MockDataTab() {
 
   const dadosJaImportados = (escolas || []).length > 0 || (matriculas || []).length > 0
 
-  const handleImportarDados = () => {
-    setEtapas(() => etapasMockadas)
-    setEscolas(() => escolasMockadas)
-    setTurmas(() => turmasMockadas)
-    setMatriculas(() => matriculasMockadas)
-    
-    toast.success('Dados importados com sucesso!', {
-      description: `${escolasMockadas.length} escolas, ${turmasMockadas.length} turmas e ${matriculasMockadas.length} matrículas foram adicionadas ao sistema.`
-    })
+  const handleImportarDados = async () => {
+    setIsImporting(true)
+    try {
+      setEtapas(() => etapasMockadas)
+      setEscolas(() => escolasMockadas)
+      setTurmas(() => turmasMockadas)
+      setMatriculas(() => matriculasMockadas)
+      
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      toast.success('Dados importados com sucesso!', {
+        description: `${escolasMockadas.length} escolas, ${turmasMockadas.length} turmas e ${matriculasMockadas.length} matrículas foram adicionadas ao sistema.`
+      })
+    } catch (error) {
+      toast.error('Erro ao importar dados', {
+        description: 'Ocorreu um erro ao salvar os dados no sistema.'
+      })
+    } finally {
+      setIsImporting(false)
+    }
   }
 
-  const handleLimparDados = () => {
-    setEscolas(() => [])
-    setEtapas(() => [])
-    setTurmas(() => [])
-    setMatriculas(() => [])
-    
-    toast.success('Dados limpos com sucesso!', {
-      description: 'Todos os dados foram removidos do sistema.'
-    })
+  const handleLimparDados = async () => {
+    setIsImporting(true)
+    try {
+      setEscolas(() => [])
+      setEtapas(() => [])
+      setTurmas(() => [])
+      setMatriculas(() => [])
+      
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      toast.success('Dados limpos com sucesso!', {
+        description: 'Todos os dados foram removidos do sistema.'
+      })
+    } catch (error) {
+      toast.error('Erro ao limpar dados', {
+        description: 'Ocorreu um erro ao remover os dados do sistema.'
+      })
+    } finally {
+      setIsImporting(false)
+    }
   }
 
   return (
@@ -77,14 +100,14 @@ export function MockDataTab() {
         </div>
         <div className="flex gap-2">
           {dadosJaImportados && (
-            <Button variant="destructive" onClick={handleLimparDados}>
+            <Button variant="destructive" onClick={handleLimparDados} disabled={isImporting}>
               <Trash size={18} className="mr-2" />
-              Limpar Dados
+              {isImporting ? 'Limpando...' : 'Limpar Dados'}
             </Button>
           )}
-          <Button onClick={handleImportarDados}>
+          <Button onClick={handleImportarDados} disabled={isImporting}>
             <Download size={18} className="mr-2" />
-            {dadosJaImportados ? 'Reimportar Dados' : 'Importar Dados'}
+            {isImporting ? 'Importando...' : dadosJaImportados ? 'Reimportar Dados' : 'Importar Dados'}
           </Button>
         </div>
       </div>
