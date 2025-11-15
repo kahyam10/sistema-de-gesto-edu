@@ -18,15 +18,17 @@ Sistema completo de gestão educacional para o município de Ibirapitanga, integ
 ## Essential Features
 
 ### Feature 1: Sistema de Cadastro e Matrículas (EM DESENVOLVIMENTO)
-- **Functionality**: Sistema completo de cadastro de séries escolares, etapas de ensino, escolas e matrículas de alunos com validação hierárquica
-- **Purpose**: Estabelecer a estrutura base do sistema educacional antes de realizar matrículas, garantindo organização e consistência
-- **Trigger**: Usuário acessa aba Desenvolvimento → Clica em módulo de Matrículas → Acessa abas de Séries/Etapas/Escolas/Matrículas
+- **Functionality**: Sistema completo de cadastro de séries escolares, etapas de ensino, escolas, turmas e matrículas de alunos com validação hierárquica e geração de dados mockados para testes
+- **Purpose**: Estabelecer a estrutura base do sistema educacional antes de realizar matrículas, garantindo organização e consistência, com capacidade de importar dados de teste em massa
+- **Trigger**: Usuário acessa aba Desenvolvimento → Clica em módulo de Matrículas → Acessa abas de Séries/Etapas/Escolas/Turmas/Matrículas OU acessa aba Dados Mock
 - **Progression**: 
   - **Séries**: Cadastra séries escolares (1º Ano, 2º Ano...) com ordem → Edita ou remove séries
   - **Etapas**: Cria etapas de ensino (Fundamental I, Fundamental II...) → Vincula séries à etapa → Gerencia etapas
   - **Escolas**: Cadastra escola com dados completos → Vincula etapas oferecidas pela escola → Define escola como ativa/inativa
-  - **Matrículas**: Seleciona escola → Seleciona etapa (baseada nas etapas da escola) → Seleciona série (baseada nas séries da etapa) → Preenche dados do aluno e responsável → Marca necessidades especiais → Submete matrícula
-- **Success criteria**: Hierarquia de cadastros funciona corretamente (séries → etapas → escolas → matrículas), dados persistem entre sessões, validações impedem inconsistências, interface responsiva com feedback visual
+  - **Turmas**: Cria turmas vinculadas a escola e série → Define turno, capacidade máxima e limite PCD → Gerencia turmas
+  - **Matrículas**: Seleciona escola → Seleciona etapa (baseada nas etapas da escola) → Seleciona série (baseada nas séries da etapa) → Seleciona turma disponível → Preenche dados do aluno e responsável → Marca necessidades especiais → Submete matrícula
+  - **Dados Mock**: Clica em "Importar Dados" → Sistema adiciona automaticamente 6 escolas, múltiplas turmas distribuídas e 200 alunos matriculados respeitando limites PCD → Visualiza estatísticas e dados importados → Pode limpar dados para recomeçar
+- **Success criteria**: Hierarquia de cadastros funciona corretamente (séries → etapas → escolas → turmas → matrículas), dados persistem entre sessões, validações impedem inconsistências (incluindo limite PCD por turma), interface responsiva com feedback visual, importação em massa funciona perfeitamente
 
 ### Feature 2: Dashboard de Progresso
 - **Functionality**: Visão geral do desenvolvimento do sistema com módulos, cronograma e KPIs

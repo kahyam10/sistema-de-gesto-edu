@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { 
   escolasMockadas, 
   etapasMockadas, 
@@ -22,24 +25,85 @@ import {
   ChartBar,
   Student,
   CheckCircle,
-  Warning
+  Warning,
+  Download,
+  Trash
 } from '@phosphor-icons/react'
+import { Escola, EtapaEnsino, Turma, Matricula } from '@/lib/types'
 
 export function MockDataTab() {
   const [activeSubTab, setActiveSubTab] = useState('resumo')
+  const [escolas, setEscolas] = useKV<Escola[]>('schools', [])
+  const [etapas, setEtapas] = useKV<EtapaEnsino[]>('school-etapas', [])
+  const [turmas, setTurmas] = useKV<Turma[]>('school-turmas', [])
+  const [matriculas, setMatriculas] = useKV<Matricula[]>('student-enrollments', [])
   
   const resumoGeral = gerarResumoGeral()
   const estatisticasEscolas = gerarEstatisticasEscolas()
   const estatisticasTurmas = gerarEstatisticasTurmas()
 
+  const dadosJaImportados = (escolas || []).length > 0 || (matriculas || []).length > 0
+
+  const handleImportarDados = () => {
+    setEtapas(etapasMockadas)
+    setEscolas(escolasMockadas)
+    setTurmas(turmasMockadas)
+    setMatriculas(matriculasMockadas)
+    
+    toast.success('Dados importados com sucesso!', {
+      description: `${escolasMockadas.length} escolas, ${turmasMockadas.length} turmas e ${matriculasMockadas.length} matrículas foram adicionadas ao sistema.`
+    })
+  }
+
+  const handleLimparDados = () => {
+    setEscolas([])
+    setEtapas([])
+    setTurmas([])
+    setMatriculas([])
+    
+    toast.success('Dados limpos com sucesso!', {
+      description: 'Todos os dados foram removidos do sistema.'
+    })
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Dados Mockados do Sistema</h2>
-        <p className="text-muted-foreground">
-          Visualização dos dados gerados para teste e desenvolvimento
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Dados Mockados do Sistema</h2>
+          <p className="text-muted-foreground">
+            Visualização dos dados gerados para teste e desenvolvimento
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {dadosJaImportados && (
+            <Button variant="destructive" onClick={handleLimparDados}>
+              <Trash size={18} className="mr-2" />
+              Limpar Dados
+            </Button>
+          )}
+          <Button onClick={handleImportarDados}>
+            <Download size={18} className="mr-2" />
+            {dadosJaImportados ? 'Reimportar Dados' : 'Importar Dados'}
+          </Button>
+        </div>
       </div>
+
+      {!dadosJaImportados && (
+        <Card className="border-primary bg-primary/5">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Download className="text-primary" size={24} weight="fill" />
+              <div>
+                <CardTitle className="text-primary">Dados Prontos para Importação</CardTitle>
+                <CardDescription>
+                  Clique no botão "Importar Dados" acima para adicionar 200 alunos, 6 escolas e turmas ao sistema
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
