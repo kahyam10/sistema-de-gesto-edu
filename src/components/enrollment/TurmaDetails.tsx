@@ -32,25 +32,25 @@ export function TurmaDetails({ turma, onBack }: TurmaDetailsProps) {
   )
 
   const professoresVinculados = (profissionais || []).filter(
-    p => currentTurma.professoresIds?.includes(p.id) && p.tipo === 'professor'
+    p => (currentTurma.professoresIds || []).includes(p.id) && p.tipo === 'professor'
   )
 
   const auxiliaresVinculados = (profissionais || []).filter(
-    p => currentTurma.auxiliaresIds?.includes(p.id) && p.tipo === 'auxiliar'
+    p => (currentTurma.auxiliaresIds || []).includes(p.id) && p.tipo === 'auxiliar'
   )
 
   const professoresDisponiveis = (profissionais || []).filter(
     p => p.tipo === 'professor' && 
         p.ativo && 
         p.escolasVinculadas.includes(turma.escolaId) &&
-        !currentTurma.professoresIds?.includes(p.id)
+        !(currentTurma.professoresIds || []).includes(p.id)
   )
 
   const auxiliaresDisponiveis = (profissionais || []).filter(
     p => p.tipo === 'auxiliar' && 
         p.ativo && 
         p.escolasVinculadas.includes(turma.escolaId) &&
-        !currentTurma.auxiliaresIds?.includes(p.id)
+        !(currentTurma.auxiliaresIds || []).includes(p.id)
   )
 
   const escola = (escolas || []).find(e => e.id === turma.escolaId)
@@ -64,51 +64,43 @@ export function TurmaDetails({ turma, onBack }: TurmaDetailsProps) {
   }
 
   const handleToggleProfessor = (profissionalId: string) => {
+    const currentIds = currentTurma.professoresIds || []
+    const isRemoving = currentIds.includes(profissionalId)
+    
     setTurmas((current) => 
       (current || []).map(t => {
         if (t.id !== turma.id) return t
         
-        const currentIds = t.professoresIds || []
-        const isAdding = !currentIds.includes(profissionalId)
-        
         return {
           ...t,
-          professoresIds: isAdding
-            ? [...currentIds, profissionalId]
-            : currentIds.filter(id => id !== profissionalId)
+          professoresIds: isRemoving
+            ? currentIds.filter(id => id !== profissionalId)
+            : [...currentIds, profissionalId]
         }
       })
     )
 
-    toast.success(
-      currentTurma.professoresIds?.includes(profissionalId)
-        ? 'Professor removido da turma!'
-        : 'Professor adicionado à turma!'
-    )
+    toast.success(isRemoving ? 'Professor removido da turma!' : 'Professor adicionado à turma!')
   }
 
   const handleToggleAuxiliar = (profissionalId: string) => {
+    const currentIds = currentTurma.auxiliaresIds || []
+    const isRemoving = currentIds.includes(profissionalId)
+    
     setTurmas((current) => 
       (current || []).map(t => {
         if (t.id !== turma.id) return t
         
-        const currentIds = t.auxiliaresIds || []
-        const isAdding = !currentIds.includes(profissionalId)
-        
         return {
           ...t,
-          auxiliaresIds: isAdding
-            ? [...currentIds, profissionalId]
-            : currentIds.filter(id => id !== profissionalId)
+          auxiliaresIds: isRemoving
+            ? currentIds.filter(id => id !== profissionalId)
+            : [...currentIds, profissionalId]
         }
       })
     )
 
-    toast.success(
-      currentTurma.auxiliaresIds?.includes(profissionalId)
-        ? 'Auxiliar removido da turma!'
-        : 'Auxiliar adicionado à turma!'
-    )
+    toast.success(isRemoving ? 'Auxiliar removido da turma!' : 'Auxiliar adicionado à turma!')
   }
 
   return (

@@ -35,26 +35,26 @@ export function CadastrosTab() {
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="etapas" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
+          <TabsTrigger value="etapas" className="flex items-center gap-2 py-3">
             <GraduationCap size={18} />
             <span className="hidden sm:inline">Etapas & Séries</span>
             <span className="sm:hidden">Etapas</span>
           </TabsTrigger>
-          <TabsTrigger value="escolas" className="flex items-center gap-2">
+          <TabsTrigger value="escolas" className="flex items-center gap-2 py-3">
             <Buildings size={18} />
             Escolas
           </TabsTrigger>
-          <TabsTrigger value="profissionais" className="flex items-center gap-2">
+          <TabsTrigger value="profissionais" className="flex items-center gap-2 py-3">
             <Users size={18} />
             <span className="hidden sm:inline">Profissionais</span>
             <span className="sm:hidden">Profs</span>
           </TabsTrigger>
-          <TabsTrigger value="turmas" className="flex items-center gap-2">
+          <TabsTrigger value="turmas" className="flex items-center gap-2 py-3">
             <ChalkboardTeacher size={18} />
             Turmas
           </TabsTrigger>
-          <TabsTrigger value="matriculas" className="flex items-center gap-2">
+          <TabsTrigger value="matriculas" className="flex items-center gap-2 py-3">
             <UserPlus size={18} />
             <span className="hidden sm:inline">Matrículas</span>
             <span className="sm:hidden">Matríc.</span>

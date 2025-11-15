@@ -595,38 +595,50 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             {onViewDetails && (
                               <Button
                                 variant="default"
                                 size="sm"
-                                onClick={() => onViewDetails(turma)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onViewDetails(turma)
+                                }}
                                 className="gap-2"
                               >
                                 <Eye size={16} />
-                                Ver Detalhes
+                                <span className="hidden md:inline">Ver Detalhes</span>
                               </Button>
                             )}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleOpenAssignStudents(turma)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenAssignStudents(turma)
+                              }}
                               className="gap-2"
                             >
                               <UserPlus size={16} />
-                              Gerenciar Alunos
+                              <span className="hidden lg:inline">Gerenciar Alunos</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => handleEdit(turma)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEdit(turma)
+                              }}
                             >
                               <Pencil size={16} />
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => handleDelete(turma.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDelete(turma.id)
+                              }}
                             >
                               <Trash size={16} />
                             </Button>
