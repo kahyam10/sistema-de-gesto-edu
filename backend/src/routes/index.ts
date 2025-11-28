@@ -1,0 +1,8 @@
+export { authRoutes } from "./auth.routes.js";
+export { seriesRoutes } from "./series.routes.js";
+export { etapasRoutes } from "./etapas.routes.js";
+export { escolasRoutes } from "./escolas.routes.js";
+export { turmasRoutes } from "./turmas.routes.js";
+export { matriculasRoutes } from "./matriculas.routes.js";
+export { profissionaisRoutes } from "./profissionais.routes.js";
+export { modulesRoutes } from "./modules.routes.js";

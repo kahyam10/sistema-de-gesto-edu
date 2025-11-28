@@ -1,0 +1,134 @@
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import jwt from "@fastify/jwt";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+
+import {
+  authRoutes,
+  seriesRoutes,
+  etapasRoutes,
+  escolasRoutes,
+  turmasRoutes,
+  matriculasRoutes,
+  profissionaisRoutes,
+  modulesRoutes,
+} from "./routes/index.js";
+
+// Types
+import "./types/fastify.d.js";
+
+async function buildApp() {
+  const app = Fastify({
+    logger: process.env.NODE_ENV === "development",
+  });
+
+  // Plugins
+  await app.register(cors, {
+    origin: true, // Em produção, especificar domínios permitidos
+    credentials: true,
+  });
+
+  await app.register(jwt, {
+    secret: process.env.JWT_SECRET || "super-secret-key-change-in-production",
+  });
+
+  // Swagger documentation
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: "Sistema de Gestão Educacional API",
+        description:
+          "API para o Sistema de Gestão Educacional de Ibirapitanga-BA",
+        version: "1.0.0",
+      },
+      servers: [
+        {
+          url: `http://localhost:${process.env.PORT || 3333}`,
+          description: "Servidor de desenvolvimento",
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: "/docs",
+    uiConfig: {
+      docExpansion: "list",
+      deepLinking: false,
+    },
+  });
+
+  // Decorator para autenticação
+  app.decorate("authenticate", async function (request: any, reply: any) {
+    try {
+      await request.jwtVerify();
+    } catch (err) {
+      reply.status(401).send({ error: "Não autorizado" });
+    }
+  });
+
+  // Health check
+  app.get("/health", async () => {
+    return { status: "ok", timestamp: new Date().toISOString() };
+  });
+
+  // Rotas
+  app.register(authRoutes, { prefix: "/api/auth" });
+  app.register(seriesRoutes, { prefix: "/api/series" });
+  app.register(etapasRoutes, { prefix: "/api/etapas" });
+  app.register(escolasRoutes, { prefix: "/api/escolas" });
+  app.register(turmasRoutes, { prefix: "/api/turmas" });
+  app.register(matriculasRoutes, { prefix: "/api/matriculas" });
+  app.register(profissionaisRoutes, { prefix: "/api/profissionais" });
+  app.register(modulesRoutes, { prefix: "/api/modules" });
+
+  // Error handler global
+  app.setErrorHandler((error, request, reply) => {
+    app.log.error(error);
+
+    if (error.validation) {
+      return reply.status(400).send({
+        error: "Erro de validação",
+        details: error.validation,
+      });
+    }
+
+    return reply.status(error.statusCode || 500).send({
+      error: error.message || "Erro interno do servidor",
+    });
+  });
+
+  return app;
+}
+
+// Start server
+async function start() {
+  try {
+    const app = await buildApp();
+    const port = parseInt(process.env.PORT || "3333");
+    const host = process.env.HOST || "0.0.0.0";
+
+    await app.listen({ port, host });
+
+    console.log(`
+    🚀 Servidor rodando em http://localhost:${port}
+    📚 Documentação: http://localhost:${port}/docs
+    🏥 Health check: http://localhost:${port}/health
+    `);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+}
+
+start();

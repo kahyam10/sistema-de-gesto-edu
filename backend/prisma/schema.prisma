@@ -1,0 +1,268 @@
+// Prisma Schema - Sistema de Gestão Educacional
+// Banco: SQLite (desenvolvimento) -> PostgreSQL (produção)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== AUTENTICAÇÃO ====================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nome      String
+  role      String   @default("USER") // ADMIN, DIRETOR, PROFESSOR, SECRETARIA, SEMEC
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  escolaId String?
+  escola   Escola? @relation(fields: [escolaId], references: [id])
+
+  @@map("users")
+}
+
+// ==================== ESTRUTURA ACADÊMICA ====================
+
+model Serie {
+  id        String   @id @default(cuid())
+  nome      String
+  ordem     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  etapaId String
+  etapa   EtapaEnsino @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  turmas  Turma[]
+
+  @@map("series")
+}
+
+model EtapaEnsino {
+  id        String   @id @default(cuid())
+  nome      String
+  descricao String?
+  ordem     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  series     Serie[]
+  escolas    EscolaEtapa[]
+  matriculas Matricula[]
+
+  @@map("etapas_ensino")
+}
+
+model Escola {
+  id        String   @id @default(cuid())
+  nome      String
+  codigo    String   @unique
+  endereco  String?
+  telefone  String?
+  email     String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  etapas       EscolaEtapa[]
+  turmas       Turma[]
+  matriculas   Matricula[]
+  profissionais EscolaProfissional[]
+  users        User[]
+
+  @@map("escolas")
+}
+
+// Tabela de junção: Escola <-> EtapaEnsino (N:M)
+model EscolaEtapa {
+  id        String   @id @default(cuid())
+  escolaId  String
+  etapaId   String
+  createdAt DateTime @default(now())
+
+  escola Escola      @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  etapa  EtapaEnsino @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  @@unique([escolaId, etapaId])
+  @@map("escolas_etapas")
+}
+
+model Turma {
+  id               String   @id @default(cuid())
+  nome             String
+  turno            String   // MATUTINO, VESPERTINO, NOTURNO, INTEGRAL
+  anoLetivo        Int
+  capacidadeMaxima Int      @default(25)
+  limitePCD        Int      @default(3)
+  ativo            Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relacionamentos
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  
+  serieId String
+  serie   Serie @relation(fields: [serieId], references: [id], onDelete: Cascade)
+
+  matriculas    Matricula[]
+  professores   TurmaProfessor[]
+
+  @@map("turmas")
+}
+
+// ==================== MATRÍCULAS ====================
+
+model Matricula {
+  id                String   @id @default(cuid())
+  numeroMatricula   String   @unique
+  anoLetivo         Int
+  status            String   @default("ATIVA") // ATIVA, TRANSFERIDA, CANCELADA, CONCLUIDA
+  dataMatricula     DateTime @default(now())
+  
+  // Dados do Aluno
+  nomeAluno         String
+  dataNascimento    DateTime
+  cpfAluno          String?
+  rgAluno           String?
+  sexo              String   // M, F
+  naturalidade      String?
+  nacionalidade     String   @default("Brasileira")
+  corRaca           String?
+  
+  // Necessidades Especiais
+  possuiDeficiencia Boolean  @default(false)
+  tipoDeficiencia   String?
+  
+  // Dados do Responsável
+  nomeResponsavel   String
+  cpfResponsavel    String?
+  telefoneResponsavel String?
+  emailResponsavel  String?
+  parentesco        String?
+  
+  // Endereço
+  endereco          String?
+  bairro            String?
+  cidade            String?
+  estado            String?
+  cep               String?
+  
+  // Documentos e Observações
+  documentosEntregues String?  // JSON string com lista de documentos
+  observacoes       String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relacionamentos
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id])
+  
+  etapaId String
+  etapa   EtapaEnsino @relation(fields: [etapaId], references: [id])
+  
+  turmaId String?
+  turma   Turma? @relation(fields: [turmaId], references: [id])
+
+  @@map("matriculas")
+}
+
+// ==================== PROFISSIONAIS ====================
+
+model ProfissionalEducacao {
+  id            String   @id @default(cuid())
+  nome          String
+  cpf           String   @unique
+  email         String?
+  telefone      String?
+  tipo          String   // PROFESSOR, AUXILIAR, COORDENADOR, DIRETOR
+  formacao      String?
+  especialidade String?
+  matricula     String?  @unique
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relacionamentos
+  escolas EscolaProfissional[]
+  turmas  TurmaProfessor[]
+
+  @@map("profissionais_educacao")
+}
+
+// Tabela de junção: Escola <-> ProfissionalEducacao (N:M)
+model EscolaProfissional {
+  id              String   @id @default(cuid())
+  escolaId        String
+  profissionalId  String
+  funcao          String?  // Função específica nesta escola
+  cargaHoraria    Int?     // Carga horária semanal
+  createdAt       DateTime @default(now())
+
+  escola       Escola               @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@unique([escolaId, profissionalId])
+  @@map("escolas_profissionais")
+}
+
+// Tabela de junção: Turma <-> Profissional (N:M)
+model TurmaProfessor {
+  id             String   @id @default(cuid())
+  turmaId        String
+  profissionalId String
+  tipo           String   // PROFESSOR, AUXILIAR
+  disciplina     String?
+  createdAt      DateTime @default(now())
+
+  turma        Turma                @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@unique([turmaId, profissionalId])
+  @@map("turmas_professores")
+}
+
+// ==================== MÓDULOS DO SISTEMA ====================
+
+model Module {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   @default("GraduationCap")
+  phase       Int      @default(1)
+  status      String   @default("planning") // planning, in-progress, completed, blocked
+  progress    Int      @default(0)
+  ordem       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subModules SubModule[]
+
+  @@map("modules")
+}
+
+model SubModule {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  status      String   @default("planning") // planning, in-progress, completed, blocked
+  ordem       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@map("sub_modules")
+}
