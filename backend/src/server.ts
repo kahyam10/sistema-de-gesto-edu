@@ -13,6 +13,7 @@ import {
   matriculasRoutes,
   profissionaisRoutes,
   modulesRoutes,
+  phaseRoutes,
 } from "./routes/index.js";
 
 // Types
@@ -91,6 +92,7 @@ async function buildApp() {
   app.register(matriculasRoutes, { prefix: "/api/matriculas" });
   app.register(profissionaisRoutes, { prefix: "/api/profissionais" });
   app.register(modulesRoutes, { prefix: "/api/modules" });
+  app.register(phaseRoutes);
 
   // Error handler global
   app.setErrorHandler((error, request, reply) => {

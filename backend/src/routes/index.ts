@@ -6,3 +6,4 @@ export { turmasRoutes } from "./turmas.routes.js";
 export { matriculasRoutes } from "./matriculas.routes.js";
 export { profissionaisRoutes } from "./profissionais.routes.js";
 export { modulesRoutes } from "./modules.routes.js";
+export { phaseRoutes } from "./phase.routes.js";

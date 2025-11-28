@@ -9,6 +9,7 @@ import {
   matriculasApi,
   profissionaisApi,
   modulesApi,
+  phasesApi,
   EtapaEnsino,
   Serie,
   Escola,
@@ -17,6 +18,7 @@ import {
   ProfissionalEducacao,
   Module,
   SubModule,
+  Phase,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -737,6 +739,90 @@ export function useToggleSubModuleStatus() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao alternar status");
+    },
+  });
+}
+
+// ==================== PHASES (CRONOGRAMA) ====================
+
+export function usePhases() {
+  return useQuery({
+    queryKey: ["phases"],
+    queryFn: () => phasesApi.list(),
+  });
+}
+
+export function usePhase(id: string) {
+  return useQuery({
+    queryKey: ["phases", id],
+    queryFn: () => phasesApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreatePhase() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string;
+      description: string;
+      monthRange: string;
+      duration: string;
+      ordem?: number;
+      status?: string;
+      moduleIds?: string[];
+    }) => phasesApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["phases"] });
+      toast.success("Fase criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar fase");
+    },
+  });
+}
+
+export function useUpdatePhase() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{
+        name: string;
+        description: string;
+        monthRange: string;
+        duration: string;
+        ordem: number;
+        status: string;
+        moduleIds: string[];
+      }>;
+    }) => phasesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["phases"] });
+      toast.success("Fase atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar fase");
+    },
+  });
+}
+
+export function useDeletePhase() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => phasesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["phases"] });
+      toast.success("Fase removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover fase");
     },
   });
 }

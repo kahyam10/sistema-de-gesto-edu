@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Wrench, Notebook } from '@phosphor-icons/react'
-import { Module } from '@/lib/types'
-import { modules as initialModules, phases, kpis, techStack } from '@/lib/data'
+import { kpis, techStack } from '@/lib/data'
 import { OverviewTab } from '@/components/OverviewTab'
 import { ModulesTab } from '@/components/ModulesTab'
 import { TimelineTab } from '@/components/TimelineTab'
@@ -12,54 +11,9 @@ import { KPITab } from '@/components/KPITab'
 import { TechStackTab } from '@/components/TechStackTab'
 import { DevelopmentTab } from '@/components/DevelopmentTab'
 import { CadastrosTab } from '@/components/CadastrosTab'
-import { toast } from 'sonner'
 
 export default function HomePage() {
-  const [modules, setModules] = useState<Module[]>(initialModules)
   const [activeTab, setActiveTab] = useState('overview')
-
-  const handleToggleSubModule = (moduleId: string, subModuleId: string) => {
-    setModules((currentModules) => {
-      const updatedModules = currentModules.map(module => {
-        if (module.id !== moduleId) return module
-
-        const updatedSubModules = module.subModules.map(subModule => {
-          if (subModule.id !== subModuleId) return subModule
-          
-          const newStatus: Module['status'] = subModule.status === 'completed' ? 'planning' : 'completed'
-          
-          if (newStatus === 'completed') {
-            toast.success('Recurso concluído!', {
-              description: subModule.name
-            })
-          }
-          
-          return { ...subModule, status: newStatus }
-        })
-
-        const completedCount = updatedSubModules.filter(sm => sm.status === 'completed').length
-        const progress = Math.round((completedCount / updatedSubModules.length) * 100)
-        
-        let moduleStatus: Module['status'] = module.status
-        if (progress === 100) {
-          moduleStatus = 'completed'
-        } else if (progress > 0) {
-          moduleStatus = 'in-progress'
-        } else {
-          moduleStatus = 'planning'
-        }
-
-        return {
-          ...module,
-          subModules: updatedSubModules,
-          progress,
-          status: moduleStatus
-        }
-      })
-
-      return updatedModules
-    })
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,15 +63,15 @@ export default function HomePage() {
           </TabsList>
 
           <TabsContent value="overview">
-            <OverviewTab modules={modules} />
+            <OverviewTab />
           </TabsContent>
 
           <TabsContent value="modules">
-            <ModulesTab modules={modules} onToggleSubModule={handleToggleSubModule} />
+            <ModulesTab />
           </TabsContent>
 
           <TabsContent value="timeline">
-            <TimelineTab phases={phases} modules={modules} />
+            <TimelineTab />
           </TabsContent>
 
           <TabsContent value="cadastros">
@@ -125,7 +79,7 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="development">
-            <DevelopmentTab modules={modules} />
+            <DevelopmentTab />
           </TabsContent>
 
           <TabsContent value="kpis">

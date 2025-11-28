@@ -1,129 +1,138 @@
+'use client'
+
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Module } from '@/lib/types'
-import { CheckCircle, Clock, Rocket, WarningCircle } from '@phosphor-icons/react'
+import { useModules, usePhases } from '@/hooks/useApi'
+import { CheckCircle, Clock, Rocket, WarningCircle, Spinner } from '@phosphor-icons/react'
 
-interface OverviewTabProps {
-  modules: Module[]
-}
+export function OverviewTab() {
+  const { data: modules = [], isLoading: modulesLoading } = useModules()
+  const { data: phases = [], isLoading: phasesLoading } = usePhases()
 
-export function OverviewTab({ modules }: OverviewTabProps) {
+  const isLoading = modulesLoading || phasesLoading
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Carregando dados...</span>
+      </div>
+    )
+  }
+
   const totalModules = modules.length
   const completedModules = modules.filter(m => m.status === 'completed').length
   const inProgressModules = modules.filter(m => m.status === 'in-progress').length
   const planningModules = modules.filter(m => m.status === 'planning').length
   const blockedModules = modules.filter(m => m.status === 'blocked').length
 
-  const totalSubModules = modules.reduce((sum, m) => sum + m.subModules.length, 0)
+  const totalSubModules = modules.reduce((sum, m) => sum + (m.subModules?.length || 0), 0)
   const completedSubModules = modules.reduce(
-    (sum, m) => sum + m.subModules.filter(sm => sm.status === 'completed').length,
+    (sum, m) => sum + (m.subModules?.filter(sm => sm.status === 'completed').length || 0),
     0
   )
 
-  const overallProgress = Math.round(
-    modules.reduce((sum, m) => sum + m.progress, 0) / modules.length
-  )
+  const overallProgress = totalModules > 0
+    ? Math.round(modules.reduce((sum, m) => sum + m.progress, 0) / totalModules)
+    : 0
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold mb-2">
-          Sistema de Gestão Educacional
-        </h2>
-        <p className="text-muted-foreground text-lg">
-          Município de Ibirapitanga - Progresso do Desenvolvimento
-        </p>
+        <h2 className="text-3xl font-bold mb-2">Sistema de Gestao Educacional</h2>
+        <p className="text-muted-foreground text-lg">Municipio de Ibirapitanga - Progresso do Desenvolvimento</p>
       </div>
 
       <Card className="p-8 bg-gradient-to-br from-primary/5 to-secondary/5 border-2">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold">Progresso Geral do Projeto</h3>
-            <span className="text-4xl font-bold text-primary">{overallProgress}%</span>
+            <div>
+              <h3 className="text-2xl font-bold">Progresso Geral</h3>
+              <p className="text-muted-foreground">{completedModules} de {totalModules} modulos concluidos</p>
+            </div>
+            <div className="text-5xl font-bold text-primary">{overallProgress}%</div>
           </div>
           <Progress value={overallProgress} className="h-4" />
-          <p className="text-sm text-muted-foreground">
-            {completedSubModules} de {totalSubModules} recursos implementados
-          </p>
         </div>
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Concluídos</p>
-              <p className="text-3xl font-bold text-accent">{completedModules}</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-green-600" weight="fill" />
             </div>
-            <CheckCircle className="text-accent" size={32} weight="fill" />
+            <div><p className="text-sm text-muted-foreground">Concluidos</p><p className="text-2xl font-bold">{completedModules}</p></div>
           </div>
-          <p className="text-xs text-muted-foreground">módulos finalizados</p>
         </Card>
-
         <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Em Progresso</p>
-              <p className="text-3xl font-bold text-secondary">{inProgressModules}</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Rocket className="h-6 w-6 text-blue-600" />
             </div>
-            <Rocket className="text-secondary" size={32} weight="fill" />
+            <div><p className="text-sm text-muted-foreground">Em Progresso</p><p className="text-2xl font-bold">{inProgressModules}</p></div>
           </div>
-          <p className="text-xs text-muted-foreground">em desenvolvimento</p>
         </Card>
-
         <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Planejamento</p>
-              <p className="text-3xl font-bold text-primary">{planningModules}</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
+              <Clock className="h-6 w-6 text-slate-600" />
             </div>
-            <Clock className="text-primary" size={32} weight="fill" />
+            <div><p className="text-sm text-muted-foreground">Planejamento</p><p className="text-2xl font-bold">{planningModules}</p></div>
           </div>
-          <p className="text-xs text-muted-foreground">aguardando início</p>
         </Card>
-
         <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Bloqueados</p>
-              <p className="text-3xl font-bold text-destructive">{blockedModules}</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <WarningCircle className="h-6 w-6 text-red-600" />
             </div>
-            <WarningCircle className="text-destructive" size={32} weight="fill" />
+            <div><p className="text-sm text-muted-foreground">Bloqueados</p><p className="text-2xl font-bold">{blockedModules}</p></div>
           </div>
-          <p className="text-xs text-muted-foreground">necessitam atenção</p>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Submodulos</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center"><span className="text-muted-foreground">Total de Submodulos</span><span className="font-bold">{totalSubModules}</span></div>
+            <div className="flex justify-between items-center"><span className="text-muted-foreground">Concluidos</span><span className="font-bold text-green-600">{completedSubModules}</span></div>
+            <div className="flex justify-between items-center"><span className="text-muted-foreground">Pendentes</span><span className="font-bold text-orange-600">{totalSubModules - completedSubModules}</span></div>
+            <Progress value={totalSubModules > 0 ? (completedSubModules / totalSubModules) * 100 : 0} className="h-2" />
+          </div>
+        </Card>
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Fases do Projeto</h3>
+          <div className="space-y-3">
+            {phases.map((phase, index) => (
+              <div key={phase.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${phase.status === 'completed' ? 'bg-green-500' : phase.status === 'in-progress' ? 'bg-blue-500' : phase.status === 'blocked' ? 'bg-red-500' : 'bg-slate-400'}`}>{index + 1}</div>
+                  <span className="text-sm">{phase.name}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{phase.duration}</span>
+              </div>
+            ))}
+            {phases.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhuma fase cadastrada</p>}
+          </div>
         </Card>
       </div>
 
       <Card className="p-6">
-        <h3 className="font-semibold text-lg mb-4">Informações do Projeto</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Objetivo</h4>
-            <p className="text-sm">
-              Centralizar toda gestão educacional do município em uma plataforma única,
-              automatizando processos administrativos e pedagógicos.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Escopo</h4>
-            <p className="text-sm">
-              9 módulos principais cobrindo matrículas, gestão pedagógica, portais de acesso,
-              RH, programas especiais, alimentação, transporte, gestão democrática e comunicação.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Cronograma</h4>
-            <p className="text-sm">
-              Implementação em 4 fases ao longo de 12 meses, priorizando funcionalidades
-              essenciais nas fases iniciais.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Autor</h4>
-            <p className="text-sm font-medium">Kahyam Souza Santos</p>
-            <p className="text-xs text-muted-foreground">KSsoft - Soluções Tecnológicas</p>
-          </div>
+        <h3 className="text-lg font-semibold mb-4">Modulos por Status</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {modules.slice(0, 6).map(module => (
+            <div key={module.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium truncate">{module.name}</h4>
+                <span className={`w-2 h-2 rounded-full ${module.status === 'completed' ? 'bg-green-500' : module.status === 'in-progress' ? 'bg-blue-500' : module.status === 'blocked' ? 'bg-red-500' : 'bg-slate-400'}`} />
+              </div>
+              <Progress value={module.progress} className="h-1.5" />
+              <p className="text-xs text-muted-foreground mt-1">{module.progress}% completo</p>
+            </div>
+          ))}
         </div>
+        {modules.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhum modulo cadastrado. Acesse a aba "Modulos" para adicionar.</p>}
       </Card>
     </div>
   )

@@ -266,3 +266,20 @@ model SubModule {
 
   @@map("sub_modules")
 }
+
+// ==================== CRONOGRAMA / FASES ====================
+
+model Phase {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  monthRange  String   // Ex: "Meses 1-3"
+  duration    String   // Ex: "3 meses"
+  ordem       Int      @default(0)
+  status      String   @default("planning") // planning, in-progress, completed, blocked
+  moduleIds   String   // JSON array de IDs de módulos relacionados
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("phases")
+}

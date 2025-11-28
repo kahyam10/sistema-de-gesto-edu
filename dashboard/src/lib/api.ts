@@ -603,4 +603,47 @@ export const modulesApi = {
     }),
 };
 
+// ==================== PHASES (CRONOGRAMA) ====================
+
+export interface Phase {
+  id: string;
+  name: string;
+  description: string;
+  monthRange: string;
+  duration: string;
+  ordem: number;
+  status: "planning" | "in-progress" | "completed" | "blocked";
+  moduleIds: string[]; // IDs dos módulos relacionados
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const phasesApi = {
+  list: () => request<Phase[]>("/api/phases"),
+  get: (id: string) => request<Phase>(`/api/phases/${id}`),
+  create: (data: {
+    name: string;
+    description: string;
+    monthRange: string;
+    duration: string;
+    ordem?: number;
+    status?: string;
+    moduleIds?: string[];
+  }) => request<Phase>("/api/phases", { method: "POST", body: data }),
+  update: (
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      monthRange: string;
+      duration: string;
+      ordem: number;
+      status: string;
+      moduleIds: string[];
+    }>
+  ) => request<Phase>(`/api/phases/${id}`, { method: "PUT", body: data }),
+  delete: (id: string) =>
+    request<void>(`/api/phases/${id}`, { method: "DELETE" }),
+};
+
 export { ApiError };
