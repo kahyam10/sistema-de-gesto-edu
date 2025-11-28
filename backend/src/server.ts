@@ -16,8 +16,8 @@ import {
   phaseRoutes,
 } from "./routes/index.js";
 
-// Types
-import "./types/fastify.d.js";
+// Types are imported via triple-slash reference in the .d.ts file
+// No need to import them here
 
 async function buildApp() {
   const app = Fastify({
