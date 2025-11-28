@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma';
+import { prisma } from "../lib/prisma";
 
 export interface CreatePhaseData {
   name: string;
@@ -23,13 +23,13 @@ export interface UpdatePhaseData {
 export const phaseService = {
   async findAll() {
     const phases = await prisma.phase.findMany({
-      orderBy: { ordem: 'asc' },
+      orderBy: { ordem: "asc" },
     });
-    
+
     // Parse moduleIds de JSON string para array
-    return phases.map(phase => ({
+    return phases.map((phase) => ({
       ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || '[]'),
+      moduleIds: JSON.parse(phase.moduleIds || "[]"),
     }));
   },
 
@@ -37,47 +37,47 @@ export const phaseService = {
     const phase = await prisma.phase.findUnique({
       where: { id },
     });
-    
+
     if (!phase) return null;
-    
+
     return {
       ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || '[]'),
+      moduleIds: JSON.parse(phase.moduleIds || "[]"),
     };
   },
 
   async create(data: CreatePhaseData) {
     const { moduleIds, ...rest } = data;
-    
+
     const phase = await prisma.phase.create({
       data: {
         ...rest,
         moduleIds: JSON.stringify(moduleIds || []),
       },
     });
-    
+
     return {
       ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || '[]'),
+      moduleIds: JSON.parse(phase.moduleIds || "[]"),
     };
   },
 
   async update(id: string, data: UpdatePhaseData) {
     const { moduleIds, ...rest } = data;
-    
+
     const updateData: Record<string, unknown> = { ...rest };
     if (moduleIds !== undefined) {
       updateData.moduleIds = JSON.stringify(moduleIds);
     }
-    
+
     const phase = await prisma.phase.update({
       where: { id },
       data: updateData,
     });
-    
+
     return {
       ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || '[]'),
+      moduleIds: JSON.parse(phase.moduleIds || "[]"),
     };
   },
 

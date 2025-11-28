@@ -465,6 +465,234 @@ async function main() {
   });
   console.log("✅ Professores vinculados às turmas");
 
+  // ==================== MÓDULOS DO SISTEMA ====================
+  console.log("\n📚 Criando módulos do sistema...");
+
+  // Limpar módulos existentes
+  await prisma.subModule.deleteMany();
+  await prisma.module.deleteMany();
+  await prisma.phase.deleteMany();
+
+  const modulesData = [
+    {
+      name: "Gestão de Matrículas e Alunos",
+      description: "Sistema completo para matrículas online/presencial, controle de vagas e gestão de alunos",
+      icon: "UserPlus",
+      phase: 1,
+      status: "planning",
+      progress: 0,
+      ordem: 0,
+      subModules: [
+        { name: "Matrículas Online e Presencial", description: "Portal para realização de matrículas via web e atendimento presencial", status: "planning", ordem: 0 },
+        { name: "Controle de Vagas", description: "Gestão de disponibilidade de vagas por turma e escola", status: "planning", ordem: 1 },
+        { name: "Regras Especiais PCD", description: "Controle automático: máximo 3 alunos PCD por turma regular", status: "planning", ordem: 2 },
+        { name: "Cadastro Completo de Alunos", description: "Ficha cadastral completa com histórico e documentação", status: "planning", ordem: 3 },
+        { name: "Histórico Escolar Digital", description: "Registro digital do percurso acadêmico do aluno", status: "planning", ordem: 4 },
+      ]
+    },
+    {
+      name: "Gestão Pedagógica",
+      description: "Calendários, frequência, notas, planejamento e acompanhamento acadêmico",
+      icon: "BookOpen",
+      phase: 2,
+      status: "planning",
+      progress: 0,
+      ordem: 1,
+      subModules: [
+        { name: "Calendários", description: "Calendário letivo, avaliações, conselhos de classe e recuperação", status: "planning", ordem: 0 },
+        { name: "Frequência Diária", description: "Registro de presença com integração ao Sistema Presença (Gov. Federal)", status: "planning", ordem: 1 },
+        { name: "Lançamento de Notas", description: "Sistema de avaliação e registro de conceitos", status: "planning", ordem: 2 },
+        { name: "Acompanhamento de Aprendizagens", description: "Monitoramento do desenvolvimento acadêmico dos alunos", status: "planning", ordem: 3 },
+        { name: "Planejamento Pedagógico", description: "Planos de aula, conteúdos programáticos e banco de atividades", status: "planning", ordem: 4 },
+      ]
+    },
+    {
+      name: "Portais de Acesso",
+      description: "Interfaces personalizadas para Professor, Aluno, Diretor, Secretaria, Coordenação e SEMEC",
+      icon: "Layout",
+      phase: 2,
+      status: "planning",
+      progress: 0,
+      ordem: 2,
+      subModules: [
+        { name: "Portal do Professor", description: "Dashboard, frequência, notas, ocorrências e planejamento", status: "planning", ordem: 0 },
+        { name: "Portal do Aluno/Responsável", description: "Consulta de notas, frequência, tarefas e comunicação", status: "planning", ordem: 1 },
+        { name: "Portal do Diretor", description: "Visão geral, indicadores e gestão da escola", status: "planning", ordem: 2 },
+        { name: "Portal da Secretaria Escolar", description: "Documentação, declarações, transferências e arquivo digital", status: "planning", ordem: 3 },
+        { name: "Portal da Coordenação", description: "Acompanhamento pedagógico e gestão de projetos", status: "planning", ordem: 4 },
+        { name: "Portal da SEMEC", description: "Dashboard municipal e indicadores consolidados", status: "planning", ordem: 5 },
+      ]
+    },
+    {
+      name: "Gestão de Recursos Humanos",
+      description: "Cadastro de servidores, lotação, horários, folha de ponto e licenças",
+      icon: "Users",
+      phase: 1,
+      status: "planning",
+      progress: 0,
+      ordem: 3,
+      subModules: [
+        { name: "Cadastro de Servidores", description: "Base completa de dados dos funcionários", status: "planning", ordem: 0 },
+        { name: "Lotação de Professores", description: "Alocação de docentes por escola e disciplina", status: "planning", ordem: 1 },
+        { name: "Gestão de Horários", description: "Controle de carga horária e ACs por área", status: "planning", ordem: 2 },
+        { name: "Folha de Ponto Digital", description: "Registro eletrônico de presença de servidores", status: "planning", ordem: 3 },
+        { name: "Licenças e Afastamentos", description: "Controle de ausências e substituições", status: "planning", ordem: 4 },
+      ]
+    },
+    {
+      name: "Programas Especiais",
+      description: "Busca Ativa Escolar e Educação Especial (AEE)",
+      icon: "Heart",
+      phase: 4,
+      status: "planning",
+      progress: 0,
+      ordem: 4,
+      subModules: [
+        { name: "Busca Ativa Escolar", description: "Interface para assistentes sociais, registro e acompanhamento", status: "planning", ordem: 0 },
+        { name: "Educação Especial", description: "Cadastro de alunos especiais, AEE e salas de recursos", status: "planning", ordem: 1 },
+        { name: "Acompanhamento Individualizado", description: "Planos personalizados e monitoramento contínuo", status: "planning", ordem: 2 },
+      ]
+    },
+    {
+      name: "Alimentação Escolar",
+      description: "Cardápios, estoque, fornecedores e relatórios PNAE",
+      icon: "Utensils",
+      phase: 4,
+      status: "planning",
+      progress: 0,
+      ordem: 5,
+      subModules: [
+        { name: "Gestão de Cardápios", description: "Planejamento nutricional de refeições escolares", status: "planning", ordem: 0 },
+        { name: "Controle de Estoque", description: "Gestão de insumos e despensa", status: "planning", ordem: 1 },
+        { name: "Registro de Refeições", description: "Controle de refeições servidas por escola", status: "planning", ordem: 2 },
+        { name: "Relatórios FNDE/PNAE", description: "Prestação de contas para programas federais", status: "planning", ordem: 3 },
+      ]
+    },
+    {
+      name: "Transporte Escolar",
+      description: "Rotas, veículos, motoristas, manutenção e relatórios PNATE",
+      icon: "Bus",
+      phase: 4,
+      status: "planning",
+      progress: 0,
+      ordem: 6,
+      subModules: [
+        { name: "Gestão de Rotas", description: "Planejamento e otimização de itinerários", status: "planning", ordem: 0 },
+        { name: "Cadastro de Veículos", description: "Frota escolar e documentação", status: "planning", ordem: 1 },
+        { name: "Controle de Motoristas", description: "Gestão de condutores e habilitações", status: "planning", ordem: 2 },
+        { name: "Manutenção Preventiva", description: "Agenda de revisões e reparos", status: "planning", ordem: 3 },
+      ]
+    },
+    {
+      name: "Gestão Democrática",
+      description: "Colegiado, Grêmio, Líderes de Turma e assembleias",
+      icon: "Scale",
+      phase: 3,
+      status: "planning",
+      progress: 0,
+      ordem: 7,
+      subModules: [
+        { name: "Colegiado Escolar", description: "Gestão de membros, atas e decisões", status: "planning", ordem: 0 },
+        { name: "Grêmio Estudantil", description: "Eleições, projetos e atividades estudantis", status: "planning", ordem: 1 },
+        { name: "Líderes de Turma", description: "Cadastro, atribuições e comunicação", status: "planning", ordem: 2 },
+        { name: "Reuniões e Assembleias", description: "Agendamento e registro de encontros", status: "planning", ordem: 3 },
+      ]
+    },
+    {
+      name: "Comunicação e Eventos",
+      description: "Plantões, reuniões de pais, comunicados e notificações",
+      icon: "Bell",
+      phase: 4,
+      status: "planning",
+      progress: 0,
+      ordem: 8,
+      subModules: [
+        { name: "Plantão Pedagógico", description: "Agendamento e registro de atendimentos", status: "planning", ordem: 0 },
+        { name: "Reuniões de Pais", description: "Convocações, atas e controle de frequência", status: "planning", ordem: 1 },
+        { name: "Comunicados Gerais", description: "Sistema de avisos para comunidade escolar", status: "planning", ordem: 2 },
+        { name: "Notificações Push/SMS/Email", description: "Alertas automáticos multicanal", status: "planning", ordem: 3 },
+      ]
+    },
+  ];
+
+  const createdModules: { id: string; name: string }[] = [];
+  let totalSubModules = 0;
+
+  for (const moduleData of modulesData) {
+    const { subModules, ...moduleInfo } = moduleData;
+    
+    const module = await prisma.module.create({
+      data: {
+        ...moduleInfo,
+        subModules: {
+          create: subModules
+        }
+      },
+      include: { subModules: true }
+    });
+    
+    createdModules.push({ id: module.id, name: module.name });
+    totalSubModules += module.subModules.length;
+  }
+  console.log(`✅ ${modulesData.length} módulos criados com ${totalSubModules} submódulos`);
+
+  // ==================== FASES DO CRONOGRAMA ====================
+  console.log("📅 Criando fases do cronograma...");
+
+  const moduleMap = new Map(createdModules.map(m => [m.name, m.id]));
+
+  const phasesData = [
+    {
+      name: "Fase 1 - Fundação",
+      description: "Estabelecimento da base: matrículas, RH básico e portal da secretaria",
+      monthRange: "Meses 1-3",
+      duration: "3 meses",
+      ordem: 0,
+      status: "planning",
+      moduleNames: ["Gestão de Matrículas e Alunos", "Gestão de Recursos Humanos"]
+    },
+    {
+      name: "Fase 2 - Núcleo Pedagógico",
+      description: "Implementação do core pedagógico com portais para professores e alunos",
+      monthRange: "Meses 4-6",
+      duration: "3 meses",
+      ordem: 1,
+      status: "planning",
+      moduleNames: ["Gestão Pedagógica", "Portais de Acesso"]
+    },
+    {
+      name: "Fase 3 - Gestão",
+      description: "Ferramentas de gestão para direção, coordenação e SEMEC",
+      monthRange: "Meses 7-9",
+      duration: "3 meses",
+      ordem: 2,
+      status: "planning",
+      moduleNames: ["Gestão Democrática"]
+    },
+    {
+      name: "Fase 4 - Expansão",
+      description: "Programas especiais, alimentação, transporte e comunicação",
+      monthRange: "Meses 10-12",
+      duration: "3 meses",
+      ordem: 3,
+      status: "planning",
+      moduleNames: ["Programas Especiais", "Alimentação Escolar", "Transporte Escolar", "Comunicação e Eventos"]
+    }
+  ];
+
+  for (const phaseData of phasesData) {
+    const { moduleNames, ...phaseInfo } = phaseData;
+    const moduleIds = moduleNames.map(name => moduleMap.get(name)).filter(Boolean) as string[];
+    
+    await prisma.phase.create({
+      data: {
+        ...phaseInfo,
+        moduleIds: JSON.stringify(moduleIds)
+      }
+    });
+  }
+  console.log(`✅ ${phasesData.length} fases criadas`);
+
   console.log("\n🎉 Seed concluído com sucesso!");
   console.log("\n📋 Dados criados:");
   console.log(`   - 1 usuário admin (admin@ibirapitanga.ba.gov.br / admin123)`);
@@ -474,6 +702,9 @@ async function main() {
   console.log(`   - ${profissionais.length} profissionais`);
   console.log(`   - ${turmas.length} turmas`);
   console.log(`   - ${matriculas.length} matrículas`);
+  console.log(`   - ${modulesData.length} módulos do sistema`);
+  console.log(`   - ${totalSubModules} submódulos`);
+  console.log(`   - ${phasesData.length} fases do cronograma`);
 }
 
 main()
