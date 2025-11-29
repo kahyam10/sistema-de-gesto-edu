@@ -98,17 +98,22 @@ export function ModulesTab() {
 
   const [subModuleDialogOpen, setSubModuleDialogOpen] = useState(false)
   const [editingSubModule, setEditingSubModule] = useState<ApiSubModule | null>(null)
-  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
+  const [currentModuleIdForSubModule, setCurrentModuleIdForSubModule] = useState<string | null>(null)
   const [subModuleForm, setSubModuleForm] = useState<SubModuleFormData>({
     name: '', description: '', status: 'planning', ordem: 0
   })
 
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
-  const [selectedModule, setSelectedModule] = useState<ApiModule | null>(null)
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
   const [deleteModuleDialogOpen, setDeleteModuleDialogOpen] = useState(false)
   const [moduleToDelete, setModuleToDelete] = useState<ApiModule | null>(null)
   const [deleteSubModuleDialogOpen, setDeleteSubModuleDialogOpen] = useState(false)
   const [subModuleToDelete, setSubModuleToDelete] = useState<ApiSubModule | null>(null)
+
+  // Deriva o módulo selecionado dos dados atualizados do React Query
+  const selectedModule = selectedModuleId 
+    ? modules.find(m => m.id === selectedModuleId) || null 
+    : null
 
   const handleOpenModuleDialog = (module?: ApiModule) => {
     if (module) {
@@ -149,7 +154,7 @@ export function ModulesTab() {
   }
 
   const handleOpenSubModuleDialog = (moduleId: string, subModule?: ApiSubModule) => {
-    setSelectedModuleId(moduleId)
+    setCurrentModuleIdForSubModule(moduleId)
     if (subModule) {
       setEditingSubModule(subModule)
       setSubModuleForm({
@@ -165,12 +170,12 @@ export function ModulesTab() {
   }
 
   const handleSaveSubModule = async () => {
-    if (!subModuleForm.name.trim() || !selectedModuleId) return
+    if (!subModuleForm.name.trim() || !currentModuleIdForSubModule) return
     try {
       if (editingSubModule) {
         await updateSubModule.mutateAsync({ id: editingSubModule.id, data: subModuleForm })
       } else {
-        await createSubModule.mutateAsync({ moduleId: selectedModuleId, data: subModuleForm })
+        await createSubModule.mutateAsync({ moduleId: currentModuleIdForSubModule, data: subModuleForm })
       }
       setSubModuleDialogOpen(false)
     } catch (error) { console.error('Erro ao salvar submodulo:', error) }
@@ -191,7 +196,7 @@ export function ModulesTab() {
   }
 
   const handleOpenDetails = (module: ApiModule) => {
-    setSelectedModule(module)
+    setSelectedModuleId(module.id)
     setDetailsDialogOpen(true)
   }
 
