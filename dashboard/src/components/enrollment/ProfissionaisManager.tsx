@@ -36,6 +36,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
@@ -45,6 +46,9 @@ import {
   Mail,
   Phone,
   GraduationCap,
+  Building2,
+  IdCard,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -103,6 +107,8 @@ export function ProfissionaisManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProfissionalForm>(initialForm);
   const [filtroTipo, setFiltroTipo] = useState<string>("all");
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedProfissionalId, setSelectedProfissionalId] = useState<string | null>(null);
 
   // API Hooks
   const { data: profissionais = [], isLoading } = useProfissionais();
@@ -111,9 +117,19 @@ export function ProfissionaisManager() {
   const updateMutation = useUpdateProfissional();
   const deleteMutation = useDeleteProfissional();
 
+  // Deriva o profissional selecionado dos dados atualizados
+  const selectedProfissional = selectedProfissionalId
+    ? profissionais.find((p) => p.id === selectedProfissionalId) || null
+    : null;
+
   const profissionaisFiltrados = filtroTipo === "all"
     ? profissionais
     : profissionais.filter((p) => p.tipo === filtroTipo);
+
+  const handleOpenDetails = (profissional: ProfissionalEducacao) => {
+    setSelectedProfissionalId(profissional.id);
+    setDetailsDialogOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -507,14 +523,18 @@ export function ProfissionaisManager() {
                 <TableHead>CPF</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Formação</TableHead>
-                <TableHead>Contato</TableHead>
+                <TableHead>Escolas Vinculadas</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {profissionaisFiltrados.map((profissional) => (
-                <TableRow key={profissional.id}>
+                <TableRow 
+                  key={profissional.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleOpenDetails(profissional)}
+                >
                   <TableCell className="font-medium">
                     {profissional.nome}
                     {profissional.matricula && (
@@ -540,20 +560,29 @@ export function ProfissionaisManager() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">
-                      {profissional.email && (
-                        <div className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {profissional.email}
-                        </div>
+                    <div className="flex flex-wrap gap-1">
+                      {profissional.escolas && profissional.escolas.length > 0 ? (
+                        profissional.escolas.length <= 2 ? (
+                          profissional.escolas.map((e) => (
+                            <Badge key={e.escola.id} variant="outline" className="text-xs">
+                              <Building2 className="h-3 w-3 mr-1" />
+                              {e.escola.nome}
+                            </Badge>
+                          ))
+                        ) : (
+                          <>
+                            <Badge variant="outline" className="text-xs">
+                              <Building2 className="h-3 w-3 mr-1" />
+                              {profissional.escolas[0].escola.nome}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              +{profissional.escolas.length - 1} escola(s)
+                            </Badge>
+                          </>
+                        )
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Nenhuma escola</span>
                       )}
-                      {profissional.telefone && (
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {profissional.telefone}
-                        </div>
-                      )}
-                      {!profissional.email && !profissional.telefone && "-"}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -564,7 +593,7 @@ export function ProfissionaisManager() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
                         variant="outline"
@@ -588,6 +617,178 @@ export function ProfissionaisManager() {
           </Table>
         )}
       </CardContent>
+
+      {/* Dialog de Detalhes do Profissional */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedProfissional && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-xl flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    {selectedProfissional.nome}
+                  </DialogTitle>
+                  <Badge
+                    variant={selectedProfissional.ativo ? "default" : "secondary"}
+                  >
+                    {selectedProfissional.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
+                </div>
+                <DialogDescription>
+                  Detalhes completos do profissional
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Informações Básicas */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <IdCard className="h-4 w-4" />
+                    Informações Pessoais
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 bg-muted/50 rounded-lg p-4">
+                    <div>
+                      <span className="text-sm text-muted-foreground">CPF</span>
+                      <p className="font-medium">{selectedProfissional.cpf}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Matrícula</span>
+                      <p className="font-medium">
+                        {selectedProfissional.matricula || "Não informada"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">E-mail</span>
+                      <p className="font-medium flex items-center gap-1">
+                        {selectedProfissional.email ? (
+                          <>
+                            <Mail className="h-3 w-3" />
+                            {selectedProfissional.email}
+                          </>
+                        ) : (
+                          "Não informado"
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Telefone</span>
+                      <p className="font-medium flex items-center gap-1">
+                        {selectedProfissional.telefone ? (
+                          <>
+                            <Phone className="h-3 w-3" />
+                            {selectedProfissional.telefone}
+                          </>
+                        ) : (
+                          "Não informado"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Informações Profissionais */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Informações Profissionais
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 bg-muted/50 rounded-lg p-4">
+                    <div>
+                      <span className="text-sm text-muted-foreground">Tipo</span>
+                      <div className="mt-1">
+                        <Badge className={tipoBadgeColors[selectedProfissional.tipo]}>
+                          {tipoLabels[selectedProfissional.tipo]}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Formação</span>
+                      <p className="font-medium flex items-center gap-1">
+                        {selectedProfissional.formacao ? (
+                          <>
+                            <GraduationCap className="h-3 w-3" />
+                            {selectedProfissional.formacao}
+                          </>
+                        ) : (
+                          "Não informada"
+                        )}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm text-muted-foreground">Especialidade</span>
+                      <p className="font-medium">
+                        {selectedProfissional.especialidade || "Não informada"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Escolas Vinculadas */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Escolas Vinculadas
+                  </h4>
+                  {selectedProfissional.escolas && selectedProfissional.escolas.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedProfissional.escolas.map((e) => (
+                        <div
+                          key={e.escola.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{e.escola.nome}</p>
+                              {e.escola.endereco && (
+                                <p className="text-xs text-muted-foreground">
+                                  {e.escola.endereco}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant="outline">
+                            {e.escola.ativo ? "Ativa" : "Inativa"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-muted/50 rounded-lg">
+                      <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        Nenhuma escola vinculada a este profissional
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => {
+                    setDetailsDialogOpen(false);
+                    handleEdit(selectedProfissional);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
