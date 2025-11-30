@@ -673,6 +673,7 @@ export function useCreateSubModule() {
         description: string;
         status?: string;
         ordem?: number;
+        observacao?: string;
       };
     }) => modulesApi.createSubModule(moduleId, data),
     onSuccess: () => {
@@ -699,6 +700,7 @@ export function useUpdateSubModule() {
         description: string;
         status: string;
         ordem: number;
+        observacao: string;
       }>;
     }) => modulesApi.updateSubModule(id, data),
     onSuccess: () => {

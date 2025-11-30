@@ -530,6 +530,7 @@ export interface SubModule {
   name: string;
   description: string;
   status: "planning" | "in-progress" | "completed" | "blocked";
+  observacao?: string | null;
   ordem: number;
   moduleId: string;
   createdAt: string;
@@ -579,7 +580,7 @@ export const modulesApi = {
   // SubModules
   createSubModule: (
     moduleId: string,
-    data: { name: string; description: string; status?: string; ordem?: number }
+    data: { name: string; description: string; status?: string; ordem?: number; observacao?: string }
   ) =>
     request<SubModule>(`/api/modules/${moduleId}/submodules`, {
       method: "POST",
@@ -592,6 +593,7 @@ export const modulesApi = {
       description: string;
       status: string;
       ordem: number;
+      observacao: string;
     }>
   ) =>
     request<SubModule>(`/api/modules/submodules/${id}`, {

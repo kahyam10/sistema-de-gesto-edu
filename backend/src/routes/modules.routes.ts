@@ -23,6 +23,7 @@ const createSubModuleSchema = z.object({
     .enum(["planning", "in-progress", "completed", "blocked"])
     .optional(),
   ordem: z.number().int().optional(),
+  observacao: z.string().optional(),
   moduleId: z.string().min(1),
 });
 
@@ -33,6 +34,7 @@ const updateSubModuleSchema = z.object({
     .enum(["planning", "in-progress", "completed", "blocked"])
     .optional(),
   ordem: z.number().int().optional(),
+  observacao: z.string().optional(),
 });
 
 export async function modulesRoutes(app: FastifyInstance) {

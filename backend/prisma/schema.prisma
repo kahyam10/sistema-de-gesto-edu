@@ -258,6 +258,7 @@ model SubModule {
   name        String
   description String
   status      String   @default("planning") // planning, in-progress, completed, blocked
+  observacao  String?
   ordem       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
