@@ -34,9 +34,10 @@ import {
   useUpdateEtapa,
   useDeleteEtapa,
   useCreateSerie,
+  useUpdateSerie,
   useDeleteSerie,
 } from "@/hooks/useApi";
-import { EtapaEnsino as EtapaType } from "@/lib/api";
+import { EtapaEnsino as EtapaType, Serie } from "@/lib/api";
 
 export function EtapasManager() {
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
@@ -44,6 +45,7 @@ export function EtapasManager() {
   const updateEtapa = useUpdateEtapa();
   const deleteEtapa = useDeleteEtapa();
   const createSerie = useCreateSerie();
+  const updateSerie = useUpdateSerie();
   const deleteSerie = useDeleteSerie();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -58,6 +60,10 @@ export function EtapasManager() {
   const [addingSerieToEtapa, setAddingSerieToEtapa] = useState<string | null>(null);
   const [newSerieName, setNewSerieName] = useState("");
   const [newSerieOrdem, setNewSerieOrdem] = useState(1);
+  
+  // Para editar série
+  const [editingSerie, setEditingSerie] = useState<Serie | null>(null);
+  const [editSerieData, setEditSerieData] = useState({ nome: "", ordem: 1 });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +128,31 @@ export function EtapasManager() {
     if (confirm("Tem certeza que deseja remover esta série?")) {
       await deleteSerie.mutateAsync(serieId);
     }
+  };
+
+  const handleEditSerie = (serie: Serie) => {
+    setEditingSerie(serie);
+    setEditSerieData({ nome: serie.nome, ordem: serie.ordem });
+  };
+
+  const handleUpdateSerie = async () => {
+    if (!editingSerie || !editSerieData.nome.trim()) return;
+
+    await updateSerie.mutateAsync({
+      id: editingSerie.id,
+      data: {
+        nome: editSerieData.nome,
+        ordem: editSerieData.ordem,
+      },
+    });
+
+    setEditingSerie(null);
+    setEditSerieData({ nome: "", ordem: 1 });
+  };
+
+  const cancelEditSerie = () => {
+    setEditingSerie(null);
+    setEditSerieData({ nome: "", ordem: 1 });
   };
 
   if (loadingEtapas) {
@@ -386,21 +417,81 @@ export function EtapasManager() {
                         {etapa.series
                           ?.sort((a, b) => a.ordem - b.ordem)
                           .map((serie) => (
-                            <div
-                              key={serie.id}
-                              className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium flex items-center gap-2 group"
-                            >
-                              <span>
-                                <span className="font-bold">{serie.ordem}.</span>{" "}
-                                {serie.nome}
-                              </span>
-                              <button
-                                onClick={() => handleDeleteSerie(serie.id)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80"
+                            editingSerie?.id === serie.id ? (
+                              <div
+                                key={serie.id}
+                                className="flex items-center gap-2 p-2 border rounded bg-muted/30"
                               >
-                                <Trash size={12} />
-                              </button>
-                            </div>
+                                <Input
+                                  placeholder="Nome da série"
+                                  value={editSerieData.nome}
+                                  onChange={(e) =>
+                                    setEditSerieData((prev) => ({
+                                      ...prev,
+                                      nome: e.target.value,
+                                    }))
+                                  }
+                                  className="h-7 w-32 text-xs"
+                                />
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={editSerieData.ordem}
+                                  onChange={(e) =>
+                                    setEditSerieData((prev) => ({
+                                      ...prev,
+                                      ordem: parseInt(e.target.value) || 1,
+                                    }))
+                                  }
+                                  className="h-7 w-14 text-xs"
+                                  placeholder="Ordem"
+                                />
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs px-2"
+                                  onClick={handleUpdateSerie}
+                                  disabled={updateSerie.isPending}
+                                >
+                                  {updateSerie.isPending ? (
+                                    <Spinner className="animate-spin" size={12} />
+                                  ) : (
+                                    "Salvar"
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs px-2"
+                                  onClick={cancelEditSerie}
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            ) : (
+                              <div
+                                key={serie.id}
+                                className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium flex items-center gap-2 group"
+                              >
+                                <span>
+                                  <span className="font-bold">{serie.ordem}.</span>{" "}
+                                  {serie.nome}
+                                </span>
+                                <button
+                                  onClick={() => handleEditSerie(serie)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80"
+                                  title="Editar série"
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSerie(serie.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80"
+                                  title="Excluir série"
+                                >
+                                  <Trash size={12} />
+                                </button>
+                              </div>
+                            )
                           ))}
                         {(!etapa.series || etapa.series.length === 0) && (
                           <span className="text-xs text-muted-foreground">
