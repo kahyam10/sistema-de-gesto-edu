@@ -152,6 +152,7 @@ export interface Escola {
   endereco?: string;
   telefone?: string;
   email?: string;
+  quantidadeSalas: number;
   ativo: boolean;
   etapas?: { etapa: EtapaEnsino }[];
   createdAt: string;
@@ -176,6 +177,7 @@ export const escolasApi = {
     endereco?: string;
     telefone?: string;
     email?: string;
+    quantidadeSalas?: number;
     ativo?: boolean;
     etapasIds?: string[];
   }) => request<Escola>("/api/escolas", { method: "POST", body: data }),
@@ -187,6 +189,7 @@ export const escolasApi = {
       endereco?: string;
       telefone?: string;
       email?: string;
+      quantidadeSalas?: number;
       ativo?: boolean;
       etapasIds?: string[];
     }>

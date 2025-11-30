@@ -63,15 +63,16 @@ model EtapaEnsino {
 }
 
 model Escola {
-  id        String   @id @default(cuid())
-  nome      String
-  codigo    String   @unique
-  endereco  String?
-  telefone  String?
-  email     String?
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  nome            String
+  codigo          String   @unique
+  endereco        String?
+  telefone        String?
+  email           String?
+  quantidadeSalas Int      @default(0)
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relacionamentos
   etapas       EscolaEtapa[]
