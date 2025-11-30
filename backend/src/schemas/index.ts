@@ -45,7 +45,11 @@ export const createEscolaSchema = z.object({
   endereco: z.string().optional(),
   telefone: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
-  quantidadeSalas: z.number().int().min(0, "Quantidade de salas não pode ser negativa").default(0),
+  quantidadeSalas: z
+    .number()
+    .int()
+    .min(0, "Quantidade de salas não pode ser negativa")
+    .default(0),
   ativo: z.boolean().default(true),
   etapasIds: z.array(z.string()).optional(),
 });
