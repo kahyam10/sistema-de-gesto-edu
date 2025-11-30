@@ -115,6 +115,24 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
   // Filtrar turmas desta escola
   const turmas = (allTurmas || []).filter((t) => t.escolaId === escolaId);
   
+  // Contar turmas por turno
+  const turmasPorTurno = {
+    MATUTINO: turmas.filter((t) => t.turno === "MATUTINO").length,
+    VESPERTINO: turmas.filter((t) => t.turno === "VESPERTINO").length,
+    NOTURNO: turmas.filter((t) => t.turno === "NOTURNO").length,
+    INTEGRAL: turmas.filter((t) => t.turno === "INTEGRAL").length,
+  };
+
+  // Verificar se pode criar turma no turno selecionado
+  const quantidadeSalas = escola?.quantidadeSalas || 0;
+  const turmasNoTurnoSelecionado = turmasPorTurno[formData.turno];
+  const turnoAtingidoLimite = quantidadeSalas > 0 && turmasNoTurnoSelecionado >= quantidadeSalas;
+  
+  // Ao editar, considerar que a turma atual já está no turno
+  const podeCriarTurma = editingTurma 
+    ? (editingTurma.turno === formData.turno || !turnoAtingidoLimite)
+    : !turnoAtingidoLimite;
+  
   // Séries disponíveis baseadas nas etapas da escola
   const etapasIds = escola?.etapas?.map((e) => e.etapa.id) || [];
   const seriesDisponiveis = (allSeries || [])
@@ -563,12 +581,26 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MATUTINO">Matutino</SelectItem>
-                    <SelectItem value="VESPERTINO">Vespertino</SelectItem>
-                    <SelectItem value="NOTURNO">Noturno</SelectItem>
-                    <SelectItem value="INTEGRAL">Integral</SelectItem>
+                    <SelectItem value="MATUTINO">
+                      Matutino ({turmasPorTurno.MATUTINO}/{quantidadeSalas || "∞"})
+                    </SelectItem>
+                    <SelectItem value="VESPERTINO">
+                      Vespertino ({turmasPorTurno.VESPERTINO}/{quantidadeSalas || "∞"})
+                    </SelectItem>
+                    <SelectItem value="NOTURNO">
+                      Noturno ({turmasPorTurno.NOTURNO}/{quantidadeSalas || "∞"})
+                    </SelectItem>
+                    <SelectItem value="INTEGRAL">
+                      Integral ({turmasPorTurno.INTEGRAL}/{quantidadeSalas || "∞"})
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {!podeCriarTurma && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <Warning className="h-3 w-3" />
+                    <span>Limite de salas atingido para este turno</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -637,7 +669,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={createTurma.isPending || updateTurma.isPending}
+                disabled={createTurma.isPending || updateTurma.isPending || !podeCriarTurma}
               >
                 {(createTurma.isPending || updateTurma.isPending) && (
                   <Spinner className="h-4 w-4 mr-2 animate-spin" />
