@@ -25,13 +25,13 @@ async function request<T>(
   const config: RequestInit = {
     method,
     headers: {
-      "Content-Type": "application/json",
+      ...(body !== undefined && { "Content-Type": "application/json" }),
       ...(token && { Authorization: `Bearer ${token}` }),
       ...headers,
     },
   };
 
-  if (body) {
+  if (body !== undefined) {
     config.body = JSON.stringify(body);
   }
 
