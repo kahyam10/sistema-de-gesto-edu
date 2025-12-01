@@ -21,14 +21,14 @@ export function OverviewTab() {
   }
 
   const totalModules = modules.length
-  const completedModules = modules.filter(m => m.status === 'completed').length
-  const inProgressModules = modules.filter(m => m.status === 'in-progress').length
+  const completedModules = modules.filter(m => m.status === 'completed' || m.status === 'homologated').length
+  const inProgressModules = modules.filter(m => m.status === 'in-progress' || m.status === 'review').length
   const planningModules = modules.filter(m => m.status === 'planning').length
-  const blockedModules = modules.filter(m => m.status === 'blocked').length
+  const correctionModules = modules.filter(m => m.status === 'correction').length
 
   const totalSubModules = modules.reduce((sum, m) => sum + (m.subModules?.length || 0), 0)
   const completedSubModules = modules.reduce(
-    (sum, m) => sum + (m.subModules?.filter(sm => sm.status === 'completed').length || 0),
+    (sum, m) => sum + (m.subModules?.filter(sm => sm.status === 'completed' || sm.status === 'homologated').length || 0),
     0
   )
 
@@ -83,10 +83,10 @@ export function OverviewTab() {
         </Card>
         <Card className="p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <WarningCircle className="h-6 w-6 text-red-600" />
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+              <WarningCircle className="h-6 w-6 text-orange-600" />
             </div>
-            <div><p className="text-sm text-muted-foreground">Bloqueados</p><p className="text-2xl font-bold">{blockedModules}</p></div>
+            <div><p className="text-sm text-muted-foreground">Correção</p><p className="text-2xl font-bold">{correctionModules}</p></div>
           </div>
         </Card>
       </div>
@@ -125,7 +125,12 @@ export function OverviewTab() {
             <div key={module.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium truncate">{module.name}</h4>
-                <span className={`w-2 h-2 rounded-full ${module.status === 'completed' ? 'bg-green-500' : module.status === 'in-progress' ? 'bg-blue-500' : module.status === 'blocked' ? 'bg-red-500' : 'bg-slate-400'}`} />
+                <span className={`w-2 h-2 rounded-full ${
+                  module.status === 'completed' || module.status === 'homologated' ? 'bg-green-500' : 
+                  module.status === 'in-progress' || module.status === 'review' ? 'bg-blue-500' : 
+                  module.status === 'correction' ? 'bg-orange-500' : 
+                  'bg-slate-400'
+                }`} />
               </div>
               <Progress value={module.progress} className="h-1.5" />
               <p className="text-xs text-muted-foreground mt-1">{module.progress}% completo</p>

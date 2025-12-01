@@ -9,14 +9,14 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   GraduationCap, Users, BookOpen, Calendar, ListChecks, ArrowLeft,
   Spinner, Wrench, CaretRight, CheckCircle, Circle, Clock, Warning,
   Plus, Pencil, Trash, FloppyDisk, X
 } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Module, SubModule } from "@/lib/api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Module, SubModule, SubModuleStatus } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -28,11 +28,13 @@ const moduleIcons: Record<string, React.ReactNode> = {
   Planejamento: <ListChecks size={24} />,
 };
 
-const statusConfig = {
-  planning: { label: "Planejamento", color: "bg-slate-100 text-slate-700 border-slate-300", icon: <Circle size={16} weight="duotone" />, badgeVariant: "outline" as const },
-  "in-progress": { label: "Em Progresso", color: "bg-blue-100 text-blue-700 border-blue-300", icon: <Clock size={16} weight="duotone" />, badgeVariant: "secondary" as const },
-  completed: { label: "Concluido", color: "bg-green-100 text-green-700 border-green-300", icon: <CheckCircle size={16} weight="duotone" />, badgeVariant: "default" as const },
-  blocked: { label: "Bloqueado", color: "bg-red-100 text-red-700 border-red-300", icon: <Warning size={16} weight="duotone" />, badgeVariant: "destructive" as const },
+const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode; badgeVariant: "outline" | "secondary" | "default" | "destructive" }> = {
+  planning: { label: "Planejamento", color: "bg-slate-100 text-slate-700 border-slate-300", icon: <Circle size={16} weight="duotone" />, badgeVariant: "outline" },
+  "in-progress": { label: "Em Progresso", color: "bg-blue-100 text-blue-700 border-blue-300", icon: <Clock size={16} weight="duotone" />, badgeVariant: "secondary" },
+  review: { label: "Em Revisão", color: "bg-purple-100 text-purple-700 border-purple-300", icon: <Clock size={16} weight="duotone" />, badgeVariant: "secondary" },
+  correction: { label: "Precisa de Correção", color: "bg-orange-100 text-orange-700 border-orange-300", icon: <Warning size={16} weight="duotone" />, badgeVariant: "destructive" },
+  homologated: { label: "Homologado", color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: <CheckCircle size={16} weight="duotone" />, badgeVariant: "default" },
+  completed: { label: "Concluído", color: "bg-green-100 text-green-700 border-green-300", icon: <CheckCircle size={16} weight="duotone" />, badgeVariant: "default" },
 };
 
 export function DevelopmentTab() {
@@ -58,9 +60,7 @@ export function DevelopmentTab() {
     }
   }, [modules, selectedModule?.id]);
 
-  const handleToggleCompleted = async (subModule: SubModule) => {
-    const newStatus = subModule.status === "completed" ? "in-progress" : "completed";
-    
+  const handleStatusChange = async (subModule: SubModule, newStatus: SubModuleStatus) => {
     // Atualiza estado local imediatamente (feedback instantaneo)
     setLocalSubModules(prev => 
       prev.map(s => s.id === subModule.id ? { ...s, status: newStatus } : s)
@@ -170,47 +170,61 @@ export function DevelopmentTab() {
 
         <div className="space-y-3">
           {localSubModules.sort((a, b) => a.ordem - b.ordem).map((subModule) => {
-            const isCompleted = subModule.status === "completed";
+            const isCompleted = subModule.status === "completed" || subModule.status === "homologated";
+            const currentStatus = statusConfig[subModule.status] || statusConfig.planning;
             return (
               <Card key={subModule.id} className={`transition-all ${isCompleted ? "bg-green-50 border-green-200" : ""}`}>
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <Checkbox
-                      checked={isCompleted}
-                      onCheckedChange={() => handleToggleCompleted(subModule)}
-                      className="mt-1 h-5 w-5"
-                    />
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className={`font-medium ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
-                            {subModule.name}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">{subModule.description}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge variant={statusConfig[subModule.status].badgeVariant} className="text-xs">
-                            {statusConfig[subModule.status].label}
-                          </Badge>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditForm(subModule)}>
-                            <Pencil size={14} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(subModule.id)}>
-                            <Trash size={14} />
-                          </Button>
-                        </div>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className={`font-medium ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
+                          {subModule.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">{subModule.description}</p>
                       </div>
-                      <div className="pt-2">
-                        <Label className="text-xs text-muted-foreground">Observacao</Label>
-                        <Textarea
-                          placeholder="Adicione observacoes sobre este recurso..."
-                          value={subModule.observacao || ""}
-                          onChange={(e) => setLocalSubModules(prev => prev.map(s => s.id === subModule.id ? { ...s, observacao: e.target.value } : s))}
-                          onBlur={(e) => handleUpdateObservacao(subModule, e.target.value)}
-                          className="mt-1 min-h-[60px] text-sm resize-none"
-                          rows={2}
-                        />
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditForm(subModule)}>
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(subModule.id)}>
+                          <Trash size={14} />
+                        </Button>
                       </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Label className="text-sm font-medium min-w-[50px]">Status:</Label>
+                      <Select
+                        value={subModule.status}
+                        onValueChange={(value) => handleStatusChange(subModule, value as SubModuleStatus)}
+                      >
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(statusConfig).map(([key, config]) => (
+                            <SelectItem key={key} value={key}>
+                              <div className="flex items-center gap-2">
+                                {config.icon}
+                                {config.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Observação</Label>
+                      <Textarea
+                        placeholder="Adicione observações sobre este recurso..."
+                        value={subModule.observacao || ""}
+                        onChange={(e) => setLocalSubModules(prev => prev.map(s => s.id === subModule.id ? { ...s, observacao: e.target.value } : s))}
+                        onBlur={(e) => handleUpdateObservacao(subModule, e.target.value)}
+                        className="mt-1 min-h-[60px] text-sm resize-none"
+                        rows={2}
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -336,8 +350,13 @@ export function DevelopmentTab() {
                       {module.subModules.slice(0, 6).map((sub) => (
                         <div
                           key={sub.id}
-                          className={`w-2 h-2 rounded-full ${sub.status === "completed" ? "bg-green-500" : sub.status === "in-progress" ? "bg-blue-500" : sub.status === "blocked" ? "bg-red-500" : "bg-slate-300"}`}
-                          title={`${sub.name}: ${statusConfig[sub.status].label}`}
+                          className={`w-2 h-2 rounded-full ${
+                            sub.status === "completed" || sub.status === "homologated" ? "bg-green-500" : 
+                            sub.status === "in-progress" || sub.status === "review" ? "bg-blue-500" : 
+                            sub.status === "correction" ? "bg-orange-500" : 
+                            "bg-slate-300"
+                          }`}
+                          title={`${sub.name}: ${statusConfig[sub.status]?.label || sub.status}`}
                         />
                       ))}
                       {module.subModules.length > 6 && <span className="text-xs text-muted-foreground">+{module.subModules.length - 6}</span>}

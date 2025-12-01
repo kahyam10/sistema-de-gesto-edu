@@ -525,11 +525,14 @@ export const healthApi = {
 
 // ==================== MÓDULOS ====================
 
+export type SubModuleStatus = "planning" | "in-progress" | "review" | "correction" | "homologated" | "completed";
+export type ModuleStatus = "planning" | "in-progress" | "review" | "correction" | "homologated" | "completed";
+
 export interface SubModule {
   id: string;
   name: string;
   description: string;
-  status: "planning" | "in-progress" | "completed" | "blocked";
+  status: SubModuleStatus;
   observacao?: string | null;
   ordem: number;
   moduleId: string;
@@ -543,7 +546,7 @@ export interface Module {
   description: string;
   icon: string;
   phase: number;
-  status: "planning" | "in-progress" | "completed" | "blocked";
+  status: ModuleStatus;
   progress: number;
   ordem: number;
   subModules: SubModule[];
@@ -580,7 +583,13 @@ export const modulesApi = {
   // SubModules
   createSubModule: (
     moduleId: string,
-    data: { name: string; description: string; status?: string; ordem?: number; observacao?: string }
+    data: {
+      name: string;
+      description: string;
+      status?: string;
+      ordem?: number;
+      observacao?: string;
+    }
   ) =>
     request<SubModule>(`/api/modules/${moduleId}/submodules`, {
       method: "POST",
