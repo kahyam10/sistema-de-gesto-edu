@@ -525,8 +525,20 @@ export const healthApi = {
 
 // ==================== MÓDULOS ====================
 
-export type SubModuleStatus = "planning" | "in-progress" | "review" | "correction" | "homologated" | "completed";
-export type ModuleStatus = "planning" | "in-progress" | "review" | "correction" | "homologated" | "completed";
+export type SubModuleStatus =
+  | "planning"
+  | "in-progress"
+  | "review"
+  | "correction"
+  | "homologated"
+  | "completed";
+export type ModuleStatus =
+  | "planning"
+  | "in-progress"
+  | "review"
+  | "correction"
+  | "homologated"
+  | "completed";
 
 export interface SubModule {
   id: string;

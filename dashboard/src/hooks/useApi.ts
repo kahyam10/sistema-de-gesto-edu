@@ -218,6 +218,7 @@ export function useUpdateEscola() {
         endereco?: string;
         telefone?: string;
         email?: string;
+        quantidadeSalas?: number;
         ativo?: boolean;
         etapasIds?: string[];
       }>;
@@ -572,6 +573,14 @@ export function useDeleteProfissional() {
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao remover profissional");
     },
+  });
+}
+
+export function useProfissionaisByEscola(escolaId: string) {
+  return useQuery({
+    queryKey: ["profissionais", "escola", escolaId],
+    queryFn: () => profissionaisApi.getByEscola(escolaId),
+    enabled: !!escolaId,
   });
 }
 

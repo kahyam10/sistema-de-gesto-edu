@@ -109,6 +109,7 @@ export function ProfissionaisManager() {
   const [filtroTipo, setFiltroTipo] = useState<string>("all");
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedProfissionalId, setSelectedProfissionalId] = useState<string | null>(null);
+  const [buscaEscola, setBuscaEscola] = useState("");
 
   // API Hooks
   const { data: profissionais = [], isLoading } = useProfissionais();
@@ -116,6 +117,15 @@ export function ProfissionaisManager() {
   const createMutation = useCreateProfissional();
   const updateMutation = useUpdateProfissional();
   const deleteMutation = useDeleteProfissional();
+
+  // Escolas filtradas pela busca
+  const escolasFiltradas = escolas.filter(
+    (e) =>
+      e.ativo &&
+      (buscaEscola === "" ||
+        e.nome.toLowerCase().includes(buscaEscola.toLowerCase()) ||
+        e.codigo.toLowerCase().includes(buscaEscola.toLowerCase()))
+  );
 
   // Deriva o profissional selecionado dos dados atualizados
   const selectedProfissional = selectedProfissionalId
@@ -216,6 +226,7 @@ export function ProfissionaisManager() {
     setForm(initialForm);
     setEditingId(null);
     setDialogOpen(false);
+    setBuscaEscola("");
   };
 
   const formatCpf = (value: string) => {
@@ -424,23 +435,73 @@ export function ProfissionaisManager() {
                 {escolas.length > 0 && (
                   <div className="space-y-2">
                     <Label>Escolas Vinculadas</Label>
-                    <div className="grid grid-cols-2 gap-2 p-3 border rounded-md max-h-32 overflow-y-auto">
-                      {escolas
-                        .filter((e) => e.ativo)
-                        .map((escola) => (
-                          <label
-                            key={escola.id}
-                            className="flex items-center gap-2 text-sm cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={form.escolasIds.includes(escola.id)}
-                              onChange={() => handleEscolaToggle(escola.id)}
-                              className="rounded border-gray-300"
-                            />
-                            {escola.nome}
-                          </label>
-                        ))}
+                    <div className="space-y-2">
+                      {/* Campo de busca */}
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Buscar escola pelo nome ou código..."
+                          value={buscaEscola}
+                          onChange={(e) => setBuscaEscola(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      
+                      {/* Escolas selecionadas */}
+                      {form.escolasIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-2 bg-muted/50 rounded-md">
+                          {form.escolasIds.map((escolaId) => {
+                            const escola = escolas.find((e) => e.id === escolaId);
+                            return escola ? (
+                              <span
+                                key={escolaId}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-sm rounded-md"
+                              >
+                                {escola.nome}
+                                <button
+                                  type="button"
+                                  onClick={() => handleEscolaToggle(escolaId)}
+                                  className="hover:bg-primary/20 rounded-full p-0.5"
+                                >
+                                  <span className="sr-only">Remover</span>
+                                  ×
+                                </button>
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+
+                      {/* Lista de escolas para selecionar */}
+                      <div className="border rounded-md max-h-40 overflow-y-auto">
+                        {escolasFiltradas.length > 0 ? (
+                          escolasFiltradas.map((escola) => (
+                            <label
+                              key={escola.id}
+                              className="flex items-center gap-2 p-2 text-sm cursor-pointer hover:bg-muted/50 border-b last:border-b-0"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.escolasIds.includes(escola.id)}
+                                onChange={() => handleEscolaToggle(escola.id)}
+                                className="rounded border-gray-300"
+                              />
+                              <div className="flex-1">
+                                <span className="font-medium">{escola.nome}</span>
+                                <span className="text-muted-foreground ml-2 text-xs">
+                                  ({escola.codigo})
+                                </span>
+                              </div>
+                            </label>
+                          ))
+                        ) : (
+                          <p className="p-3 text-center text-sm text-muted-foreground">
+                            {buscaEscola
+                              ? "Nenhuma escola encontrada"
+                              : "Nenhuma escola disponível"}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

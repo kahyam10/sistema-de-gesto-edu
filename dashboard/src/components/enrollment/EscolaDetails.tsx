@@ -36,8 +36,11 @@ import {
   Student,
   Users,
   Warning,
+  User,
+  Chalkboard,
+  BookOpen,
 } from "@phosphor-icons/react";
-import { Escola, Turma } from "@/lib/api";
+import { Escola, Turma, ProfissionalEducacao, EtapaEnsino } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +53,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   useTurmas,
   useSeries,
@@ -60,8 +65,12 @@ import {
   useAddAlunoToTurma,
   useRemoveAlunoFromTurma,
   useEscolas,
+  useUpdateEscola,
+  useProfissionaisByEscola,
+  useEtapas,
 } from "@/hooks/useApi";
 import { TurmaDetails } from "./TurmaDetails";
+import { toast } from "sonner";
 
 interface EscolaDetailsProps {
   escolaId: string;
@@ -82,23 +91,53 @@ const turnoBadgeColors = {
   INTEGRAL: "bg-green-100 text-green-800",
 };
 
+const tipoLabels: Record<string, string> = {
+  PROFESSOR: "Professor",
+  AUXILIAR: "Auxiliar",
+  COORDENADOR: "Coordenador",
+  DIRETOR: "Diretor",
+  SECRETARIO: "Secretário",
+};
+
+const tipoBadgeColors: Record<string, string> = {
+  PROFESSOR: "bg-blue-100 text-blue-800",
+  AUXILIAR: "bg-green-100 text-green-800",
+  COORDENADOR: "bg-purple-100 text-purple-800",
+  DIRETOR: "bg-orange-100 text-orange-800",
+  SECRETARIO: "bg-teal-100 text-teal-800",
+};
+
 export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: allTurmas, isLoading: loadingTurmas } = useTurmas();
   const { data: allSeries, isLoading: loadingSeries } = useSeries();
   const { data: allMatriculas } = useMatriculas();
+  const { data: profissionais = [], isLoading: loadingProfissionais } = useProfissionaisByEscola(escolaId);
+  const { data: etapas = [] } = useEtapas();
 
   const createTurma = useCreateTurma();
   const updateTurma = useUpdateTurma();
   const deleteTurma = useDeleteTurma();
   const addAluno = useAddAlunoToTurma();
   const removeAluno = useRemoveAlunoFromTurma();
+  const updateEscola = useUpdateEscola();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTurma, setEditingTurma] = useState<Turma | null>(null);
   const [isAssignStudentsOpen, setIsAssignStudentsOpen] = useState(false);
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null);
   const [viewingTurma, setViewingTurma] = useState<Turma | null>(null);
+  const [isEditEscolaOpen, setIsEditEscolaOpen] = useState(false);
+  const [escolaFormData, setEscolaFormData] = useState({
+    nome: "",
+    codigo: "",
+    endereco: "",
+    telefone: "",
+    email: "",
+    quantidadeSalas: 0,
+    ativo: true,
+    etapasIds: [] as string[],
+  });
   const [formData, setFormData] = useState({
     serieId: "",
     nome: "",
@@ -202,6 +241,46 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     }
   };
 
+  // Funções para editar escola
+  const openEditEscola = () => {
+    if (escola) {
+      setEscolaFormData({
+        nome: escola.nome,
+        codigo: escola.codigo,
+        endereco: escola.endereco || "",
+        telefone: escola.telefone || "",
+        email: escola.email || "",
+        quantidadeSalas: escola.quantidadeSalas || 0,
+        ativo: escola.ativo,
+        etapasIds: escola.etapas?.map((e) => e.etapa.id) || [],
+      });
+      setIsEditEscolaOpen(true);
+    }
+  };
+
+  const handleEscolaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateEscola.mutateAsync({
+        id: escolaId,
+        data: {
+          nome: escolaFormData.nome,
+          codigo: escolaFormData.codigo,
+          endereco: escolaFormData.endereco || undefined,
+          telefone: escolaFormData.telefone || undefined,
+          email: escolaFormData.email || undefined,
+          quantidadeSalas: escolaFormData.quantidadeSalas,
+          ativo: escolaFormData.ativo,
+          etapasIds: escolaFormData.etapasIds,
+        },
+      });
+      setIsEditEscolaOpen(false);
+      toast.success("Escola atualizada com sucesso!");
+    } catch {
+      toast.error("Erro ao atualizar escola");
+    }
+  };
+
   const openAssignStudents = (turma: Turma) => {
     setSelectedTurma(turma);
     setIsAssignStudentsOpen(true);
@@ -283,9 +362,15 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
             {escola.endereco && ` • ${escola.endereco}`}
           </p>
         </div>
-        <Badge variant={escola.ativo ? "default" : "secondary"}>
-          {escola.ativo ? "Ativa" : "Inativa"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={openEditEscola}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+          <Badge variant={escola.ativo ? "default" : "secondary"}>
+            {escola.ativo ? "Ativa" : "Inativa"}
+          </Badge>
+        </div>
       </div>
 
       {/* Cards de estatísticas */}
@@ -388,6 +473,83 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                   </Badge>
                 ))}
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Lista de profissionais vinculados */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profissionais Vinculados
+              </CardTitle>
+              <CardDescription>
+                Professores, coordenadores, diretores e auxiliares desta escola
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingProfissionais ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : profissionais.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Nenhum profissional vinculado a esta escola</p>
+              <p className="text-sm mt-1">
+                Vincule profissionais através do cadastro de Profissionais
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Agrupar por tipo */}
+              {["DIRETOR", "COORDENADOR", "PROFESSOR", "AUXILIAR", "SECRETARIO"].map((tipo) => {
+                const profissionaisTipo = profissionais.filter((p) => p.tipo === tipo);
+                if (profissionaisTipo.length === 0) return null;
+                
+                return (
+                  <div key={tipo}>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                      <Badge className={tipoBadgeColors[tipo] || "bg-gray-100 text-gray-800"}>
+                        {tipoLabels[tipo] || tipo}
+                      </Badge>
+                      <span className="text-xs">({profissionaisTipo.length})</span>
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {profissionaisTipo.map((prof) => (
+                        <div
+                          key={prof.id}
+                          className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="p-2 bg-muted rounded-full">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{prof.nome}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {prof.matricula && <span>Mat: {prof.matricula}</span>}
+                              {prof.especialidade && <span>• {prof.especialidade}</span>}
+                            </div>
+                          </div>
+                          {!prof.ativo && (
+                            <Badge variant="secondary" className="text-xs">
+                              Inativo
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -778,6 +940,163 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
               </TabsContent>
             </Tabs>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar escola */}
+      <Dialog open={isEditEscolaOpen} onOpenChange={setIsEditEscolaOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Escola</DialogTitle>
+            <DialogDescription>
+              Atualize as informações da escola
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEscolaSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nome">Nome da Escola *</Label>
+                <Input
+                  id="edit-nome"
+                  value={escolaFormData.nome}
+                  onChange={(e) =>
+                    setEscolaFormData({ ...escolaFormData, nome: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-codigo">Código *</Label>
+                <Input
+                  id="edit-codigo"
+                  value={escolaFormData.codigo}
+                  onChange={(e) =>
+                    setEscolaFormData({ ...escolaFormData, codigo: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-endereco">Endereço</Label>
+              <Input
+                id="edit-endereco"
+                value={escolaFormData.endereco}
+                onChange={(e) =>
+                  setEscolaFormData({ ...escolaFormData, endereco: e.target.value })
+                }
+                placeholder="Rua, número, bairro..."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-telefone">Telefone</Label>
+                <Input
+                  id="edit-telefone"
+                  value={escolaFormData.telefone}
+                  onChange={(e) =>
+                    setEscolaFormData({ ...escolaFormData, telefone: e.target.value })
+                  }
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">E-mail</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={escolaFormData.email}
+                  onChange={(e) =>
+                    setEscolaFormData({ ...escolaFormData, email: e.target.value })
+                  }
+                  placeholder="escola@email.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-salas">Quantidade de Salas</Label>
+                <Input
+                  id="edit-salas"
+                  type="number"
+                  min={0}
+                  value={escolaFormData.quantidadeSalas}
+                  onChange={(e) =>
+                    setEscolaFormData({
+                      ...escolaFormData,
+                      quantidadeSalas: parseInt(e.target.value) || 0,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Etapas de Ensino</Label>
+              <div className="border rounded-lg p-4 space-y-2 max-h-[200px] overflow-y-auto">
+                {etapas.map((etapa) => (
+                  <div key={etapa.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`edit-etapa-${etapa.id}`}
+                      checked={escolaFormData.etapasIds.includes(etapa.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setEscolaFormData({
+                            ...escolaFormData,
+                            etapasIds: [...escolaFormData.etapasIds, etapa.id],
+                          });
+                        } else {
+                          setEscolaFormData({
+                            ...escolaFormData,
+                            etapasIds: escolaFormData.etapasIds.filter(
+                              (id) => id !== etapa.id
+                            ),
+                          });
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`edit-etapa-${etapa.id}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {etapa.nome}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-ativo"
+                checked={escolaFormData.ativo}
+                onCheckedChange={(checked) =>
+                  setEscolaFormData({ ...escolaFormData, ativo: checked })
+                }
+              />
+              <Label htmlFor="edit-ativo">Escola ativa</Label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditEscolaOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={updateEscola.isPending}>
+                {updateEscola.isPending ? (
+                  <>
+                    <Spinner className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Alterações"
+                )}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
