@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Buildings, GraduationCap, Users, UserPlus } from '@phosphor-icons/react'
+import { Buildings, GraduationCap, Users, UserPlus, CalendarDots } from '@phosphor-icons/react'
 import { EscolasManager } from '@/components/enrollment/EscolasManager'
 import { EscolaDetails } from '@/components/enrollment/EscolaDetails'
 import { EtapasManager } from '@/components/enrollment/EtapasManager'
 import { MatriculasManager } from '@/components/enrollment/MatriculasManager'
 import { ProfissionaisManager } from '@/components/enrollment/ProfissionaisManager'
+import { CalendarioLetivoManager } from '@/components/enrollment/CalendarioLetivoManager'
 import type { Escola } from '@/lib/api'
 
 export function CadastrosTab() {
-  const [activeSubTab, setActiveSubTab] = useState('etapas')
+  const [activeSubTab, setActiveSubTab] = useState('calendario')
   const [selectedEscola, setSelectedEscola] = useState<Escola | null>(null)
 
   useEffect(() => {
@@ -39,7 +40,12 @@ export function CadastrosTab() {
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
+          <TabsTrigger value="calendario" className="flex items-center gap-2 py-3">
+            <CalendarDots className="h-4 w-4" />
+            <span className="hidden sm:inline">Calendário</span>
+            <span className="sm:hidden">Cal.</span>
+          </TabsTrigger>
           <TabsTrigger value="etapas" className="flex items-center gap-2 py-3">
             <GraduationCap className="h-4 w-4" />
             <span className="hidden sm:inline">Etapas & Séries</span>
@@ -60,6 +66,10 @@ export function CadastrosTab() {
             <span className="sm:hidden">Matríc.</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="calendario" className="mt-6">
+          <CalendarioLetivoManager />
+        </TabsContent>
 
         <TabsContent value="etapas" className="mt-6">
           <EtapasManager />

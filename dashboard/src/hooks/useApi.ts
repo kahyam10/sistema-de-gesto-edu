@@ -10,6 +10,8 @@ import {
   profissionaisApi,
   modulesApi,
   phasesApi,
+  salasApi,
+  calendarioApi,
   EtapaEnsino,
   Serie,
   Escola,
@@ -584,6 +586,104 @@ export function useProfissionaisByEscola(escolaId: string) {
   });
 }
 
+// ==================== FORMAÇÕES ====================
+
+export function useFormacoes(profissionalId: string) {
+  return useQuery({
+    queryKey: ["formacoes", profissionalId],
+    queryFn: () => profissionaisApi.getFormacoes(profissionalId),
+    enabled: !!profissionalId,
+  });
+}
+
+export function useAddFormacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      profissionalId,
+      data,
+    }: {
+      profissionalId: string;
+      data: {
+        tipo: string;
+        nome: string;
+        instituicao?: string;
+        anoConclusao?: number;
+        cargaHoraria?: number;
+        emAndamento?: boolean;
+      };
+    }) => profissionaisApi.addFormacao(profissionalId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["formacoes", variables.profissionalId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["profissionais"] });
+      toast.success("Formação adicionada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao adicionar formação");
+    },
+  });
+}
+
+export function useUpdateFormacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      profissionalId,
+      formacaoId,
+      data,
+    }: {
+      profissionalId: string;
+      formacaoId: string;
+      data: Partial<{
+        tipo: string;
+        nome: string;
+        instituicao?: string;
+        anoConclusao?: number;
+        cargaHoraria?: number;
+        emAndamento?: boolean;
+      }>;
+    }) => profissionaisApi.updateFormacao(profissionalId, formacaoId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["formacoes", variables.profissionalId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["profissionais"] });
+      toast.success("Formação atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar formação");
+    },
+  });
+}
+
+export function useDeleteFormacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      profissionalId,
+      formacaoId,
+    }: {
+      profissionalId: string;
+      formacaoId: string;
+    }) => profissionaisApi.deleteFormacao(profissionalId, formacaoId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["formacoes", variables.profissionalId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["profissionais"] });
+      toast.success("Formação removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover formação");
+    },
+  });
+}
+
 // ==================== MÓDULOS ====================
 
 export function useModules() {
@@ -835,5 +935,372 @@ export function useDeletePhase() {
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao remover fase");
     },
+  });
+}
+
+// ==================== SALAS ====================
+
+export function useSalasByEscola(escolaId: string | undefined) {
+  return useQuery({
+    queryKey: ["salas", "escola", escolaId],
+    queryFn: () => salasApi.listByEscola(escolaId!),
+    enabled: !!escolaId,
+  });
+}
+
+export function useSala(id: string | undefined) {
+  return useQuery({
+    queryKey: ["salas", id],
+    queryFn: () => salasApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useSalaEstatisticas(escolaId: string | undefined) {
+  return useQuery({
+    queryKey: ["salas", "estatisticas", escolaId],
+    queryFn: () => salasApi.getEstatisticas(escolaId!),
+    enabled: !!escolaId,
+  });
+}
+
+export function useCreateSala() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      escolaId,
+      data,
+    }: {
+      escolaId: string;
+      data: {
+        nome: string;
+        tipo:
+          | "AULA"
+          | "INFORMATICA"
+          | "LEITURA"
+          | "LABORATORIO"
+          | "MULTIUSO"
+          | "AEE";
+        capacidade?: number;
+        andar?: number;
+        possuiArCondicionado?: boolean;
+        possuiVentilador?: boolean;
+        possuiTV?: boolean;
+        possuiProjetor?: boolean;
+        possuiQuadro?: boolean;
+        metragem?: number | null;
+        acessivel?: boolean;
+        observacoes?: string | null;
+        ativo?: boolean;
+      };
+    }) => salasApi.create(escolaId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["salas", "escola", variables.escolaId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["salas", "estatisticas", variables.escolaId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["escolas", variables.escolaId],
+      });
+      toast.success("Sala criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar sala");
+    },
+  });
+}
+
+export function useUpdateSala() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      escolaId,
+      data,
+    }: {
+      id: string;
+      escolaId: string;
+      data: Partial<{
+        nome: string;
+        tipo:
+          | "AULA"
+          | "INFORMATICA"
+          | "LEITURA"
+          | "LABORATORIO"
+          | "MULTIUSO"
+          | "AEE";
+        capacidade: number;
+        andar: number;
+        possuiArCondicionado: boolean;
+        possuiVentilador: boolean;
+        possuiTV: boolean;
+        possuiProjetor: boolean;
+        possuiQuadro: boolean;
+        metragem: number | null;
+        acessivel: boolean;
+        observacoes: string | null;
+        ativo: boolean;
+      }>;
+    }) => salasApi.update(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["salas", variables.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["salas", "escola", variables.escolaId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["salas", "estatisticas", variables.escolaId],
+      });
+      toast.success("Sala atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar sala");
+    },
+  });
+}
+
+export function useDeleteSala() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, escolaId }: { id: string; escolaId: string }) =>
+      salasApi.delete(id),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["salas", "escola", variables.escolaId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["salas", "estatisticas", variables.escolaId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["escolas", variables.escolaId],
+      });
+      toast.success("Sala removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover sala");
+    },
+  });
+}
+
+// ==================== CALENDÁRIO LETIVO ====================
+
+// Cache times para o calendário (em ms)
+const CALENDARIO_STALE_TIME = 1000 * 60 * 5; // 5 minutos
+const CALENDARIO_CACHE_TIME = 1000 * 60 * 30; // 30 minutos
+
+export function useAnosLetivos() {
+  return useQuery({
+    queryKey: ["anos-letivos"],
+    queryFn: () => calendarioApi.listAnosLetivos(),
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+export function useAnoLetivoAtivo() {
+  return useQuery({
+    queryKey: ["anos-letivos", "ativo"],
+    queryFn: () => calendarioApi.getAnoLetivoAtivo(),
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+export function useAnoLetivo(id: string) {
+  return useQuery({
+    queryKey: ["anos-letivos", id],
+    queryFn: () => calendarioApi.getAnoLetivo(id),
+    enabled: !!id,
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+export function useCreateAnoLetivo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { ano: number; ativo?: boolean }) =>
+      calendarioApi.createAnoLetivo(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["anos-letivos"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["estatisticas-calendario"] });
+      toast.success("Ano letivo criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar ano letivo");
+    },
+  });
+}
+
+export function useUpdateAnoLetivo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{
+        ano: number;
+        ativo: boolean;
+      }>;
+    }) => calendarioApi.updateAnoLetivo(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["anos-letivos"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["estatisticas-calendario"] });
+      toast.success("Ano letivo atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar ano letivo");
+    },
+  });
+}
+
+export function useDeleteAnoLetivo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => calendarioApi.deleteAnoLetivo(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["anos-letivos"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["estatisticas-calendario"] });
+      toast.success("Ano letivo removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover ano letivo");
+    },
+  });
+}
+
+// Eventos
+export function useEventos(anoLetivoId: string, escolaId?: string) {
+  return useQuery({
+    queryKey: ["eventos", anoLetivoId, escolaId],
+    queryFn: () => calendarioApi.getEventos(anoLetivoId, escolaId),
+    enabled: !!anoLetivoId,
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+export function useEventosByMes(
+  anoLetivoId: string,
+  ano: number,
+  mes: number,
+  escolaId?: string
+) {
+  return useQuery({
+    queryKey: ["eventos", "mes", anoLetivoId, ano, mes, escolaId],
+    queryFn: () =>
+      calendarioApi.getEventosByMes(anoLetivoId, ano, mes, escolaId),
+    enabled: !!anoLetivoId && !!ano && !!mes,
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+export function useEventosByData(
+  anoLetivoId: string,
+  data: string,
+  escolaId?: string
+) {
+  return useQuery({
+    queryKey: ["eventos", "data", anoLetivoId, data, escolaId],
+    queryFn: () => calendarioApi.getEventosByData(anoLetivoId, data, escolaId),
+    enabled: !!anoLetivoId && !!data,
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+export function useCreateEvento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof calendarioApi.createEvento>[0]) =>
+      calendarioApi.createEvento(data),
+    onSuccess: (_, variables) => {
+      // Invalidar todas as queries de eventos
+      queryClient.invalidateQueries({
+        queryKey: ["eventos"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["anos-letivos"] });
+      queryClient.invalidateQueries({ queryKey: ["estatisticas-calendario"] });
+      toast.success("Evento criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar evento");
+    },
+  });
+}
+
+export function useUpdateEvento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+      anoLetivoId,
+    }: {
+      id: string;
+      data: Parameters<typeof calendarioApi.updateEvento>[1];
+      anoLetivoId: string;
+    }) => calendarioApi.updateEvento(id, data),
+    onSuccess: () => {
+      // Invalidar todas as queries de eventos
+      queryClient.invalidateQueries({
+        queryKey: ["eventos"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["anos-letivos"] });
+      queryClient.invalidateQueries({ queryKey: ["estatisticas-calendario"] });
+      toast.success("Evento atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar evento");
+    },
+  });
+}
+
+export function useDeleteEvento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, anoLetivoId }: { id: string; anoLetivoId: string }) =>
+      calendarioApi.deleteEvento(id),
+    onSuccess: () => {
+      // Invalidar todas as queries de eventos
+      queryClient.invalidateQueries({
+        queryKey: ["eventos"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["anos-letivos"] });
+      queryClient.invalidateQueries({ queryKey: ["estatisticas-calendario"] });
+      toast.success("Evento removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover evento");
+    },
+  });
+}
+
+export function useEstatisticasCalendario(
+  anoLetivoId: string,
+  escolaId?: string
+) {
+  return useQuery({
+    queryKey: ["estatisticas-calendario", anoLetivoId, escolaId],
+    queryFn: () => calendarioApi.getEstatisticas(anoLetivoId, escolaId),
+    enabled: !!anoLetivoId,
+    staleTime: CALENDARIO_STALE_TIME,
+    gcTime: CALENDARIO_CACHE_TIME,
   });
 }

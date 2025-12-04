@@ -39,6 +39,8 @@ import {
   User,
   Chalkboard,
   BookOpen,
+  Door,
+  CalendarDots,
 } from "@phosphor-icons/react";
 import { Escola, Turma, ProfissionalEducacao, EtapaEnsino } from "@/lib/api";
 import {
@@ -70,6 +72,8 @@ import {
   useEtapas,
 } from "@/hooks/useApi";
 import { TurmaDetails } from "./TurmaDetails";
+import { SalasManager } from "./SalasManager";
+import { CalendarioLetivoManager } from "./CalendarioLetivoManager";
 import { toast } from "sonner";
 
 interface EscolaDetailsProps {
@@ -127,6 +131,8 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
   const [isAssignStudentsOpen, setIsAssignStudentsOpen] = useState(false);
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null);
   const [viewingTurma, setViewingTurma] = useState<Turma | null>(null);
+  const [viewingSalas, setViewingSalas] = useState(false);
+  const [viewingCalendario, setViewingCalendario] = useState(false);
   const [isEditEscolaOpen, setIsEditEscolaOpen] = useState(false);
   const [escolaFormData, setEscolaFormData] = useState({
     nome: "",
@@ -306,6 +312,39 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     );
   }
 
+  // Se está visualizando salas
+  if (viewingSalas && escola) {
+    return (
+      <SalasManager
+        escola={escola}
+        onBack={() => setViewingSalas(false)}
+      />
+    );
+  }
+
+  // Se está visualizando calendário da escola
+  if (viewingCalendario && escola) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setViewingCalendario(false)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <CalendarDots className="h-6 w-6" />
+              Calendário - {escola.nome}
+            </h2>
+            <p className="text-muted-foreground">
+              Eventos específicos desta escola (não afetam outras unidades)
+            </p>
+          </div>
+        </div>
+        <CalendarioLetivoManager escolaId={escolaId} />
+      </div>
+    );
+  }
+
   const isLoading = loadingEscolas || loadingTurmas || loadingSeries;
 
   if (isLoading) {
@@ -363,6 +402,14 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setViewingCalendario(true)}>
+            <CalendarDots className="h-4 w-4 mr-2" />
+            Calendário
+          </Button>
+          <Button variant="outline" onClick={() => setViewingSalas(true)}>
+            <Door className="h-4 w-4 mr-2" />
+            Salas
+          </Button>
           <Button variant="outline" onClick={openEditEscola}>
             <Pencil className="h-4 w-4 mr-2" />
             Editar

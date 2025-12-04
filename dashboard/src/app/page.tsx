@@ -11,6 +11,7 @@ import { KPITab } from '@/components/KPITab'
 import { TechStackTab } from '@/components/TechStackTab'
 import { DevelopmentTab } from '@/components/DevelopmentTab'
 import { CadastrosTab } from '@/components/CadastrosTab'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -19,12 +20,15 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <GraduationCap className="text-primary h-8 w-8" />
-            <div>
-              <h1 className="text-xl font-bold">Sistema de Gestão Educacional</h1>
-              <p className="text-xs text-muted-foreground">Ibirapitanga - Dashboard de Progresso</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <GraduationCap className="text-primary h-8 w-8" />
+              <div>
+                <h1 className="text-xl font-bold">Sistema de Gestão Educacional</h1>
+                <p className="text-xs text-muted-foreground">Ibirapitanga - Dashboard de Progresso</p>
+              </div>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>

@@ -196,4 +196,121 @@ export async function profissionaisRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  // ==================== FORMAÇÕES ====================
+
+  // Listar formações de um profissional
+  app.get(
+    "/:id/formacoes",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const formacoes = await profissionalService.getFormacoes(id);
+        return reply.send(formacoes);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao listar formações";
+        return reply.status(500).send({ error: message });
+      }
+    }
+  );
+
+  // Adicionar formação
+  app.post(
+    "/:id/formacoes",
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: {
+          tipo: string;
+          nome: string;
+          instituicao?: string;
+          anoConclusao?: number;
+          cargaHoraria?: number;
+          emAndamento?: boolean;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const data = request.body as {
+          tipo: string;
+          nome: string;
+          instituicao?: string;
+          anoConclusao?: number;
+          cargaHoraria?: number;
+          emAndamento?: boolean;
+        };
+        const formacao = await profissionalService.addFormacao(id, data);
+        return reply.status(201).send(formacao);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao adicionar formação";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // Atualizar formação
+  app.put(
+    "/:id/formacoes/:formacaoId",
+    async (
+      request: FastifyRequest<{
+        Params: { id: string; formacaoId: string };
+        Body: {
+          tipo?: string;
+          nome?: string;
+          instituicao?: string;
+          anoConclusao?: number;
+          cargaHoraria?: number;
+          emAndamento?: boolean;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { formacaoId } = request.params;
+        const data = request.body as {
+          tipo?: string;
+          nome?: string;
+          instituicao?: string;
+          anoConclusao?: number;
+          cargaHoraria?: number;
+          emAndamento?: boolean;
+        };
+        const formacao = await profissionalService.updateFormacao(
+          formacaoId,
+          data
+        );
+        return reply.send(formacao);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao atualizar formação";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // Remover formação
+  app.delete(
+    "/:id/formacoes/:formacaoId",
+    async (
+      request: FastifyRequest<{ Params: { id: string; formacaoId: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { formacaoId } = request.params;
+        await profissionalService.deleteFormacao(formacaoId);
+        return reply.status(204).send();
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao remover formação";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
 }

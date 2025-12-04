@@ -36,7 +36,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
@@ -48,6 +47,7 @@ import {
   GraduationCap,
   Building2,
   IdCard,
+  Eye,
   BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -59,6 +59,7 @@ import {
   useEscolas,
 } from "@/hooks/useApi";
 import type { ProfissionalEducacao } from "@/lib/api";
+import { ProfissionalDetails } from "./ProfissionalDetails";
 
 type TipoProfissional = "PROFESSOR" | "AUXILIAR" | "COORDENADOR" | "DIRETOR";
 
@@ -107,8 +108,7 @@ export function ProfissionaisManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProfissionalForm>(initialForm);
   const [filtroTipo, setFiltroTipo] = useState<string>("all");
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedProfissionalId, setSelectedProfissionalId] = useState<string | null>(null);
+  const [viewingProfissionalId, setViewingProfissionalId] = useState<string | null>(null);
   const [buscaEscola, setBuscaEscola] = useState("");
 
   // API Hooks
@@ -127,18 +127,12 @@ export function ProfissionaisManager() {
         e.codigo.toLowerCase().includes(buscaEscola.toLowerCase()))
   );
 
-  // Deriva o profissional selecionado dos dados atualizados
-  const selectedProfissional = selectedProfissionalId
-    ? profissionais.find((p) => p.id === selectedProfissionalId) || null
-    : null;
-
   const profissionaisFiltrados = filtroTipo === "all"
     ? profissionais
     : profissionais.filter((p) => p.tipo === filtroTipo);
 
-  const handleOpenDetails = (profissional: ProfissionalEducacao) => {
-    setSelectedProfissionalId(profissional.id);
-    setDetailsDialogOpen(true);
+  const handleViewDetails = (profissional: ProfissionalEducacao) => {
+    setViewingProfissionalId(profissional.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -271,6 +265,16 @@ export function ProfissionaisManager() {
           <Skeleton className="h-64 w-full" />
         </CardContent>
       </Card>
+    );
+  }
+
+  // Se está visualizando detalhes de um profissional
+  if (viewingProfissionalId) {
+    return (
+      <ProfissionalDetails
+        profissionalId={viewingProfissionalId}
+        onBack={() => setViewingProfissionalId(null)}
+      />
     );
   }
 
@@ -594,7 +598,7 @@ export function ProfissionaisManager() {
                 <TableRow 
                   key={profissional.id} 
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleOpenDetails(profissional)}
+                  onClick={() => handleViewDetails(profissional)}
                 >
                   <TableCell className="font-medium">
                     {profissional.nome}
@@ -678,178 +682,6 @@ export function ProfissionaisManager() {
           </Table>
         )}
       </CardContent>
-
-      {/* Dialog de Detalhes do Profissional */}
-      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          {selectedProfissional && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-xl flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    {selectedProfissional.nome}
-                  </DialogTitle>
-                  <Badge
-                    variant={selectedProfissional.ativo ? "default" : "secondary"}
-                  >
-                    {selectedProfissional.ativo ? "Ativo" : "Inativo"}
-                  </Badge>
-                </div>
-                <DialogDescription>
-                  Detalhes completos do profissional
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                {/* Informações Básicas */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <IdCard className="h-4 w-4" />
-                    Informações Pessoais
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 bg-muted/50 rounded-lg p-4">
-                    <div>
-                      <span className="text-sm text-muted-foreground">CPF</span>
-                      <p className="font-medium">{selectedProfissional.cpf}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Matrícula</span>
-                      <p className="font-medium">
-                        {selectedProfissional.matricula || "Não informada"}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">E-mail</span>
-                      <p className="font-medium flex items-center gap-1">
-                        {selectedProfissional.email ? (
-                          <>
-                            <Mail className="h-3 w-3" />
-                            {selectedProfissional.email}
-                          </>
-                        ) : (
-                          "Não informado"
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Telefone</span>
-                      <p className="font-medium flex items-center gap-1">
-                        {selectedProfissional.telefone ? (
-                          <>
-                            <Phone className="h-3 w-3" />
-                            {selectedProfissional.telefone}
-                          </>
-                        ) : (
-                          "Não informado"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Informações Profissionais */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    Informações Profissionais
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 bg-muted/50 rounded-lg p-4">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Tipo</span>
-                      <div className="mt-1">
-                        <Badge className={tipoBadgeColors[selectedProfissional.tipo]}>
-                          {tipoLabels[selectedProfissional.tipo]}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Formação</span>
-                      <p className="font-medium flex items-center gap-1">
-                        {selectedProfissional.formacao ? (
-                          <>
-                            <GraduationCap className="h-3 w-3" />
-                            {selectedProfissional.formacao}
-                          </>
-                        ) : (
-                          "Não informada"
-                        )}
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-sm text-muted-foreground">Especialidade</span>
-                      <p className="font-medium">
-                        {selectedProfissional.especialidade || "Não informada"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Escolas Vinculadas */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Escolas Vinculadas
-                  </h4>
-                  {selectedProfissional.escolas && selectedProfissional.escolas.length > 0 ? (
-                    <div className="space-y-2">
-                      {selectedProfissional.escolas.map((e) => (
-                        <div
-                          key={e.escola.id}
-                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Building2 className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{e.escola.nome}</p>
-                              {e.escola.endereco && (
-                                <p className="text-xs text-muted-foreground">
-                                  {e.escola.endereco}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <Badge variant="outline">
-                            {e.escola.ativo ? "Ativa" : "Inativa"}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 bg-muted/50 rounded-lg">
-                      <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        Nenhuma escola vinculada a este profissional
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
-                  Fechar
-                </Button>
-                <Button
-                  onClick={() => {
-                    setDetailsDialogOpen(false);
-                    handleEdit(selectedProfissional);
-                  }}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

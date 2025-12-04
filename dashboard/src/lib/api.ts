@@ -155,9 +155,147 @@ export interface Escola {
   quantidadeSalas: number;
   ativo: boolean;
   etapas?: { etapa: EtapaEnsino }[];
+
+  // Infraestrutura - Áreas comuns
+  possuiPatio?: boolean;
+  possuiParque?: boolean;
+  possuiQuadra?: boolean;
+  quadraCoberta?: boolean;
+  possuiBiblioteca?: boolean;
+  possuiRefeitorio?: boolean;
+  possuiSalaProfessores?: boolean;
+  possuiSecretaria?: boolean;
+  possuiDiretoria?: boolean;
+  possuiAlmoxarifado?: boolean;
+  possuiCozinha?: boolean;
+  possuiDispensa?: boolean;
+
+  // Infraestrutura - Banheiros
+  qtdBanheirosAlunos?: number;
+  qtdBanheirosAlunas?: number;
+  qtdBanheirosAdaptados?: number;
+  qtdBanheirosFuncionarios?: number;
+
+  // Infraestrutura - Tecnologia
+  possuiInternet?: boolean;
+  tipoInternet?: string | null;
+  velocidadeInternet?: string | null;
+  possuiSalaInformatica?: boolean;
+  qtdComputadores?: number;
+  possuiProjetores?: boolean;
+  qtdProjetores?: number;
+
+  // Infraestrutura - Acessibilidade
+  possuiRampaAcesso?: boolean;
+  possuiElevador?: boolean;
+  possuiPisoTatil?: boolean;
+  possuiSinalizacaoBraile?: boolean;
+
+  // Relacionamentos
+  salas?: Sala[];
+
   createdAt: string;
   updatedAt: string;
 }
+
+// ==================== SALAS ====================
+
+export type TipoSala =
+  | "AULA"
+  | "INFORMATICA"
+  | "LEITURA"
+  | "LABORATORIO"
+  | "MULTIUSO"
+  | "AEE";
+
+export interface Sala {
+  id: string;
+  nome: string;
+  tipo: TipoSala;
+  capacidade: number;
+  possuiArCondicionado: boolean;
+  possuiVentilador: boolean;
+  possuiTV: boolean;
+  possuiProjetor: boolean;
+  possuiQuadro: boolean;
+  metragem?: number | null;
+  andar: number;
+  acessivel: boolean;
+  ativo: boolean;
+  observacoes?: string | null;
+  escolaId: string;
+  escola?: Escola;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalasEstatisticas {
+  totalSalas: number;
+  salasAula: number;
+  salasInformatica: number;
+  salasLeitura: number;
+  laboratorios: number;
+  salasMultiuso: number;
+  salasAEE: number;
+  capacidadeTotal: number;
+  salasComArCondicionado: number;
+  salasComProjetor: number;
+  salasAcessiveis: number;
+}
+
+export const salasApi = {
+  listByEscola: (escolaId: string) =>
+    request<Sala[]>(`/api/escolas/${escolaId}/salas`),
+  get: (id: string) => request<Sala>(`/api/salas/${id}`),
+  getEstatisticas: (escolaId: string) =>
+    request<SalasEstatisticas>(`/api/escolas/${escolaId}/salas/estatisticas`),
+  create: (
+    escolaId: string,
+    data: {
+      nome: string;
+      tipo: TipoSala;
+      capacidade?: number;
+      possuiArCondicionado?: boolean;
+      possuiVentilador?: boolean;
+      possuiTV?: boolean;
+      possuiProjetor?: boolean;
+      possuiQuadro?: boolean;
+      metragem?: number | null;
+      andar?: number;
+      acessivel?: boolean;
+      observacoes?: string | null;
+      ativo?: boolean;
+    }
+  ) =>
+    request<Sala>(`/api/escolas/${escolaId}/salas`, {
+      method: "POST",
+      body: data,
+    }),
+  update: (
+    id: string,
+    data: Partial<{
+      nome: string;
+      tipo: TipoSala;
+      capacidade: number;
+      possuiArCondicionado: boolean;
+      possuiVentilador: boolean;
+      possuiTV: boolean;
+      possuiProjetor: boolean;
+      possuiQuadro: boolean;
+      metragem: number | null;
+      andar: number;
+      acessivel: boolean;
+      observacoes: string | null;
+      ativo: boolean;
+    }>
+  ) =>
+    request<Sala>(`/api/salas/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/salas/${id}`, { method: "DELETE" }),
+};
 
 export interface EscolaEstatisticas {
   totalTurmas: number;
@@ -166,21 +304,53 @@ export interface EscolaEstatisticas {
   ocupacao: number;
 }
 
+export type EscolaInfraestruturaUpdate = Partial<{
+  possuiPatio: boolean;
+  possuiParque: boolean;
+  possuiQuadra: boolean;
+  quadraCoberta: boolean;
+  possuiBiblioteca: boolean;
+  possuiRefeitorio: boolean;
+  possuiSalaProfessores: boolean;
+  possuiSecretaria: boolean;
+  possuiDiretoria: boolean;
+  possuiAlmoxarifado: boolean;
+  possuiCozinha: boolean;
+  possuiDispensa: boolean;
+  qtdBanheirosAlunos: number;
+  qtdBanheirosAlunas: number;
+  qtdBanheirosAdaptados: number;
+  qtdBanheirosFuncionarios: number;
+  possuiInternet: boolean;
+  tipoInternet: string | null;
+  velocidadeInternet: string | null;
+  possuiSalaInformatica: boolean;
+  qtdComputadores: number;
+  possuiProjetores: boolean;
+  qtdProjetores: number;
+  possuiRampaAcesso: boolean;
+  possuiElevador: boolean;
+  possuiPisoTatil: boolean;
+  possuiSinalizacaoBraile: boolean;
+}>;
+
 export const escolasApi = {
   list: () => request<Escola[]>("/api/escolas"),
   get: (id: string) => request<Escola>(`/api/escolas/${id}`),
   getEstatisticas: (id: string) =>
     request<EscolaEstatisticas>(`/api/escolas/${id}/estatisticas`),
-  create: (data: {
-    nome: string;
-    codigo: string;
-    endereco?: string;
-    telefone?: string;
-    email?: string;
-    quantidadeSalas?: number;
-    ativo?: boolean;
-    etapasIds?: string[];
-  }) => request<Escola>("/api/escolas", { method: "POST", body: data }),
+  create: (
+    data: {
+      nome: string;
+      codigo: string;
+      endereco?: string;
+      telefone?: string;
+      email?: string;
+      quantidadeSalas?: number;
+      ativo?: boolean;
+      etapasIds?: string[];
+    } & EscolaInfraestruturaUpdate
+  ) => request<Escola>("/api/escolas", { method: "POST", body: data }),
   update: (
     id: string,
     data: Partial<{
@@ -192,7 +362,8 @@ export const escolasApi = {
       quantidadeSalas?: number;
       ativo?: boolean;
       etapasIds?: string[];
-    }>
+    }> &
+      EscolaInfraestruturaUpdate
   ) => request<Escola>(`/api/escolas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/escolas/${id}`, { method: "DELETE" }),
@@ -433,6 +604,19 @@ export const matriculasApi = {
 
 // ==================== PROFISSIONAIS ====================
 
+export interface FormacaoProfissional {
+  id: string;
+  profissionalId: string;
+  tipo: string; // GRADUACAO, POS_GRADUACAO, MESTRADO, DOUTORADO, CURSO_TECNICO, CURSO_LIVRE
+  nome: string;
+  instituicao?: string;
+  anoConclusao?: number;
+  cargaHoraria?: number;
+  emAndamento: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProfissionalEducacao {
   id: string;
   nome: string;
@@ -446,6 +630,7 @@ export interface ProfissionalEducacao {
   ativo: boolean;
   escolas?: { escola: Escola }[];
   turmas?: { turma: Turma; tipo: string; disciplina?: string }[];
+  formacoes?: FormacaoProfissional[];
   createdAt: string;
   updatedAt: string;
 }
@@ -516,6 +701,55 @@ export const profissionaisApi = {
     request<void>(`/api/profissionais/${profissionalId}/escolas/${escolaId}`, {
       method: "DELETE",
     }),
+  // Formações
+  getFormacoes: (profissionalId: string) =>
+    request<FormacaoProfissional[]>(
+      `/api/profissionais/${profissionalId}/formacoes`
+    ),
+  addFormacao: (
+    profissionalId: string,
+    data: {
+      tipo: string;
+      nome: string;
+      instituicao?: string;
+      anoConclusao?: number;
+      cargaHoraria?: number;
+      emAndamento?: boolean;
+    }
+  ) =>
+    request<FormacaoProfissional>(
+      `/api/profissionais/${profissionalId}/formacoes`,
+      {
+        method: "POST",
+        body: data,
+      }
+    ),
+  updateFormacao: (
+    profissionalId: string,
+    formacaoId: string,
+    data: Partial<{
+      tipo: string;
+      nome: string;
+      instituicao?: string;
+      anoConclusao?: number;
+      cargaHoraria?: number;
+      emAndamento?: boolean;
+    }>
+  ) =>
+    request<FormacaoProfissional>(
+      `/api/profissionais/${profissionalId}/formacoes/${formacaoId}`,
+      {
+        method: "PUT",
+        body: data,
+      }
+    ),
+  deleteFormacao: (profissionalId: string, formacaoId: string) =>
+    request<void>(
+      `/api/profissionais/${profissionalId}/formacoes/${formacaoId}`,
+      {
+        method: "DELETE",
+      }
+    ),
 };
 
 // Health check
@@ -670,6 +904,205 @@ export const phasesApi = {
   ) => request<Phase>(`/api/phases/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/phases/${id}`, { method: "DELETE" }),
+};
+
+// ==================== CALENDÁRIO LETIVO ====================
+
+// Status do ano letivo
+export interface StatusAnoLetivo {
+  // Início e Fim do Ano Letivo (define intervalo para cadastro de eventos)
+  temInicioDefinido: boolean;
+  temFimDefinido: boolean;
+  dataInicioAnoLetivo: string | null;
+  dataFimAnoLetivo: string | null;
+
+  // Início e Fim das Aulas Regulares (define período para contabilização de dias letivos)
+  temInicioAulasDefinido: boolean;
+  temFimAulasDefinido: boolean;
+  dataInicioAulas: string | null;
+  dataFimAulas: string | null;
+
+  // Controle de fluxo
+  podeAdicionarEventos: boolean;
+  podeContabilizarDiasLetivos: boolean;
+  proximoEventoObrigatorio:
+    | "INICIO_ANO_LETIVO"
+    | "FIM_ANO_LETIVO"
+    | "INICIO_AULAS_REGULARES"
+    | "FIM_AULAS_REGULARES"
+    | null;
+
+  // Legado (manter compatibilidade)
+  dataInicio: string | null;
+  dataFim: string | null;
+}
+
+export interface AnoLetivo {
+  id: string;
+  ano: number;
+  ativo: boolean;
+  eventos?: EventoCalendario[];
+  status: StatusAnoLetivo;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventoCalendario {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  dataInicio: string;
+  dataFim?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  tipo: string; // INICIO_ANO_LETIVO, FIM_ANO_LETIVO, FERIADO, RECESSO, SABADO_LETIVO, EVENTO, AC, AVALIACAO, REUNIAO, CONSELHO_CLASSE, PLANEJAMENTO, FORMACAO, OUTRO
+  escopo: string; // REDE, ESCOLA
+  recorrente: boolean;
+  tipoRecorrencia?: string;
+  diaRecorrencia?: string;
+  cor: string;
+  reduzDiaLetivo: boolean;
+  anoLetivoId: string;
+  escolaId?: string;
+  escola?: Escola;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EstatisticasCalendario {
+  diasTotais: number | null;
+  diasLetivos: number | null;
+  sabadosLetivos: number | null;
+  feriados: number | null;
+  domingos: number | null;
+  eventos: number;
+  feriadosEventos: number;
+  dataInicioAnoLetivo: string | null;
+  dataFimAnoLetivo: string | null;
+  dataInicioAulas: string | null;
+  dataFimAulas: string | null;
+  status: {
+    temInicioDefinido: boolean;
+    temFimDefinido: boolean;
+    temInicioAulasDefinido: boolean;
+    temFimAulasDefinido: boolean;
+    podeAdicionarEventos: boolean;
+    podeContabilizarDiasLetivos: boolean;
+    proximoEventoObrigatorio:
+      | "INICIO_ANO_LETIVO"
+      | "FIM_ANO_LETIVO"
+      | "INICIO_AULAS_REGULARES"
+      | "FIM_AULAS_REGULARES"
+      | null;
+  };
+}
+
+export const calendarioApi = {
+  // Anos Letivos
+  listAnosLetivos: () => request<AnoLetivo[]>("/api/calendario/anos-letivos"),
+  getAnoLetivoAtivo: () =>
+    request<AnoLetivo>("/api/calendario/anos-letivos/ativo"),
+  getAnoLetivo: (id: string) =>
+    request<AnoLetivo>(`/api/calendario/anos-letivos/${id}`),
+  createAnoLetivo: (data: { ano: number; ativo?: boolean }) =>
+    request<AnoLetivo>("/api/calendario/anos-letivos", {
+      method: "POST",
+      body: data,
+    }),
+  updateAnoLetivo: (
+    id: string,
+    data: Partial<{
+      ano: number;
+      ativo: boolean;
+    }>
+  ) =>
+    request<AnoLetivo>(`/api/calendario/anos-letivos/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  deleteAnoLetivo: (id: string) =>
+    request<void>(`/api/calendario/anos-letivos/${id}`, { method: "DELETE" }),
+
+  // Eventos
+  getEventos: (anoLetivoId: string, escolaId?: string) => {
+    const params = escolaId ? `?escolaId=${escolaId}` : "";
+    return request<EventoCalendario[]>(
+      `/api/calendario/anos-letivos/${anoLetivoId}/eventos${params}`
+    );
+  },
+  getEventosByData: (anoLetivoId: string, data: string, escolaId?: string) => {
+    const params = escolaId ? `?escolaId=${escolaId}` : "";
+    return request<EventoCalendario[]>(
+      `/api/calendario/anos-letivos/${anoLetivoId}/eventos/data/${data}${params}`
+    );
+  },
+  getEventosByMes: (
+    anoLetivoId: string,
+    ano: number,
+    mes: number,
+    escolaId?: string
+  ) => {
+    const params = escolaId ? `?escolaId=${escolaId}` : "";
+    return request<EventoCalendario[]>(
+      `/api/calendario/anos-letivos/${anoLetivoId}/eventos/mes/${ano}/${mes}${params}`
+    );
+  },
+  getEvento: (id: string) =>
+    request<EventoCalendario>(`/api/calendario/eventos/${id}`),
+  createEvento: (data: {
+    titulo: string;
+    descricao?: string;
+    dataInicio: string;
+    dataFim?: string;
+    horaInicio?: string;
+    horaFim?: string;
+    tipo: string;
+    escopo?: string;
+    recorrente?: boolean;
+    tipoRecorrencia?: string;
+    diaRecorrencia?: string;
+    cor?: string;
+    reduzDiaLetivo?: boolean;
+    anoLetivoId: string;
+    escolaId?: string;
+  }) =>
+    request<EventoCalendario>("/api/calendario/eventos", {
+      method: "POST",
+      body: data,
+    }),
+  updateEvento: (
+    id: string,
+    data: Partial<{
+      titulo: string;
+      descricao?: string;
+      dataInicio: string;
+      dataFim?: string;
+      horaInicio?: string;
+      horaFim?: string;
+      tipo: string;
+      escopo?: string;
+      recorrente?: boolean;
+      tipoRecorrencia?: string;
+      diaRecorrencia?: string;
+      cor?: string;
+      reduzDiaLetivo?: boolean;
+      escolaId?: string;
+    }>
+  ) =>
+    request<EventoCalendario>(`/api/calendario/eventos/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  deleteEvento: (id: string) =>
+    request<void>(`/api/calendario/eventos/${id}`, { method: "DELETE" }),
+
+  // Estatísticas
+  getEstatisticas: (anoLetivoId: string, escolaId?: string) => {
+    const params = escolaId ? `?escolaId=${escolaId}` : "";
+    return request<EstatisticasCalendario>(
+      `/api/calendario/anos-letivos/${anoLetivoId}/estatisticas${params}`
+    );
+  },
 };
 
 export { ApiError };

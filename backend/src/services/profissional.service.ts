@@ -15,6 +15,9 @@ export class ProfissionalService {
         turmas: {
           include: { turma: { include: { escola: true, serie: true } } },
         },
+        formacoes: {
+          orderBy: { anoConclusao: "desc" },
+        },
       },
       orderBy: { nome: "asc" },
     });
@@ -29,6 +32,9 @@ export class ProfissionalService {
         },
         turmas: {
           include: { turma: { include: { escola: true, serie: true } } },
+        },
+        formacoes: {
+          orderBy: { anoConclusao: "desc" },
         },
       },
     });
@@ -154,6 +160,57 @@ export class ProfissionalService {
           profissionalId,
         },
       },
+    });
+  }
+
+  // ==================== FORMAÇÕES ====================
+
+  async getFormacoes(profissionalId: string) {
+    return prisma.formacaoProfissional.findMany({
+      where: { profissionalId },
+      orderBy: { anoConclusao: "desc" },
+    });
+  }
+
+  async addFormacao(
+    profissionalId: string,
+    data: {
+      tipo: string;
+      nome: string;
+      instituicao?: string;
+      anoConclusao?: number;
+      cargaHoraria?: number;
+      emAndamento?: boolean;
+    }
+  ) {
+    return prisma.formacaoProfissional.create({
+      data: {
+        profissionalId,
+        ...data,
+      },
+    });
+  }
+
+  async updateFormacao(
+    formacaoId: string,
+    data: {
+      tipo?: string;
+      nome?: string;
+      instituicao?: string;
+      anoConclusao?: number;
+      cargaHoraria?: number;
+      emAndamento?: boolean;
+    }
+  ) {
+    return prisma.formacaoProfissional.update({
+      where: { id: formacaoId },
+      data,
+    });
+  }
+
+  async deleteFormacao(formacaoId: string) {
+    return prisma.formacaoProfissional.delete({
+      where: { id: formacaoId },
     });
   }
 }

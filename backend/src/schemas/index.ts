@@ -52,6 +52,41 @@ export const createEscolaSchema = z.object({
     .default(0),
   ativo: z.boolean().default(true),
   etapasIds: z.array(z.string()).optional(),
+
+  // Infraestrutura - Áreas comuns
+  possuiPatio: z.boolean().default(false),
+  possuiParque: z.boolean().default(false),
+  possuiQuadra: z.boolean().default(false),
+  quadraCoberta: z.boolean().default(false),
+  possuiBiblioteca: z.boolean().default(false),
+  possuiRefeitorio: z.boolean().default(false),
+  possuiSalaProfessores: z.boolean().default(false),
+  possuiSecretaria: z.boolean().default(false),
+  possuiDiretoria: z.boolean().default(false),
+  possuiAlmoxarifado: z.boolean().default(false),
+  possuiCozinha: z.boolean().default(false),
+  possuiDispensa: z.boolean().default(false),
+
+  // Infraestrutura - Banheiros
+  qtdBanheirosAlunos: z.number().int().min(0).default(0),
+  qtdBanheirosAlunas: z.number().int().min(0).default(0),
+  qtdBanheirosAdaptados: z.number().int().min(0).default(0),
+  qtdBanheirosFuncionarios: z.number().int().min(0).default(0),
+
+  // Infraestrutura - Tecnologia
+  possuiInternet: z.boolean().default(false),
+  tipoInternet: z.string().optional().nullable(),
+  velocidadeInternet: z.string().optional().nullable(),
+  possuiSalaInformatica: z.boolean().default(false),
+  qtdComputadores: z.number().int().min(0).default(0),
+  possuiProjetores: z.boolean().default(false),
+  qtdProjetores: z.number().int().min(0).default(0),
+
+  // Infraestrutura - Acessibilidade
+  possuiRampaAcesso: z.boolean().default(false),
+  possuiElevador: z.boolean().default(false),
+  possuiPisoTatil: z.boolean().default(false),
+  possuiSinalizacaoBraile: z.boolean().default(false),
 });
 
 export const updateEscolaSchema = createEscolaSchema.partial();

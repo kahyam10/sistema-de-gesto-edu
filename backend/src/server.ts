@@ -14,7 +14,9 @@ import {
   profissionaisRoutes,
   modulesRoutes,
   phaseRoutes,
+  salasRoutes,
 } from "./routes/index.js";
+import { calendarioRoutes } from "./routes/calendario.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -93,6 +95,8 @@ async function buildApp() {
   app.register(profissionaisRoutes, { prefix: "/api/profissionais" });
   app.register(modulesRoutes, { prefix: "/api/modules" });
   app.register(phaseRoutes);
+  app.register(salasRoutes);
+  app.register(calendarioRoutes, { prefix: "/api/calendario" });
 
   // Error handler global
   app.setErrorHandler((error, request, reply) => {

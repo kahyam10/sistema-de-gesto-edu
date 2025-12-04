@@ -7,3 +7,4 @@ export { matriculasRoutes } from "./matriculas.routes.js";
 export { profissionaisRoutes } from "./profissionais.routes.js";
 export { modulesRoutes } from "./modules.routes.js";
 export { phaseRoutes } from "./phase.routes.js";
+export { salasRoutes } from "./salas.routes.js";

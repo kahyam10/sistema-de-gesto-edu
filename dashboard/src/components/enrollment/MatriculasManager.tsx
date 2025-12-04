@@ -28,6 +28,7 @@ import {
   Spinner,
   Pencil,
   Trash,
+  Eye,
 } from "@phosphor-icons/react";
 import {
   Dialog,
@@ -49,6 +50,7 @@ import {
   useDeleteMatricula,
 } from "@/hooks/useApi";
 import { Matricula } from "@/lib/api";
+import { AlunoDetails } from "./AlunoDetails";
 
 export function MatriculasManager() {
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
@@ -62,6 +64,7 @@ export function MatriculasManager() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMatricula, setEditingMatricula] = useState<Matricula | null>(null);
+  const [viewingAlunoId, setViewingAlunoId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     escolaId: "",
     etapaId: "",
@@ -189,6 +192,16 @@ export function MatriculasManager() {
     return etapas?.find((e) => e.id === etapaId)?.nome || "N/A";
   };
 
+  // Se está visualizando detalhes de um aluno
+  if (viewingAlunoId) {
+    return (
+      <AlunoDetails
+        matriculaId={viewingAlunoId}
+        onBack={() => setViewingAlunoId(null)}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -269,7 +282,7 @@ export function MatriculasManager() {
                   <Buildings size={16} />
                   Informações Escolares
                 </h4>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="escolaId">Escola *</Label>
                     <Select
@@ -320,8 +333,8 @@ export function MatriculasManager() {
                   <User size={16} />
                   Dados do Aluno
                 </h4>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2 md:col-span-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                  <div className="space-y-2">
                     <Label htmlFor="nomeAluno">Nome Completo *</Label>
                     <Input
                       id="nomeAluno"
@@ -354,6 +367,8 @@ export function MatriculasManager() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
                     <Input
@@ -391,7 +406,7 @@ export function MatriculasManager() {
                   <User size={16} />
                   Dados do Responsável
                 </h4>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="nomeResponsavel">Nome do Responsável *</Label>
                     <Input
@@ -632,7 +647,16 @@ export function MatriculasManager() {
                       <Button
                         variant="outline"
                         size="icon"
+                        onClick={() => setViewingAlunoId(matricula.id)}
+                        title="Ver detalhes"
+                      >
+                        <Eye size={16} />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => handleEdit(matricula)}
+                        title="Editar"
                       >
                         <Pencil size={16} />
                       </Button>
@@ -641,6 +665,7 @@ export function MatriculasManager() {
                         size="icon"
                         onClick={() => handleDelete(matricula.id)}
                         disabled={deleteMatricula.isPending}
+                        title="Excluir"
                       >
                         <Trash size={16} />
                       </Button>

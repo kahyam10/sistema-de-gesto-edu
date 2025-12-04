@@ -74,14 +74,78 @@ model Escola {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  // Infraestrutura - Áreas comuns
+  possuiPatio         Boolean @default(false)
+  possuiParque        Boolean @default(false)
+  possuiQuadra        Boolean @default(false)
+  quadraCoberta       Boolean @default(false)
+  possuiBiblioteca    Boolean @default(false)
+  possuiRefeitorio    Boolean @default(false)
+  possuiSalaProfessores Boolean @default(false)
+  possuiSecretaria    Boolean @default(false)
+  possuiDiretoria     Boolean @default(false)
+  possuiAlmoxarifado  Boolean @default(false)
+  possuiCozinha       Boolean @default(false)
+  possuiDispensa      Boolean @default(false)
+  
+  // Infraestrutura - Banheiros
+  qtdBanheirosAlunos      Int @default(0)
+  qtdBanheirosAlunas      Int @default(0)
+  qtdBanheirosAdaptados   Int @default(0)
+  qtdBanheirosFuncionarios Int @default(0)
+  
+  // Infraestrutura - Tecnologia
+  possuiInternet        Boolean @default(false)
+  tipoInternet          String? // FIBRA, CABO, RADIO, SATELITE
+  velocidadeInternet    String? // Ex: "100 Mbps"
+  possuiSalaInformatica Boolean @default(false)
+  qtdComputadores       Int     @default(0)
+  possuiProjetores      Boolean @default(false)
+  qtdProjetores         Int     @default(0)
+  
+  // Infraestrutura - Acessibilidade
+  possuiRampaAcesso     Boolean @default(false)
+  possuiElevador        Boolean @default(false)
+  possuiPisoTatil       Boolean @default(false)
+  possuiSinalizacaoBraile Boolean @default(false)
+
   // Relacionamentos
   etapas       EscolaEtapa[]
   turmas       Turma[]
   matriculas   Matricula[]
   profissionais EscolaProfissional[]
   users        User[]
+  salas        Sala[]
+  eventosCalendario EventoCalendario[]
 
   @@map("escolas")
+}
+
+// ==================== SALAS DA ESCOLA ====================
+
+model Sala {
+  id               String   @id @default(cuid())
+  nome             String   // Ex: "Sala 01", "Sala de Leitura", "Laboratório"
+  tipo             String   // AULA, INFORMATICA, LEITURA, LABORATORIO, MULTIUSO, AEE
+  capacidade       Int      @default(25)
+  possuiArCondicionado Boolean @default(false)
+  possuiVentilador Boolean @default(false)
+  possuiTV         Boolean @default(false)
+  possuiProjetor   Boolean @default(false)
+  possuiQuadro     Boolean @default(true) // Quadro branco/verde
+  metragem         Float?   // Área em m²
+  andar            Int      @default(0) // 0 = térreo
+  acessivel        Boolean  @default(true) // Acessível para cadeirantes
+  ativo            Boolean  @default(true)
+  observacoes      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relacionamentos
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  @@map("salas")
 }
 
 // Tabela de junção: Escola <-> EtapaEnsino (N:M)
@@ -188,7 +252,7 @@ model ProfissionalEducacao {
   email         String?
   telefone      String?
   tipo          String   // PROFESSOR, AUXILIAR, COORDENADOR, DIRETOR
-  formacao      String?
+  formacao      String?  // Campo legado - manter compatibilidade
   especialidade String?
   matricula     String?  @unique
   ativo         Boolean  @default(true)
@@ -196,10 +260,29 @@ model ProfissionalEducacao {
   updatedAt     DateTime @updatedAt
 
   // Relacionamentos
-  escolas EscolaProfissional[]
-  turmas  TurmaProfessor[]
+  escolas   EscolaProfissional[]
+  turmas    TurmaProfessor[]
+  formacoes FormacaoProfissional[]
 
   @@map("profissionais_educacao")
+}
+
+// Formações acadêmicas do profissional
+model FormacaoProfissional {
+  id              String   @id @default(cuid())
+  profissionalId  String
+  tipo            String   // GRADUACAO, POS_GRADUACAO, MESTRADO, DOUTORADO, CURSO_TECNICO, CURSO_LIVRE
+  nome            String   // Ex: "Licenciatura em Pedagogia", "MBA em Gestão Escolar"
+  instituicao     String?  // Ex: "UFBA", "UESC"
+  anoConclusao    Int?     // Ano de conclusão
+  cargaHoraria    Int?     // Carga horária (para cursos)
+  emAndamento     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@map("formacoes_profissionais")
 }
 
 // Tabela de junção: Escola <-> ProfissionalEducacao (N:M)
@@ -284,4 +367,65 @@ model Phase {
   updatedAt   DateTime @updatedAt
 
   @@map("phases")
+}
+
+// ==================== CALENDÁRIO LETIVO ====================
+
+// Ano Letivo - Define o período do ano letivo
+model AnoLetivo {
+  id              String   @id @default(cuid())
+  ano             Int      @unique // Ex: 2025
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  eventos EventoCalendario[]
+
+  @@map("anos_letivos")
+}
+
+// Eventos do Calendário
+model EventoCalendario {
+  id          String   @id @default(cuid())
+  titulo      String
+  descricao   String?
+  dataInicio  DateTime
+  dataFim     DateTime? // Se null, é evento de um único dia
+  horaInicio  String?   // Ex: "08:00" - para eventos com horário específico
+  horaFim     String?   // Ex: "17:00"
+  
+  // Tipo do evento - INICIO_ANO_LETIVO e FIM_ANO_LETIVO são obrigatórios e únicos por ano
+  tipo        String   // INICIO_ANO_LETIVO, FIM_ANO_LETIVO, FERIADO, RECESSO, SABADO_LETIVO, EVENTO, AC, AVALIACAO, REUNIAO, CONSELHO_CLASSE, PLANEJAMENTO, FORMACAO, OUTRO
+  
+  // Escopo do evento
+  escopo      String   @default("REDE") // REDE (toda rede), ESCOLA (específico da escola)
+  
+  // Recorrência
+  recorrente      Boolean @default(false)
+  tipoRecorrencia String? // SEMANAL, MENSAL, ANUAL
+  diaRecorrencia  String? // Para semanal: "SEGUNDA", "TERCA", etc. Para mensal: "1", "15", etc.
+  
+  // Cor para exibição no calendário
+  cor         String   @default("#3B82F6") // Cor em hexadecimal
+  
+  // Impacto em dias letivos
+  reduzDiaLetivo Boolean @default(false) // Se true, reduz contagem de dias letivos (ex: feriados)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  anoLetivoId String
+  anoLetivo   AnoLetivo @relation(fields: [anoLetivoId], references: [id], onDelete: Cascade)
+  
+  escolaId    String?  // Se null, aplica a toda rede
+  escola      Escola?  @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  // Índices para otimização de consultas
+  @@index([anoLetivoId])
+  @@index([anoLetivoId, escolaId])
+  @@index([anoLetivoId, dataInicio])
+  @@index([dataInicio, dataFim])
+  @@map("eventos_calendario")
 }
