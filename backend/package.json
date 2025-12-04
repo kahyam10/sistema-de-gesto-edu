@@ -24,14 +24,14 @@
     "@fastify/swagger": "^8.14.0",
     "@fastify/swagger-ui": "^3.0.0",
     "@prisma/client": "^5.22.0",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.3",
     "fastify": "^4.28.0",
     "safer-buffer": "^2.1.2",
     "toad-cache": "^3.7.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20.14.0",
     "esbuild": "^0.25.12",
     "prisma": "^5.22.0",
