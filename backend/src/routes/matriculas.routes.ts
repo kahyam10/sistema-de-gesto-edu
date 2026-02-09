@@ -158,6 +158,24 @@ export async function matriculasRoutes(app: FastifyInstance) {
     }
   });
 
+  // Criar matrícula via portal (fila de espera automática)
+  app.post(
+    "/portal",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const data = createMatriculaSchema.parse(request.body);
+        const matricula = await matriculaService.createPortal(data);
+        return reply.status(201).send(matricula);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao criar matrícula via portal";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
   // Atualizar matrícula
   app.put(
     "/:id",
@@ -245,6 +263,104 @@ export async function matriculasRoutes(app: FastifyInstance) {
           error instanceof Error
             ? error.message
             : "Erro ao transferir matrícula";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // Confirmar matrícula em turma
+  app.patch(
+    "/:id/confirmar",
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { turmaId: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const { turmaId } = request.body as { turmaId: string };
+        const matricula = await matriculaService.confirmar(id, turmaId);
+        return reply.send(matricula);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao confirmar matrícula";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // Relatório de matrículas por escola
+  app.get(
+    "/relatorio",
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          escolaId?: string;
+          anoLetivo?: string;
+          formato?: "json" | "csv";
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { escolaId, anoLetivo, formato = "json" } = request.query;
+        const ano = anoLetivo ? parseInt(anoLetivo) : new Date().getFullYear();
+
+        const matriculas = await matriculaService.findAll({
+          escolaId,
+          anoLetivo: ano,
+        });
+
+        if (formato === "csv") {
+          // Gera CSV
+          const header =
+            "Número,Aluno,Data Nascimento,CPF,Escola,Etapa,Turma,Status,Data Matrícula\n";
+          const rows = matriculas
+            .map((m) => {
+              const turmaDisplay = m.turma
+                ? `${m.turma.serie?.nome || ""} - ${m.turma.nome}`
+                : "Sem turma";
+              return [
+                m.numeroMatricula,
+                m.nomeAluno,
+                new Date(m.dataNascimento).toLocaleDateString("pt-BR"),
+                m.cpfAluno || "Não informado",
+                m.escola.nome,
+                m.etapa.nome,
+                turmaDisplay,
+                m.status,
+                new Date(m.dataMatricula).toLocaleDateString("pt-BR"),
+              ].join(",");
+            })
+            .join("\n");
+
+          const csv = header + rows;
+
+          reply.header("Content-Type", "text/csv; charset=utf-8");
+          reply.header(
+            "Content-Disposition",
+            `attachment; filename="matriculas_${ano}.csv"`
+          );
+          return reply.send("\uFEFF" + csv); // BOM para UTF-8
+        }
+
+        // Retorna JSON com estatísticas
+        const stats = await matriculaService.getEstatisticas(ano, escolaId);
+
+        return reply.send({
+          matriculas,
+          estatisticas: stats,
+          total: matriculas.length,
+        });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao gerar relatório";
         return reply.status(400).send({ error: message });
       }
     }

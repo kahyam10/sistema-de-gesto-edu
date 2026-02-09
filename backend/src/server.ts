@@ -3,6 +3,9 @@ import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import { join } from "path";
 
 import {
   authRoutes,
@@ -15,6 +18,8 @@ import {
   modulesRoutes,
   phaseRoutes,
   salasRoutes,
+  gradeHorariaRoutes,
+  uploadRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
 
@@ -34,6 +39,19 @@ async function buildApp() {
 
   await app.register(jwt, {
     secret: process.env.JWT_SECRET || "super-secret-key-change-in-production",
+  });
+
+  // Multipart para upload de arquivos
+  await app.register(multipart, {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB
+    },
+  });
+
+  // Servir arquivos estáticos (uploads)
+  await app.register(fastifyStatic, {
+    root: join(process.cwd(), "uploads"),
+    prefix: "/uploads/",
   });
 
   // Swagger documentation
@@ -97,6 +115,8 @@ async function buildApp() {
   app.register(phaseRoutes);
   app.register(salasRoutes);
   app.register(calendarioRoutes, { prefix: "/api/calendario" });
+  app.register(gradeHorariaRoutes, { prefix: "/api/grade-horaria" });
+  app.register(uploadRoutes, { prefix: "/api/upload" });
 
   // Error handler global
   app.setErrorHandler((error, request, reply) => {

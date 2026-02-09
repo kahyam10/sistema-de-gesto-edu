@@ -8,3 +8,5 @@ export { profissionaisRoutes } from "./profissionais.routes.js";
 export { modulesRoutes } from "./modules.routes.js";
 export { phaseRoutes } from "./phase.routes.js";
 export { salasRoutes } from "./salas.routes.js";
+export { gradeHorariaRoutes } from "./grade-horaria.routes.js";
+export { uploadRoutes } from "./upload.routes.js";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CPFValidator } from "@/utils/cpf-validator";
 import {
   Card,
   CardContent,
@@ -29,6 +30,7 @@ import {
   Pencil,
   Trash,
   Eye,
+  XCircle,
 } from "@phosphor-icons/react";
 import {
   Dialog,
@@ -45,26 +47,61 @@ import {
   useEtapas,
   useSeries,
   useMatriculas,
+  useMatriculasEstatisticas,
+  useVagasResumo,
   useCreateMatricula,
   useUpdateMatricula,
   useDeleteMatricula,
+  useCancelarMatricula,
 } from "@/hooks/useApi";
 import { Matricula } from "@/lib/api";
 import { AlunoDetails } from "./AlunoDetails";
 
+const DOCUMENTOS_OPCOES = [
+  "Certidão de nascimento",
+  "RG",
+  "CPF",
+  "Comprovante de residência",
+  "Foto 3x4",
+  "Cartão SUS",
+  "Cartão Bolsa Família",
+  "Histórico/Transferência",
+];
+
+const parseDocumentos = (value?: string) => {
+  if (!value) return [] as string[];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [] as string[];
+  }
+};
+
 export function MatriculasManager() {
+  const [filtroStatus, setFiltroStatus] = useState("all");
+  const [filtroEscola, setFiltroEscola] = useState("all");
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: series, isLoading: loadingSeries } = useSeries();
-  const { data: matriculas, isLoading: loadingMatriculas } = useMatriculas();
+  const { data: matriculas, isLoading: loadingMatriculas } = useMatriculas({
+    status: filtroStatus === "all" ? undefined : filtroStatus,
+    escolaId: filtroEscola === "all" ? undefined : filtroEscola,
+  });
+  const anoAtual = new Date().getFullYear();
+  const { data: estatisticas } = useMatriculasEstatisticas(anoAtual);
+  const { data: vagasResumo = [] } = useVagasResumo(undefined, anoAtual);
 
   const createMatricula = useCreateMatricula();
   const updateMatricula = useUpdateMatricula();
   const deleteMatricula = useDeleteMatricula();
+  const cancelarMatricula = useCancelarMatricula();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMatricula, setEditingMatricula] = useState<Matricula | null>(null);
   const [viewingAlunoId, setViewingAlunoId] = useState<string | null>(null);
+  const [cpfError, setCpfError] = useState<string>("");
+  const [cpfRespError, setCpfRespError] = useState<string>("");
   const [formData, setFormData] = useState({
     escolaId: "",
     etapaId: "",
@@ -79,6 +116,8 @@ export function MatriculasManager() {
     endereco: "",
     possuiDeficiencia: false,
     tipoDeficiencia: "",
+    documentosEntregues: [] as string[],
+    observacoes: "",
   });
 
   const escolasAtivas = (escolas || []).filter((e) => e.ativo);
@@ -101,6 +140,24 @@ export function MatriculasManager() {
       return;
     }
 
+    // Valida CPF do aluno (se fornecido)
+    if (formData.cpfAluno) {
+      const cpfValidation = CPFValidator.validateWithMessage(formData.cpfAluno);
+      if (!cpfValidation.valid) {
+        setCpfError(cpfValidation.message || "CPF inválido");
+        return;
+      }
+    }
+
+    // Valida CPF do responsável (se fornecido)
+    if (formData.cpfResponsavel) {
+      const cpfRespValidation = CPFValidator.validateWithMessage(formData.cpfResponsavel);
+      if (!cpfRespValidation.valid) {
+        setCpfRespError(cpfRespValidation.message || "CPF inválido");
+        return;
+      }
+    }
+
     const data = {
       anoLetivo: new Date().getFullYear(),
       nomeAluno: formData.nomeAluno,
@@ -114,6 +171,10 @@ export function MatriculasManager() {
       endereco: formData.endereco || undefined,
       possuiDeficiencia: formData.possuiDeficiencia,
       tipoDeficiencia: formData.possuiDeficiencia ? formData.tipoDeficiencia : undefined,
+      documentosEntregues: formData.documentosEntregues.length
+        ? JSON.stringify(formData.documentosEntregues)
+        : undefined,
+      observacoes: formData.observacoes || undefined,
       escolaId: formData.escolaId,
       etapaId: formData.etapaId,
     };
@@ -145,7 +206,11 @@ export function MatriculasManager() {
       endereco: "",
       possuiDeficiencia: false,
       tipoDeficiencia: "",
+      documentosEntregues: [],
+      observacoes: "",
     });
+    setCpfError("");
+    setCpfRespError("");
     setEditingMatricula(null);
     setIsFormOpen(false);
   };
@@ -166,6 +231,8 @@ export function MatriculasManager() {
       endereco: matricula.endereco || "",
       possuiDeficiencia: matricula.possuiDeficiencia,
       tipoDeficiencia: matricula.tipoDeficiencia || "",
+      documentosEntregues: parseDocumentos(matricula.documentosEntregues),
+      observacoes: matricula.observacoes || "",
     });
     setIsFormOpen(true);
   };
@@ -173,6 +240,12 @@ export function MatriculasManager() {
   const handleDelete = async (id: string) => {
     if (confirm("Tem certeza que deseja remover esta matrícula?")) {
       await deleteMatricula.mutateAsync(id);
+    }
+  };
+
+  const handleCancelar = async (id: string) => {
+    if (confirm("Deseja cancelar esta matrícula?")) {
+      await cancelarMatricula.mutateAsync(id);
     }
   };
 
@@ -190,6 +263,23 @@ export function MatriculasManager() {
 
   const getEtapaNome = (etapaId: string) => {
     return etapas?.find((e) => e.id === etapaId)?.nome || "N/A";
+  };
+
+  const getStatusLabel = (status: Matricula["status"]) => {
+    switch (status) {
+      case "ATIVA":
+        return "Ativa";
+      case "CANCELADA":
+        return "Cancelada";
+      case "TRANSFERIDA":
+        return "Transferida";
+      case "CONCLUIDA":
+        return "Concluída";
+      case "AGUARDANDO_VAGA":
+        return "Aguardando vaga";
+      default:
+        return "Pendente";
+    }
   };
 
   // Se está visualizando detalhes de um aluno
@@ -229,6 +319,91 @@ export function MatriculasManager() {
 
   return (
     <div className="space-y-6">
+      {estatisticas && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-2xl font-semibold">{estatisticas.total}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground">Ativas</p>
+              <p className="text-2xl font-semibold">{estatisticas.ativas}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground">PCD</p>
+              <p className="text-2xl font-semibold">
+                {estatisticas.pcd} ({estatisticas.percentualPCD}%)
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground">Sem turma</p>
+              <p className="text-2xl font-semibold">{estatisticas.semTurma}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {vagasResumo.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Vagas por escola</CardTitle>
+            <CardDescription>
+              Resumo de capacidade, ocupação e PCD por unidade
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              {vagasResumo.map((item) => {
+                const ocupacao = item.capacidadeTotal
+                  ? Math.round((item.alunosTotal / item.capacidadeTotal) * 100)
+                  : 0;
+                return (
+                  <div key={item.escolaId} className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium flex items-center gap-2">
+                          <Buildings size={16} />
+                          {item.escolaNome}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.totalTurmas} turma(s) • {ocupacao}% ocupação
+                        </p>
+                      </div>
+                      <Badge variant={item.turmasLotadas > 0 ? "destructive" : "outline"}>
+                        {item.turmasLotadas} lotada(s)
+                      </Badge>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      <div>
+                        Capacidade: <span className="font-medium text-foreground">{item.capacidadeTotal}</span>
+                      </div>
+                      <div>
+                        Matriculados: <span className="font-medium text-foreground">{item.alunosTotal}</span>
+                      </div>
+                      <div>
+                        Vagas: <span className="font-medium text-foreground">{item.vagasDisponiveis}</span>
+                      </div>
+                      <div>
+                        PCD: <span className="font-medium text-foreground">{item.pcdTotal}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Vagas PCD disponíveis: {item.vagasPCDDisponiveis}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold">Sistema de Matrículas</h3>
@@ -257,6 +432,39 @@ export function MatriculasManager() {
           </CardContent>
         </Card>
       )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="w-56">
+          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="ATIVA">Ativas</SelectItem>
+              <SelectItem value="AGUARDANDO_VAGA">Aguardando vaga</SelectItem>
+              <SelectItem value="TRANSFERIDA">Transferidas</SelectItem>
+              <SelectItem value="CANCELADA">Canceladas</SelectItem>
+              <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-72">
+          <Select value={filtroEscola} onValueChange={setFiltroEscola}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por escola" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as escolas</SelectItem>
+              {escolasAtivas.map((escola) => (
+                <SelectItem key={escola.id} value={escola.id}>
+                  {escola.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <Dialog open={isFormOpen} onOpenChange={(open) => !open && resetForm()}>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
@@ -385,18 +593,33 @@ export function MatriculasManager() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cpfAluno">CPF do Aluno</Label>
+                    <Label htmlFor="cpfAluno">CPF do Aluno (opcional)</Label>
                     <Input
                       id="cpfAluno"
                       value={formData.cpfAluno}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const masked = CPFValidator.mask(e.target.value);
+                        setCpfError("");
                         setFormData((prev) => ({
                           ...prev,
-                          cpfAluno: e.target.value,
-                        }))
-                      }
+                          cpfAluno: masked,
+                        }));
+                      }}
+                      onBlur={() => {
+                        if (formData.cpfAluno) {
+                          const validation = CPFValidator.validateWithMessage(formData.cpfAluno);
+                          if (!validation.valid) {
+                            setCpfError(validation.message || "CPF inválido");
+                          }
+                        }
+                      }}
                       placeholder="000.000.000-00"
+                      maxLength={14}
+                      className={cpfError ? "border-red-500" : ""}
                     />
+                    {cpfError && (
+                      <p className="text-sm text-red-500 mt-1">{cpfError}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -423,18 +646,33 @@ export function MatriculasManager() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cpfResponsavel">CPF do Responsável</Label>
+                    <Label htmlFor="cpfResponsavel">CPF do Responsável (opcional)</Label>
                     <Input
                       id="cpfResponsavel"
                       value={formData.cpfResponsavel}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const masked = CPFValidator.mask(e.target.value);
+                        setCpfRespError("");
                         setFormData((prev) => ({
                           ...prev,
-                          cpfResponsavel: e.target.value,
-                        }))
-                      }
+                          cpfResponsavel: masked,
+                        }));
+                      }}
+                      onBlur={() => {
+                        if (formData.cpfResponsavel) {
+                          const validation = CPFValidator.validateWithMessage(formData.cpfResponsavel);
+                          if (!validation.valid) {
+                            setCpfRespError(validation.message || "CPF inválido");
+                          }
+                        }
+                      }}
                       placeholder="000.000.000-00"
+                      maxLength={14}
+                      className={cpfRespError ? "border-red-500" : ""}
                     />
+                    {cpfRespError && (
+                      <p className="text-sm text-red-500 mt-1">{cpfRespError}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="telefoneResponsavel">Telefone</Label>
@@ -530,6 +768,52 @@ export function MatriculasManager() {
                     </div>
                   )}
                 </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-sm">Documentos entregues</Label>
+                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {DOCUMENTOS_OPCOES.map((doc) => (
+                        <label
+                          key={doc}
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Checkbox
+                            checked={formData.documentosEntregues.includes(doc)}
+                            onCheckedChange={(checked) => {
+                              setFormData((prev) => {
+                                const documentos = new Set(prev.documentosEntregues);
+                                if (checked) {
+                                  documentos.add(doc);
+                                } else {
+                                  documentos.delete(doc);
+                                }
+                                return {
+                                  ...prev,
+                                  documentosEntregues: Array.from(documentos),
+                                };
+                              });
+                            }}
+                          />
+                          {doc}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="observacoes">Observações</Label>
+                    <Input
+                      id="observacoes"
+                      value={formData.observacoes}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          observacoes: e.target.value,
+                        }))
+                      }
+                      placeholder="Observações adicionais da matrícula"
+                    />
+                  </div>
+                </div>
               </div>
             </form>
           </ScrollArea>
@@ -605,13 +889,7 @@ export function MatriculasManager() {
                                 : "secondary"
                             }
                           >
-                            {matricula.status === "ATIVA"
-                              ? "Ativa"
-                              : matricula.status === "CANCELADA"
-                              ? "Cancelada"
-                              : matricula.status === "TRANSFERIDA"
-                              ? "Transferida"
-                              : "Concluída"}
+                            {getStatusLabel(matricula.status)}
                           </Badge>
                           {matricula.possuiDeficiencia && (
                             <Badge variant="outline">PCD</Badge>
@@ -652,6 +930,17 @@ export function MatriculasManager() {
                       >
                         <Eye size={16} />
                       </Button>
+                      {matricula.status !== "CANCELADA" && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleCancelar(matricula.id)}
+                          disabled={cancelarMatricula.isPending}
+                          title="Cancelar matrícula"
+                        >
+                          <XCircle size={16} />
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="icon"

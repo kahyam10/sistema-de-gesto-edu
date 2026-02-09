@@ -182,6 +182,7 @@ model Turma {
 
   matriculas    Matricula[]
   professores   TurmaProfessor[]
+  horarios      GradeHoraria[]
 
   @@map("turmas")
 }
@@ -226,6 +227,15 @@ model Matricula {
   // Documentos e Observações
   documentosEntregues String?  // JSON string com lista de documentos
   observacoes       String?
+
+  // Arquivos de Documentos (paths)
+  fotoAluno              String?  // Path para foto 3x4
+  documentoRG            String?  // Path para RG digitalizado
+  documentoCPF           String?  // Path para CPF digitalizado
+  comprovanteResidencia  String?  // Path para comprovante
+  certidaoNascimento     String?  // Path para certidão
+  historicoEscolar       String?  // Path para histórico/transferência
+  outrosDocumentos       String?  // JSON com array de {nome, path}
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -263,8 +273,32 @@ model ProfissionalEducacao {
   escolas   EscolaProfissional[]
   turmas    TurmaProfessor[]
   formacoes FormacaoProfissional[]
+  horarios  GradeHoraria[]
 
   @@map("profissionais_educacao")
+}
+
+// ==================== GRADE HORÁRIA ====================
+
+model GradeHoraria {
+  id            String   @id @default(cuid())
+  diaSemana     String   // SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO
+  horaInicio    String   // Ex: "07:30"
+  horaFim       String   // Ex: "08:20"
+  disciplina    String
+  observacoes   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  turmaId       String
+  turma         Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  profissionalId String?
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  @@index([turmaId])
+  @@index([profissionalId])
+  @@map("grade_horaria")
 }
 
 // Formações acadêmicas do profissional
