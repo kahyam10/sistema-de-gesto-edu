@@ -1553,6 +1553,18 @@ export function useAlunosBaixaFrequencia(
   });
 }
 
+export function useResumoFrequenciaTurma(
+  turmaId: string | undefined,
+  dataInicio?: string,
+  dataFim?: string
+) {
+  return useQuery({
+    queryKey: ["frequencias", "resumo-turma", turmaId, dataInicio, dataFim],
+    queryFn: () => frequenciaApi.getResumoTurma(turmaId!, dataInicio, dataFim),
+    enabled: !!turmaId,
+  });
+}
+
 export function useCreateFrequencia() {
   const queryClient = useQueryClient();
 

@@ -1429,6 +1429,21 @@ export const frequenciaApi = {
     );
   },
 
+  // Resumo de frequência da turma (todos os alunos)
+  getResumoTurma: (
+    turmaId: string,
+    dataInicio?: string,
+    dataFim?: string
+  ) => {
+    const query = new URLSearchParams();
+    if (dataInicio) query.append("dataInicio", dataInicio);
+    if (dataFim) query.append("dataFim", dataFim);
+    const queryString = query.toString();
+    return request<AlunoComBaixaFrequencia[]>(
+      `/api/frequencia/turma/${turmaId}/resumo${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
   // Buscar frequência por data
   buscarPorData: (turmaId: string, data: string) =>
     request<Frequencia[]>(`/api/frequencia/turma/${turmaId}/data/${data}`),
@@ -1635,6 +1650,7 @@ export interface Nota {
 export interface BoletimDisciplina {
   disciplinaId: string;
   disciplinaNome: string;
+  disciplinaCodigo?: string;
   bimestres: {
     bimestre: number;
     media: number | null;
@@ -1643,17 +1659,12 @@ export interface BoletimDisciplina {
       nome: string;
       tipo: string;
       peso: number;
+      valorMaximo?: number;
       nota: number | null;
     }[];
   }[];
   mediaFinal: number | null;
   situacao: string;
-  frequencia?: {
-    totalAulas: number;
-    presencas: number;
-    faltas: number;
-    percentualPresenca: number;
-  };
 }
 
 export interface Boletim {
@@ -1665,10 +1676,18 @@ export interface Boletim {
   turma?: {
     id: string;
     nome: string;
-    serie?: { nome: string };
+    serie?: string | { nome: string };
     escola?: { nome: string };
   };
   disciplinas: BoletimDisciplina[];
+  frequencia?: {
+    totalAulas: number;
+    presencas: number;
+    faltas: number;
+    percentualPresenca: number;
+    abaixoDoLimite: boolean;
+  };
+  situacaoGeral?: string;
 }
 
 export const notasApi = {

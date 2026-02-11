@@ -265,6 +265,40 @@ export async function frequenciaRoutes(app: FastifyInstance) {
     }
   );
 
+  // Resumo de frequência de todos os alunos da turma
+  app.get(
+    "/turma/:turmaId/resumo",
+    async (
+      request: FastifyRequest<{
+        Params: { turmaId: string };
+        Querystring: {
+          dataInicio?: string;
+          dataFim?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { turmaId } = request.params;
+        const { dataInicio, dataFim } = request.query;
+
+        const resumo = await frequenciaService.getResumoTurma(
+          turmaId,
+          dataInicio ? new Date(dataInicio) : undefined,
+          dataFim ? new Date(dataFim) : undefined
+        );
+
+        return reply.send(resumo);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao gerar resumo de frequência";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
   // Busca frequência por data específica de uma turma
   app.get(
     "/turma/:turmaId/data/:data",

@@ -442,6 +442,52 @@ export class FrequenciaService {
   }
 
   /**
+   * Retorna estatísticas de frequência para todos os alunos de uma turma.
+   */
+  async getResumoTurma(
+    turmaId: string,
+    dataInicio?: Date,
+    dataFim?: Date
+  ) {
+    const turma = await prisma.turma.findUnique({
+      where: { id: turmaId },
+      include: {
+        matriculas: {
+          where: { status: "ATIVA" },
+          select: {
+            id: true,
+            numeroMatricula: true,
+            nomeAluno: true,
+          },
+          orderBy: { nomeAluno: "asc" },
+        },
+      },
+    });
+
+    if (!turma) {
+      throw new Error("Turma não encontrada");
+    }
+
+    const alunos = [];
+
+    for (const matricula of turma.matriculas) {
+      const stats = await this.calcularEstatisticas(
+        matricula.id,
+        turmaId,
+        dataInicio,
+        dataFim
+      );
+
+      alunos.push({
+        matricula,
+        estatisticas: stats,
+      });
+    }
+
+    return alunos;
+  }
+
+  /**
    * Busca frequência por data específica de uma turma
    */
   async buscarPorData(turmaId: string, data: Date) {

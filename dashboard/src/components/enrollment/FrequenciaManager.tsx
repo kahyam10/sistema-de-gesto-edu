@@ -31,13 +31,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import {
   useTurmas,
   useRegistrarFrequenciaTurma,
   useFrequenciasPorData,
   useAlunosBaixaFrequencia,
+  useResumoFrequenciaTurma,
 } from "@/hooks/useApi";
-import { Check, X, FileText, Users, Warning, CalendarCheck } from "@phosphor-icons/react";
+import { Check, X, FileText, Users, Warning, CalendarCheck, ChartLine } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 interface FrequenciaAluno {
@@ -67,6 +69,7 @@ export function FrequenciaManager() {
   const { data: alunosBaixaFreq = [], isLoading: loadingBaixaFreq } = useAlunosBaixaFrequencia(
     turmaId
   );
+  const { data: resumoTurma = [], isLoading: loadingResumo } = useResumoFrequenciaTurma(turmaId);
   const registrarMutation = useRegistrarFrequenciaTurma();
 
   const turmaSelecionada = turmas.find((t) => t.id === turmaId);
@@ -432,6 +435,56 @@ export function FrequenciaManager() {
               >
                 {registrarMutation.isPending ? "Salvando..." : "Salvar Frequência"}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumo de Frequência da Turma */}
+      {turmaId && resumoTurma.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ChartLine size={20} />
+              Resumo de Frequência da Turma
+            </CardTitle>
+            <CardDescription>
+              Percentual acumulado de presença por aluno
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {resumoTurma.map((item) => {
+                const pct = item.estatisticas.percentualPresenca;
+                return (
+                  <div key={item.matricula.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{item.matricula.nomeAluno}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({item.estatisticas.presencas}/{item.estatisticas.totalAulas})
+                        </span>
+                      </div>
+                      <Badge
+                        variant={pct >= 75 ? "default" : "destructive"}
+                        className="text-xs"
+                      >
+                        {pct.toFixed(1)}%
+                      </Badge>
+                    </div>
+                    <Progress
+                      value={pct}
+                      className={`h-2 ${
+                        pct < 75
+                          ? "[&>div]:bg-red-500"
+                          : pct < 85
+                            ? "[&>div]:bg-yellow-500"
+                            : ""
+                      }`}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

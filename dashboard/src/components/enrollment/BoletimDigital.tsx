@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -36,21 +38,22 @@ import {
   Printer,
   Student,
   ChartBar,
+  Clock,
 } from "@phosphor-icons/react";
-import type { Turma, Matricula } from "@/lib/api";
 
-function getSituacaoBadge(situacao: string) {
+function getSituacaoBadge(situacao: string, size: "sm" | "lg" = "sm") {
+  const className = size === "lg" ? "text-sm px-3 py-1" : "";
   switch (situacao) {
     case "APROVADO":
-      return <Badge className="bg-green-600">Aprovado</Badge>;
+      return <Badge className={`bg-green-600 ${className}`}>Aprovado</Badge>;
     case "REPROVADO":
-      return <Badge variant="destructive">Reprovado</Badge>;
+      return <Badge variant="destructive" className={className}>Reprovado</Badge>;
     case "RECUPERACAO":
-      return <Badge className="bg-yellow-500 text-black">Recuperacao</Badge>;
+      return <Badge className={`bg-yellow-500 text-black ${className}`}>Recuperacao</Badge>;
     case "EM_CURSO":
-      return <Badge variant="secondary">Em Curso</Badge>;
+      return <Badge variant="secondary" className={className}>Em Curso</Badge>;
     default:
-      return <Badge variant="outline">{situacao || "-"}</Badge>;
+      return <Badge variant="outline" className={className}>{situacao || "-"}</Badge>;
   }
 }
 
@@ -79,8 +82,36 @@ export function BoletimDigital() {
   const matriculasAtivas =
     turmaSelecionada?.matriculas?.filter((m) => m.status === "ATIVA") || [];
 
+  // Calcula media geral do aluno (media das medias finais)
+  const mediaGeral = (() => {
+    if (!boletim) return null;
+    const mediasFinais = boletim.disciplinas
+      .map((d) => d.mediaFinal)
+      .filter((m): m is number => m !== null);
+    if (mediasFinais.length === 0) return null;
+    const soma = mediasFinais.reduce((acc, m) => acc + m, 0);
+    return Math.round((soma / mediasFinais.length) * 100) / 100;
+  })();
+
+  // Calcula medias por bimestre (media de todas as disciplinas naquele bimestre)
+  const mediasPorBimestre = [1, 2, 3, 4].map((bim) => {
+    if (!boletim) return null;
+    const notas = boletim.disciplinas
+      .map((d) => d.bimestres.find((b) => b.bimestre === bim)?.media)
+      .filter((m): m is number => m !== null && m !== undefined);
+    if (notas.length === 0) return null;
+    return Math.round((notas.reduce((a, b) => a + b, 0) / notas.length) * 100) / 100;
+  });
+
   const handlePrint = () => {
     window.print();
+  };
+
+  // Resolve turma.serie que pode ser string ou { nome: string }
+  const getTurmaSerie = () => {
+    if (!boletim?.turma?.serie) return null;
+    if (typeof boletim.turma.serie === "string") return boletim.turma.serie;
+    return boletim.turma.serie.nome;
   };
 
   if (loadingTurmas) {
@@ -184,7 +215,7 @@ export function BoletimDigital() {
       {/* Boletim */}
       {boletim && !loadingBoletim && (
         <div className="space-y-6" id="boletim-print">
-          {/* Cabecalho */}
+          {/* Cabecalho com situacao geral */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -199,13 +230,28 @@ export function BoletimDigital() {
                     {boletim.turma && (
                       <div>
                         Turma: {boletim.turma.nome}
-                        {boletim.turma.serie && ` - ${boletim.turma.serie.nome}`}
-                        {boletim.turma.escola && ` | ${boletim.turma.escola.nome}`}
+                        {getTurmaSerie() && ` - ${getTurmaSerie()}`}
+                        {boletim.turma.escola && ` | ${typeof boletim.turma.escola === 'string' ? boletim.turma.escola : boletim.turma.escola.nome}`}
                       </div>
                     )}
                   </CardDescription>
                 </div>
-                <Student size={48} className="text-muted-foreground" />
+                <div className="flex flex-col items-end gap-2">
+                  {boletim.situacaoGeral && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Situacao Geral</p>
+                      {getSituacaoBadge(boletim.situacaoGeral, "lg")}
+                    </div>
+                  )}
+                  {mediaGeral !== null && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Media Geral</p>
+                      <p className={`text-2xl font-bold ${getNotaColor(mediaGeral)}`}>
+                        {mediaGeral.toFixed(1)}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -267,6 +313,29 @@ export function BoletimDigital() {
                         </TableRow>
                       ))}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow className="bg-muted/50 font-semibold">
+                        <TableCell>Media Geral</TableCell>
+                        {mediasPorBimestre.map((media, idx) => (
+                          <TableCell
+                            key={idx}
+                            className={`text-center ${getNotaColor(media)}`}
+                          >
+                            {media !== null ? media.toFixed(1) : "-"}
+                          </TableCell>
+                        ))}
+                        <TableCell
+                          className={`text-center text-base ${getNotaColor(mediaGeral)}`}
+                        >
+                          {mediaGeral !== null ? mediaGeral.toFixed(1) : "-"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {boletim.situacaoGeral
+                            ? getSituacaoBadge(boletim.situacaoGeral)
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
                   </Table>
                 </div>
               </CardContent>
@@ -282,55 +351,67 @@ export function BoletimDigital() {
             </Card>
           )}
 
-          {/* Frequencia por disciplina */}
-          {boletim.disciplinas.some((d) => d.frequencia) && (
+          {/* Frequencia Geral */}
+          {boletim.frequencia && boletim.frequencia.totalAulas > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Frequencia</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock size={18} />
+                  Frequencia
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {boletim.disciplinas
-                    .filter((d) => d.frequencia)
-                    .map((disc) => (
-                      <div
-                        key={disc.disciplinaId}
-                        className="rounded-lg border p-4 space-y-2"
-                      >
-                        <p className="font-medium text-sm">
-                          {disc.disciplinaNome}
-                        </p>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Presencas:
-                          </span>
-                          <span className="font-medium">
-                            {disc.frequencia!.presencas}/
-                            {disc.frequencia!.totalAulas}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Faltas:</span>
-                          <span className="font-medium text-red-600">
-                            {disc.frequencia!.faltas}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Frequencia:
-                          </span>
-                          <Badge
-                            variant={
-                              disc.frequencia!.percentualPresenca >= 75
-                                ? "default"
-                                : "destructive"
-                            }
-                          >
-                            {disc.frequencia!.percentualPresenca.toFixed(1)}%
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Percentual de presenca
+                    </span>
+                    <Badge
+                      variant={
+                        boletim.frequencia.percentualPresenca >= 75
+                          ? "default"
+                          : "destructive"
+                      }
+                      className="text-sm"
+                    >
+                      {boletim.frequencia.percentualPresenca.toFixed(1)}%
+                    </Badge>
+                  </div>
+                  <Progress
+                    value={boletim.frequencia.percentualPresenca}
+                    className={`h-3 ${
+                      boletim.frequencia.percentualPresenca < 75
+                        ? "[&>div]:bg-red-500"
+                        : boletim.frequencia.percentualPresenca < 85
+                          ? "[&>div]:bg-yellow-500"
+                          : ""
+                    }`}
+                  />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        {boletim.frequencia.presencas}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Presencas</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-red-600">
+                        {boletim.frequencia.faltas}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Faltas</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold">
+                        {boletim.frequencia.totalAulas}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Total de Aulas</p>
+                    </div>
+                  </div>
+                  {boletim.frequencia.abaixoDoLimite && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                      Atencao: Frequencia abaixo do minimo exigido de 75%. O aluno pode ser reprovado por faltas.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

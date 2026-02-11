@@ -10,6 +10,7 @@ import {
   useTurmas,
   useModules,
   useVagasResumo,
+  useEtapas,
 } from '@/hooks/useApi'
 import {
   Buildings,
@@ -18,11 +19,36 @@ import {
   Chalkboard,
   ChartBar,
   Warning,
-  CheckCircle,
-  ArrowUp,
-  ArrowDown,
-  Spinner,
 } from '@phosphor-icons/react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
+
+const STATUS_COLORS: Record<string, string> = {
+  ATIVA: '#22c55e',
+  AGUARDANDO_VAGA: '#f59e0b',
+  TRANSFERIDA: '#3b82f6',
+  CANCELADA: '#ef4444',
+  CONCLUIDA: '#8b5cf6',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  ATIVA: 'Ativas',
+  AGUARDANDO_VAGA: 'Aguardando',
+  TRANSFERIDA: 'Transferidas',
+  CANCELADA: 'Canceladas',
+  CONCLUIDA: 'Concluidas',
+}
 
 export function OverviewTab() {
   const anoLetivo = new Date().getFullYear()
@@ -33,6 +59,7 @@ export function OverviewTab() {
   const { data: turmas = [], isLoading: loadingTurmas } = useTurmas({ anoLetivo })
   const { data: modules = [], isLoading: loadingModules } = useModules()
   const { data: vagasResumo = [], isLoading: loadingVagas } = useVagasResumo(undefined, anoLetivo)
+  const { data: etapas = [] } = useEtapas()
 
   const isLoading = loadingEscolas || loadingMatriculas || loadingProfissionais || loadingTurmas
 
@@ -58,18 +85,56 @@ export function OverviewTab() {
     ? Math.round(modules.reduce((sum, m) => sum + m.progress, 0) / totalModules)
     : 0
 
-  // Alunos por turno
-  const turnosCount = turmas.reduce((acc, t) => {
-    acc[t.turno] = (acc[t.turno] || 0) + (t.matriculas?.length || 0)
-    return acc
-  }, {} as Record<string, number>)
+  // Dados para graficos
+  const matriculasPorEscola = vagasResumo.map(v => ({
+    nome: v.escolaNome.length > 18 ? v.escolaNome.substring(0, 18) + '...' : v.escolaNome,
+    matriculados: v.alunosTotal,
+    capacidade: v.capacidadeTotal,
+    vagas: v.vagasDisponiveis,
+  }))
 
-  const turnoLabels: Record<string, string> = {
-    MATUTINO: 'Matutino',
-    VESPERTINO: 'Vespertino',
-    NOTURNO: 'Noturno',
-    INTEGRAL: 'Integral',
-  }
+  const statusDistribuicao = Object.entries(
+    matriculas.reduce((acc, m) => {
+      acc[m.status] = (acc[m.status] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+  ).map(([status, count]) => ({
+    name: STATUS_LABELS[status] || status,
+    value: count,
+    color: STATUS_COLORS[status] || '#94a3b8',
+  }))
+
+  const turmasDistribuicao = (() => {
+    const turnos: Record<string, { turmas: number; alunos: number }> = {}
+    const turnoLabels: Record<string, string> = {
+      MATUTINO: 'Matutino',
+      VESPERTINO: 'Vespertino',
+      NOTURNO: 'Noturno',
+      INTEGRAL: 'Integral',
+    }
+    turmas.filter(t => t.ativo).forEach(t => {
+      const label = turnoLabels[t.turno] || t.turno
+      if (!turnos[label]) turnos[label] = { turmas: 0, alunos: 0 }
+      turnos[label].turmas += 1
+      turnos[label].alunos += t.matriculas?.length || 0
+    })
+    return Object.entries(turnos).map(([name, data]) => ({ name, ...data }))
+  })()
+
+  const matriculasPorEtapa = (() => {
+    const etapaMap: Record<string, number> = {}
+    matriculas.forEach(m => {
+      const etapa = etapas.find(e => e.id === m.etapaId)
+      const nome = etapa?.nome || 'Sem etapa'
+      etapaMap[nome] = (etapaMap[nome] || 0) + 1
+    })
+    return Object.entries(etapaMap).map(([name, value]) => ({
+      name: name.length > 20 ? name.substring(0, 20) + '...' : name,
+      value,
+    }))
+  })()
+
+  const ETAPA_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
   function CardSkeleton() {
     return (
@@ -83,6 +148,14 @@ export function OverviewTab() {
           <Skeleton className="h-12 w-12 rounded-xl" />
         </div>
       </Card>
+    )
+  }
+
+  function ChartSkeleton() {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Skeleton className="h-48 w-full" />
+      </div>
     )
   }
 
@@ -187,6 +260,124 @@ export function OverviewTab() {
         </div>
       )}
 
+      {/* Graficos - Linha 1 */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Matriculas por Escola - Bar Chart */}
+        <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Matriculas por Escola</h3>
+          {loadingVagas ? (
+            <ChartSkeleton />
+          ) : matriculasPorEscola.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Nenhuma escola com turmas</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={matriculasPorEscola} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="nome"
+                  tick={{ fontSize: 11 }}
+                  angle={-20}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+                />
+                <Bar dataKey="matriculados" fill="#3b82f6" name="Matriculados" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="capacidade" fill="#e2e8f0" name="Capacidade" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+
+        {/* Status das Matriculas - Pie Chart */}
+        <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Status das Matriculas</h3>
+          {loadingMatriculas ? (
+            <ChartSkeleton />
+          ) : statusDistribuicao.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Nenhuma matricula registrada</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={statusDistribuicao}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={3}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                  labelLine={{ stroke: '#94a3b8' }}
+                >
+                  {statusDistribuicao.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+      </div>
+
+      {/* Graficos - Linha 2 */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Turmas e Alunos por Turno */}
+        <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Distribuicao por Turno</h3>
+          {loadingTurmas ? (
+            <ChartSkeleton />
+          ) : turmasDistribuicao.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Nenhuma turma cadastrada</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={turmasDistribuicao} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="turmas" fill="#8b5cf6" name="Turmas" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="alunos" fill="#3b82f6" name="Alunos" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+
+        {/* Matriculas por Etapa - Pie Chart */}
+        <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Matriculas por Etapa de Ensino</h3>
+          {loadingMatriculas ? (
+            <ChartSkeleton />
+          ) : matriculasPorEtapa.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Nenhuma matricula registrada</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={matriculasPorEtapa}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                  labelLine={{ stroke: '#94a3b8' }}
+                >
+                  {matriculasPorEtapa.map((_, index) => (
+                    <Cell key={`etapa-${index}`} fill={ETAPA_COLORS[index % ETAPA_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+      </div>
+
+      {/* Cards informativos - Linha 3 */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Ocupacao por Escola */}
         <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
@@ -230,7 +421,7 @@ export function OverviewTab() {
           )}
         </Card>
 
-        {/* Distribuicao de Profissionais */}
+        {/* Equipe por Funcao */}
         <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Equipe por Funcao</h3>
           {loadingProfissionais ? (
@@ -267,33 +458,8 @@ export function OverviewTab() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Turmas por Turno */}
-        <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Turmas por Turno</h3>
-          {loadingTurmas ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-full" />)}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {['MATUTINO', 'VESPERTINO', 'NOTURNO', 'INTEGRAL'].map(turno => {
-                const turmasDoTurno = turmas.filter(t => t.turno === turno && t.ativo)
-                if (turmasDoTurno.length === 0) return null
-                return (
-                  <div key={turno} className="flex items-center justify-between rounded-lg border border-slate-100 p-3">
-                    <span className="text-sm text-slate-700">{turnoLabels[turno] || turno}</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs text-slate-400">{turmasDoTurno.length} turmas</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </Card>
-
-        {/* Progresso do Sistema */}
+      {/* Progresso do Sistema */}
+      {modules.length > 0 && (
         <Card className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Progresso do Sistema</h3>
           {loadingModules ? (
@@ -305,8 +471,6 @@ export function OverviewTab() {
                 </div>
               ))}
             </div>
-          ) : modules.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">Nenhum modulo cadastrado</p>
           ) : (
             <>
               <div className="flex items-center justify-between mb-3">
@@ -314,10 +478,10 @@ export function OverviewTab() {
                 <span className="text-2xl font-semibold text-slate-900">{overallProgress}%</span>
               </div>
               <Progress value={overallProgress} className="h-2 mb-4" />
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                {modules.slice(0, 6).map(m => (
-                  <div key={m.id} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600 truncate max-w-[200px]">{m.name}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {modules.map(m => (
+                  <div key={m.id} className="flex items-center justify-between text-sm rounded-lg border border-slate-100 p-3">
+                    <span className="text-slate-600 truncate max-w-[180px]">{m.name}</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16">
                         <Progress value={m.progress} className="h-1.5" />
@@ -330,7 +494,7 @@ export function OverviewTab() {
             </>
           )}
         </Card>
-      </div>
+      )}
     </div>
   )
 }
