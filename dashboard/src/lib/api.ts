@@ -621,6 +621,22 @@ export interface Matricula {
   cep?: string;
   documentosEntregues?: string;
   observacoes?: string;
+  // Saude
+  tipoSanguineo?: string;
+  alergias?: string;
+  medicamentos?: string;
+  condicoesSaude?: string;
+  planoSaude?: string;
+  numeroCartaoSUS?: string;
+  // Emergencia
+  contatoEmergenciaNome?: string;
+  contatoEmergenciaTelefone?: string;
+  contatoEmergenciaParentesco?: string;
+  // Autorizacoes
+  autorizacaoImagem: boolean;
+  autorizacaoSaida: boolean;
+  pessoasAutorizadasRetirar?: string;
+  // Relacionamentos
   escolaId: string;
   escola?: Escola;
   etapaId: string;
@@ -663,6 +679,22 @@ export interface CreateMatriculaData {
   cep?: string;
   documentosEntregues?: string;
   observacoes?: string;
+  // Saude
+  tipoSanguineo?: string;
+  alergias?: string;
+  medicamentos?: string;
+  condicoesSaude?: string;
+  planoSaude?: string;
+  numeroCartaoSUS?: string;
+  // Emergencia
+  contatoEmergenciaNome?: string;
+  contatoEmergenciaTelefone?: string;
+  contatoEmergenciaParentesco?: string;
+  // Autorizacoes
+  autorizacaoImagem?: boolean;
+  autorizacaoSaida?: boolean;
+  pessoasAutorizadasRetirar?: string;
+  // Relacionamentos
   escolaId: string;
   etapaId: string;
   turmaId?: string;

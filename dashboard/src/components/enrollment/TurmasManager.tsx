@@ -30,6 +30,7 @@ import {
   X,
   Eye,
   Spinner,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
 import { Turma } from "@/lib/api";
 import {
@@ -78,6 +79,7 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTurma, setEditingTurma] = useState<Turma | null>(null);
   const [isAssignStudentsOpen, setIsAssignStudentsOpen] = useState(false);
+  const [busca, setBusca] = useState("");
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null);
   const [formData, setFormData] = useState({
     escolaId: "",
@@ -226,7 +228,18 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
     await removeAluno.mutateAsync({ turmaId: selectedTurma.id, matriculaId });
   };
 
-  const turmasPorEscola = (turmas || []).reduce((acc, turma) => {
+  const turmasFiltradas = (turmas || []).filter((t) => {
+    if (!busca) return true;
+    const termo = busca.toLowerCase();
+    const escolaNome = escolas?.find((e) => e.id === t.escolaId)?.nome || "";
+    return (
+      t.nome.toLowerCase().includes(termo) ||
+      t.turno.toLowerCase().includes(termo) ||
+      escolaNome.toLowerCase().includes(termo)
+    );
+  });
+
+  const turmasPorEscola = turmasFiltradas.reduce((acc, turma) => {
     if (!acc[turma.escolaId]) acc[turma.escolaId] = [];
     acc[turma.escolaId].push(turma);
     return acc;
@@ -304,6 +317,21 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
           <Plus size={20} weight="bold" />
           Nova Turma
         </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-72">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar turma por nome ou escola..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <span className="text-sm text-muted-foreground">
+          {turmasFiltradas.length} turma(s) encontrada(s)
+        </span>
       </div>
 
       {escolasAtivas.length === 0 && (

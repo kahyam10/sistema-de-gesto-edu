@@ -38,6 +38,9 @@ import {
   Clock,
   UploadSimple,
   Eye,
+  FirstAid,
+  Warning,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 import { Matricula, API_BASE_URL, DocumentoMatricula } from "@/lib/api";
 import {
@@ -123,6 +126,20 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
     endereco: "",
     possuiDeficiencia: false,
     tipoDeficiencia: "",
+    // Saude
+    tipoSanguineo: "",
+    alergias: "",
+    medicamentos: "",
+    condicoesSaude: "",
+    planoSaude: "",
+    numeroCartaoSUS: "",
+    // Emergencia
+    contatoEmergenciaNome: "",
+    contatoEmergenciaTelefone: "",
+    contatoEmergenciaParentesco: "",
+    // Autorizacoes
+    autorizacaoImagem: false,
+    autorizacaoSaida: false,
   });
 
   // Buscar matrícula atual pelo ID
@@ -187,6 +204,17 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
         endereco: matricula.endereco || "",
         possuiDeficiencia: matricula.possuiDeficiencia,
         tipoDeficiencia: matricula.tipoDeficiencia || "",
+        tipoSanguineo: matricula.tipoSanguineo || "",
+        alergias: matricula.alergias || "",
+        medicamentos: matricula.medicamentos || "",
+        condicoesSaude: matricula.condicoesSaude || "",
+        planoSaude: matricula.planoSaude || "",
+        numeroCartaoSUS: matricula.numeroCartaoSUS || "",
+        contatoEmergenciaNome: matricula.contatoEmergenciaNome || "",
+        contatoEmergenciaTelefone: matricula.contatoEmergenciaTelefone || "",
+        contatoEmergenciaParentesco: matricula.contatoEmergenciaParentesco || "",
+        autorizacaoImagem: matricula.autorizacaoImagem || false,
+        autorizacaoSaida: matricula.autorizacaoSaida || false,
       });
       setIsEditOpen(true);
     }
@@ -213,6 +241,17 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
           endereco: formData.endereco || undefined,
           possuiDeficiencia: formData.possuiDeficiencia,
           tipoDeficiencia: formData.possuiDeficiencia ? formData.tipoDeficiencia : undefined,
+          tipoSanguineo: formData.tipoSanguineo || undefined,
+          alergias: formData.alergias || undefined,
+          medicamentos: formData.medicamentos || undefined,
+          condicoesSaude: formData.condicoesSaude || undefined,
+          planoSaude: formData.planoSaude || undefined,
+          numeroCartaoSUS: formData.numeroCartaoSUS || undefined,
+          contatoEmergenciaNome: formData.contatoEmergenciaNome || undefined,
+          contatoEmergenciaTelefone: formData.contatoEmergenciaTelefone || undefined,
+          contatoEmergenciaParentesco: formData.contatoEmergenciaParentesco || undefined,
+          autorizacaoImagem: formData.autorizacaoImagem,
+          autorizacaoSaida: formData.autorizacaoSaida,
           escolaId: matricula.escolaId,
           etapaId: matricula.etapaId,
         },
@@ -455,6 +494,121 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dados de Saude */}
+      {(matricula.tipoSanguineo || matricula.alergias || matricula.medicamentos || matricula.condicoesSaude || matricula.planoSaude || matricula.numeroCartaoSUS) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FirstAid className="h-5 w-5" />
+              Dados de Saude
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {matricula.tipoSanguineo && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Tipo Sanguineo: </span>
+                  <Badge variant="outline">{matricula.tipoSanguineo}</Badge>
+                </div>
+              )}
+              {matricula.planoSaude && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Plano de Saude: </span>
+                  <span>{matricula.planoSaude}</span>
+                </div>
+              )}
+              {matricula.numeroCartaoSUS && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Cartao SUS: </span>
+                  <span>{matricula.numeroCartaoSUS}</span>
+                </div>
+              )}
+            </div>
+            {(matricula.alergias || matricula.medicamentos || matricula.condicoesSaude) && (
+              <div className="mt-4 pt-4 border-t space-y-3">
+                {matricula.alergias && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1 mb-1">
+                      <Warning className="h-3 w-3 text-red-500" /> Alergias
+                    </span>
+                    <p className="pl-4">{matricula.alergias}</p>
+                  </div>
+                )}
+                {matricula.medicamentos && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Medicamentos de uso continuo: </span>
+                    <span>{matricula.medicamentos}</span>
+                  </div>
+                )}
+                {matricula.condicoesSaude && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Condicoes de saude: </span>
+                    <span>{matricula.condicoesSaude}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Contato de Emergencia */}
+      {matricula.contatoEmergenciaNome && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              Contato de Emergencia
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Nome:</span>
+                <span>{matricula.contatoEmergenciaNome}</span>
+              </div>
+              {matricula.contatoEmergenciaTelefone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Telefone:</span>
+                  <span>{matricula.contatoEmergenciaTelefone}</span>
+                </div>
+              )}
+              {matricula.contatoEmergenciaParentesco && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Parentesco:</span>
+                  <span>{matricula.contatoEmergenciaParentesco}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Autorizacoes */}
+      {(matricula.autorizacaoImagem || matricula.autorizacaoSaida) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              Autorizacoes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Badge variant={matricula.autorizacaoImagem ? "default" : "outline"}>
+                {matricula.autorizacaoImagem ? "Imagem autorizada" : "Imagem nao autorizada"}
+              </Badge>
+              <Badge variant={matricula.autorizacaoSaida ? "default" : "outline"}>
+                {matricula.autorizacaoSaida ? "Saida autorizada" : "Saida nao autorizada"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Documentos e observações */}
       <Card>
@@ -808,15 +962,159 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
                   </div>
                   {formData.possuiDeficiencia && (
                     <div className="space-y-2 pl-6">
-                      <Label htmlFor="tipoDeficiencia">Tipo de Deficiência</Label>
+                      <Label htmlFor="tipoDeficiencia">Tipo de Deficiencia</Label>
                       <Input
                         id="tipoDeficiencia"
                         value={formData.tipoDeficiencia}
                         onChange={(e) => setFormData({ ...formData, tipoDeficiencia: e.target.value })}
-                        placeholder="Descreva a deficiência do aluno"
+                        placeholder="Descreva a deficiencia do aluno"
                       />
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Dados de Saude */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <FirstAid size={16} />
+                  Dados de Saude
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tipoSanguineo">Tipo Sanguineo</Label>
+                    <Select
+                      value={formData.tipoSanguineo}
+                      onValueChange={(value) => setFormData({ ...formData, tipoSanguineo: value })}
+                    >
+                      <SelectTrigger id="tipoSanguineo">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="planoSaude">Plano de Saude</Label>
+                    <Input
+                      id="planoSaude"
+                      value={formData.planoSaude}
+                      onChange={(e) => setFormData({ ...formData, planoSaude: e.target.value })}
+                      placeholder="Nome do plano"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="numeroCartaoSUS">Cartao SUS</Label>
+                    <Input
+                      id="numeroCartaoSUS"
+                      value={formData.numeroCartaoSUS}
+                      onChange={(e) => setFormData({ ...formData, numeroCartaoSUS: e.target.value })}
+                      placeholder="Numero do cartao"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="alergias">Alergias</Label>
+                    <Input
+                      id="alergias"
+                      value={formData.alergias}
+                      onChange={(e) => setFormData({ ...formData, alergias: e.target.value })}
+                      placeholder="Descreva alergias (alimentos, medicamentos, etc.)"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="medicamentos">Medicamentos de uso continuo</Label>
+                    <Input
+                      id="medicamentos"
+                      value={formData.medicamentos}
+                      onChange={(e) => setFormData({ ...formData, medicamentos: e.target.value })}
+                      placeholder="Liste os medicamentos"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="condicoesSaude">Condicoes de saude</Label>
+                    <Input
+                      id="condicoesSaude"
+                      value={formData.condicoesSaude}
+                      onChange={(e) => setFormData({ ...formData, condicoesSaude: e.target.value })}
+                      placeholder="Asma, diabetes, epilepsia, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Contato de Emergencia */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <Phone size={16} />
+                  Contato de Emergencia
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contatoEmergenciaNome">Nome</Label>
+                    <Input
+                      id="contatoEmergenciaNome"
+                      value={formData.contatoEmergenciaNome}
+                      onChange={(e) => setFormData({ ...formData, contatoEmergenciaNome: e.target.value })}
+                      placeholder="Nome do contato"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contatoEmergenciaTelefone">Telefone</Label>
+                    <Input
+                      id="contatoEmergenciaTelefone"
+                      value={formData.contatoEmergenciaTelefone}
+                      onChange={(e) => setFormData({ ...formData, contatoEmergenciaTelefone: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contatoEmergenciaParentesco">Parentesco</Label>
+                    <Input
+                      id="contatoEmergenciaParentesco"
+                      value={formData.contatoEmergenciaParentesco}
+                      onChange={(e) => setFormData({ ...formData, contatoEmergenciaParentesco: e.target.value })}
+                      placeholder="Ex: Avo, Tio, Vizinho"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Autorizacoes */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <ShieldCheck size={16} />
+                  Autorizacoes
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="autorizacaoImagem"
+                      checked={formData.autorizacaoImagem}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, autorizacaoImagem: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="autorizacaoImagem" className="cursor-pointer">
+                      Autorizo o uso de imagem do aluno em atividades escolares
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="autorizacaoSaida"
+                      checked={formData.autorizacaoSaida}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, autorizacaoSaida: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="autorizacaoSaida" className="cursor-pointer">
+                      Autorizo a saida do aluno desacompanhado
+                    </Label>
+                  </div>
                 </div>
               </div>
             </form>

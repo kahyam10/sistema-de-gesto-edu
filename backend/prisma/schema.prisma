@@ -241,7 +241,25 @@ model Matricula {
   certidaoNascimento     String?  // Path para certidão
   historicoEscolar       String?  // Path para histórico/transferência
   outrosDocumentos       String?  // JSON com array de {nome, path}
-  
+
+  // Dados de Saude
+  tipoSanguineo         String?  // A+, A-, B+, B-, AB+, AB-, O+, O-
+  alergias              String?  // Texto livre com alergias
+  medicamentos          String?  // Medicamentos de uso continuo
+  condicoesSaude        String?  // Condicoes de saude relevantes
+  planoSaude            String?  // Nome do plano de saude
+  numeroCartaoSUS       String?  // Numero do Cartao SUS
+
+  // Contatos de Emergencia
+  contatoEmergenciaNome       String?
+  contatoEmergenciaTelefone   String?
+  contatoEmergenciaParentesco String?
+
+  // Autorizacoes
+  autorizacaoImagem     Boolean  @default(false)
+  autorizacaoSaida      Boolean  @default(false)
+  pessoasAutorizadasRetirar String? // JSON com array de {nome, parentesco, telefone}
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

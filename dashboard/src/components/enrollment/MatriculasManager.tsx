@@ -31,6 +31,7 @@ import {
   Trash,
   Eye,
   XCircle,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
 import {
   Dialog,
@@ -81,6 +82,7 @@ const parseDocumentos = (value?: string) => {
 export function MatriculasManager() {
   const [filtroStatus, setFiltroStatus] = useState("all");
   const [filtroEscola, setFiltroEscola] = useState("all");
+  const [busca, setBusca] = useState("");
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: series, isLoading: loadingSeries } = useSeries();
@@ -121,6 +123,16 @@ export function MatriculasManager() {
   });
 
   const escolasAtivas = (escolas || []).filter((e) => e.ativo);
+
+  const matriculasFiltradas = (matriculas || []).filter((m) => {
+    if (!busca) return true;
+    const termo = busca.toLowerCase();
+    return (
+      m.nomeAluno.toLowerCase().includes(termo) ||
+      m.numeroMatricula?.toLowerCase().includes(termo) ||
+      m.nomeResponsavel?.toLowerCase().includes(termo)
+    );
+  });
 
   // Encontrar as etapas disponíveis para a escola selecionada
   const escolaSelecionada = escolasAtivas.find(
@@ -434,6 +446,15 @@ export function MatriculasManager() {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-72">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome do aluno..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <div className="w-56">
           <Select value={filtroStatus} onValueChange={setFiltroStatus}>
             <SelectTrigger>
@@ -841,11 +862,12 @@ export function MatriculasManager() {
         <CardHeader>
           <CardTitle>Matrículas Realizadas</CardTitle>
           <CardDescription>
-            {(matriculas || []).length} matrícula(s) no sistema
+            {matriculasFiltradas.length} matrícula(s) encontrada(s)
+            {busca && ` para "${busca}"`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!matriculas || matriculas.length === 0 ? (
+          {!matriculas || matriculasFiltradas.length === 0 ? (
             <div className="text-center py-12">
               <UserPlus
                 className="mx-auto mb-4 text-muted-foreground"
@@ -861,7 +883,7 @@ export function MatriculasManager() {
             </div>
           ) : (
             <div className="space-y-3">
-              {matriculas.map((matricula) => (
+              {matriculasFiltradas.map((matricula) => (
                 <div
                   key={matricula.id}
                   className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"

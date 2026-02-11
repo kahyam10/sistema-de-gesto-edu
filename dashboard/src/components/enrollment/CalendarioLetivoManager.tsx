@@ -770,31 +770,55 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
             </CardHeader>
             <CardContent>
               {estatisticas?.status?.podeContabilizarDiasLetivos ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      {estatisticas.diasLetivos ?? "-"}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                      <div className={cn(
+                        "text-2xl font-bold",
+                        (estatisticas.diasLetivos ?? 0) >= 200 ? "text-green-600" : "text-red-600"
+                      )}>
+                        {estatisticas.diasLetivos ?? "-"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Dias Letivos</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Dias Letivos</div>
-                  </div>
-                  <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">
-                      {estatisticas.feriados ?? "-"}
+                    <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
+                      <div className="text-2xl font-bold text-red-600">
+                        {estatisticas.feriados ?? "-"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Feriados</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Feriados</div>
-                  </div>
-                  <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {estatisticas.sabadosLetivos ?? "-"}
+                    <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {estatisticas.sabadosLetivos ?? "-"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Sabados Letivos</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Sábados Letivos</div>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {estatisticas.eventos ?? 0}
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {estatisticas.eventos ?? 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Total de Eventos</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Total de Eventos</div>
                   </div>
+                  {(estatisticas.diasLetivos ?? 0) > 0 && (estatisticas.diasLetivos ?? 0) < 200 && (
+                    <Alert variant="destructive">
+                      <Warning className="h-4 w-4" />
+                      <AlertTitle>Dias letivos insuficientes</AlertTitle>
+                      <AlertDescription>
+                        O minimo exigido por lei (LDB) e de 200 dias letivos. Faltam {200 - (estatisticas.diasLetivos ?? 0)} dias.
+                        Considere adicionar sabados letivos.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {(estatisticas.diasLetivos ?? 0) >= 200 && (
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertTitle>Meta atingida</AlertTitle>
+                      <AlertDescription>
+                        O calendario atende ao minimo de 200 dias letivos exigidos pela LDB.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

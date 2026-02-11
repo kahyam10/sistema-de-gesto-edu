@@ -49,6 +49,7 @@ import {
   IdCard,
   Eye,
   BookOpen,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -111,6 +112,7 @@ export function ProfissionaisManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProfissionalForm>(initialForm);
   const [filtroTipo, setFiltroTipo] = useState<string>("all");
+  const [busca, setBusca] = useState("");
   const [viewingProfissionalId, setViewingProfissionalId] = useState<string | null>(null);
   const [buscaEscola, setBuscaEscola] = useState("");
 
@@ -133,9 +135,18 @@ export function ProfissionaisManager() {
         e.codigo.toLowerCase().includes(buscaEscola.toLowerCase()))
   );
 
-  const profissionaisFiltrados = filtroTipo === "all"
-    ? profissionais
-    : profissionais.filter((p) => p.tipo === filtroTipo);
+  const profissionaisFiltrados = profissionais.filter((p) => {
+    if (filtroTipo !== "all" && p.tipo !== filtroTipo) return false;
+    if (busca) {
+      const termo = busca.toLowerCase();
+      return (
+        p.nome.toLowerCase().includes(termo) ||
+        p.cpf.includes(termo) ||
+        p.matricula?.toLowerCase().includes(termo)
+      );
+    }
+    return true;
+  });
 
   const handleViewDetails = (profissional: ProfissionalEducacao) => {
     setViewingProfissionalId(profissional.id);
@@ -655,7 +666,16 @@ export function ProfissionaisManager() {
             </div>
           </div>
         )}
-        <div className="mb-4 flex items-center gap-4">
+        <div className="mb-4 flex flex-wrap items-center gap-4">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, CPF ou matrícula..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-9"
+            />
+          </div>
           <div className="w-48">
             <Select value={filtroTipo} onValueChange={setFiltroTipo}>
               <SelectTrigger>

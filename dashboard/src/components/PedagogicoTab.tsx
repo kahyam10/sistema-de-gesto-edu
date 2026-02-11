@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, PencilLine, Certificate, GearSix, CalendarCheck } from "@phosphor-icons/react";
+import { BookOpen, PencilLine, Certificate, GearSix, CalendarCheck, Clock } from "@phosphor-icons/react";
 import { DisciplinasManager } from "@/components/enrollment/DisciplinasManager";
 import { FrequenciaManager } from "@/components/enrollment/FrequenciaManager";
 import { NotasManager } from "@/components/enrollment/NotasManager";
 import { BoletimDigital } from "@/components/enrollment/BoletimDigital";
 import { ConfiguracaoAvaliacaoManager } from "@/components/enrollment/ConfiguracaoAvaliacaoManager";
+import { GradeHorariaManager } from "@/components/enrollment/GradeHorariaManager";
 
 export function PedagogicoTab() {
   const [activeSubTab, setActiveSubTab] = useState("frequencia");
@@ -19,12 +20,12 @@ export function PedagogicoTab() {
           Gestao Pedagogica
         </h2>
         <p className="text-muted-foreground">
-          Frequencia, disciplinas, lancamento de notas, boletim digital e configuracoes de avaliacao
+          Frequencia, grade horaria, disciplinas, notas, boletim digital e configuracoes
         </p>
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-6 h-auto">
           <TabsTrigger
             value="frequencia"
             className="flex items-center gap-2 py-3"
@@ -32,6 +33,14 @@ export function PedagogicoTab() {
             <CalendarCheck className="h-4 w-4" />
             <span className="hidden sm:inline">Frequencia</span>
             <span className="sm:hidden">Freq.</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="grade"
+            className="flex items-center gap-2 py-3"
+          >
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Grade Horaria</span>
+            <span className="sm:hidden">Grade</span>
           </TabsTrigger>
           <TabsTrigger
             value="disciplinas"
@@ -69,6 +78,10 @@ export function PedagogicoTab() {
 
         <TabsContent value="frequencia" className="mt-6">
           <FrequenciaManager />
+        </TabsContent>
+
+        <TabsContent value="grade" className="mt-6">
+          <GradeHorariaManager />
         </TabsContent>
 
         <TabsContent value="disciplinas" className="mt-6">
