@@ -41,7 +41,13 @@ import {
   FirstAid,
   Warning,
   ShieldCheck,
+  FileText,
+  Printer,
 } from "@phosphor-icons/react";
+import { pdf } from '@react-pdf/renderer';
+import { FichaMatriculaPDF } from '@/components/pdf/FichaMatriculaPDF';
+import { DeclaracaoMatriculaPDF } from '@/components/pdf/DeclaracaoMatriculaPDF';
+import { HistoricoMatriculas } from '@/components/enrollment/HistoricoMatriculas';
 import { Matricula, API_BASE_URL, DocumentoMatricula } from "@/lib/api";
 import {
   Dialog,
@@ -307,6 +313,54 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
   const podeEnturmar =
     matricula.status === "AGUARDANDO_VAGA" || !turmaVinculada;
 
+  // Funções para download de PDF
+  const handleDownloadFicha = async () => {
+    try {
+      const blob = await pdf(
+        <FichaMatriculaPDF
+          matricula={matricula}
+          escolaNome={escola?.nome}
+          etapaNome={etapa?.nome}
+          serieName={turmaVinculada?.serie?.nome}
+          turmaNome={turmaVinculada?.nome}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ficha-matricula-${matricula.numeroMatricula}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('Ficha de matrícula gerada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao gerar ficha de matrícula');
+    }
+  };
+
+  const handleDownloadDeclaracao = async () => {
+    try {
+      const blob = await pdf(
+        <DeclaracaoMatriculaPDF
+          matricula={matricula}
+          escolaNome={escola?.nome}
+          etapaNome={etapa?.nome}
+          serieName={turmaVinculada?.serie?.nome}
+          turmaNome={turmaVinculada?.nome}
+          turnoNome={turmaVinculada?.turno}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `declaracao-matricula-${matricula.numeroMatricula}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('Declaração de matrícula gerada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao gerar declaração');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com botão voltar - estilo igual ao EscolaDetails */}
@@ -332,6 +386,14 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
               Enturmar
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={handleDownloadFicha}>
+            <FileText className="h-4 w-4 mr-2" />
+            Ficha
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleDownloadDeclaracao}>
+            <Printer className="h-4 w-4 mr-2" />
+            Declaração
+          </Button>
           <Button variant="outline" onClick={() => setIsTransferOpen(true)}>
             <Buildings className="h-4 w-4 mr-2" />
             Transferir
@@ -765,46 +827,12 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
         </Card>
       )}
 
-      {/* Histórico / Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Histórico
-          </CardTitle>
-          <CardDescription>
-            Registro de eventos da matrícula
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-green-100 rounded-full">
-                <Student className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Matrícula realizada</p>
-                <p className="text-xs text-muted-foreground">
-                  Ano letivo {matricula.anoLetivo}
-                </p>
-              </div>
-            </div>
-            {turmaVinculada && (
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Chalkboard className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Enturmado</p>
-                  <p className="text-xs text-muted-foreground">
-                    Turma: {turmaVinculada.nome}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Histórico de Matrículas */}
+      <HistoricoMatriculas
+        nomeAluno={matricula.nomeAluno}
+        cpfAluno={(matricula as any).cpf}
+        currentMatriculaId={matricula.id}
+      />
 
       {/* Dialog de Edição */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

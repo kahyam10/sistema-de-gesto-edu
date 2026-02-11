@@ -33,6 +33,7 @@ import {
   Cell,
   Legend,
 } from 'recharts'
+import { AlertasTurmas } from '@/components/enrollment/AlertasTurmas'
 
 const STATUS_COLORS: Record<string, string> = {
   ATIVA: '#22c55e',
@@ -457,6 +458,9 @@ export function OverviewTab() {
           )}
         </Card>
       </div>
+
+      {/* Alertas de Ocupação de Turmas */}
+      <AlertasTurmas />
 
       {/* Progresso do Sistema */}
       {modules.length > 0 && (

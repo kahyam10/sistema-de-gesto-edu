@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Buildings, GraduationCap, Users, UserPlus, CalendarDots, Chalkboard } from '@phosphor-icons/react'
+import { Buildings, GraduationCap, Users, UserPlus, CalendarDots, Chalkboard, Wheelchair } from '@phosphor-icons/react'
 import { EscolasManager } from '@/components/enrollment/EscolasManager'
 import { EscolaDetails } from '@/components/enrollment/EscolaDetails'
 import { EtapasManager } from '@/components/enrollment/EtapasManager'
@@ -8,6 +8,7 @@ import { MatriculasManager } from '@/components/enrollment/MatriculasManager'
 import { ProfissionaisManager } from '@/components/enrollment/ProfissionaisManager'
 import { CalendarioLetivoManager } from '@/components/enrollment/CalendarioLetivoManager'
 import { TurmasManager } from '@/components/enrollment/TurmasManager'
+import { RelatorioPCD } from '@/components/enrollment/RelatorioPCD'
 import type { Escola } from '@/lib/api'
 
 export function CadastrosTab() {
@@ -41,7 +42,7 @@ export function CadastrosTab() {
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-7 h-auto">
           <TabsTrigger value="calendario" className="flex items-center gap-2 py-3">
             <CalendarDots className="h-4 w-4" />
             <span className="hidden sm:inline">Calendário</span>
@@ -70,6 +71,11 @@ export function CadastrosTab() {
             <span className="hidden sm:inline">Matrículas</span>
             <span className="sm:hidden">Matríc.</span>
           </TabsTrigger>
+          <TabsTrigger value="relatorio-pcd" className="flex items-center gap-2 py-3">
+            <Wheelchair className="h-4 w-4" />
+            <span className="hidden sm:inline">Relatório PCD</span>
+            <span className="sm:hidden">PCD</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendario" className="mt-6">
@@ -94,6 +100,10 @@ export function CadastrosTab() {
 
         <TabsContent value="matriculas" className="mt-6">
           <MatriculasManager />
+        </TabsContent>
+
+        <TabsContent value="relatorio-pcd" className="mt-6">
+          <RelatorioPCD />
         </TabsContent>
       </Tabs>
     </div>
