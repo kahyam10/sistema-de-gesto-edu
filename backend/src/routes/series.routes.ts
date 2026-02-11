@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { serieService } from "../services/index.js";
 import { createSerieSchema, updateSerieSchema } from "../schemas/index.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 export async function seriesRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
   // Listar todas as séries
   app.get("/", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {

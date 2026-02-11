@@ -6,6 +6,7 @@ import {
   addAlunoTurmaSchema,
   addProfessorTurmaSchema,
 } from "../schemas/index.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 interface TurmaFilters {
   escolaId?: string;
@@ -14,6 +15,34 @@ interface TurmaFilters {
 }
 
 export async function turmasRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
+
+  // Relatório de vagas por escola
+  app.get(
+    "/relatorios/vagas",
+    async (
+      request: FastifyRequest<{
+        Querystring: { escolaId?: string; anoLetivo?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { escolaId, anoLetivo } = request.query;
+        const resumo = await turmaService.getVagasResumo(
+          escolaId,
+          anoLetivo ? parseInt(anoLetivo) : undefined
+        );
+        return reply.send(resumo);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao gerar relatório de vagas";
+        return reply.status(500).send({ error: message });
+      }
+    }
+  );
+
   // Listar todas as turmas
   app.get(
     "/",

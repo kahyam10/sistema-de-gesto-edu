@@ -4,6 +4,7 @@ import {
   createMatriculaSchema,
   updateMatriculaSchema,
 } from "../schemas/index.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 interface MatriculaFilters {
   escolaId?: string;
@@ -11,9 +12,13 @@ interface MatriculaFilters {
   turmaId?: string;
   anoLetivo?: string;
   status?: string;
+  page?: string;
+  limit?: string;
 }
 
 export async function matriculasRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
+
   // Listar todas as matrículas
   app.get(
     "/",
@@ -22,7 +27,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { escolaId, etapaId, turmaId, anoLetivo, status } = request.query;
+        const { escolaId, etapaId, turmaId, anoLetivo, status, page, limit } = request.query;
         const filters: {
           escolaId?: string;
           etapaId?: string;
@@ -36,6 +41,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         if (turmaId) filters.turmaId = turmaId;
         if (anoLetivo) filters.anoLetivo = parseInt(anoLetivo);
         if (status) filters.status = status;
+
+        if (page && limit) {
+          const result = await matriculaService.findAllPaginated(filters, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+          });
+          return reply.send(result);
+        }
 
         const matriculas = await matriculaService.findAll(filters);
         return reply.send(matriculas);

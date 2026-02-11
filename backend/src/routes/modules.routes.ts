@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { moduleService } from "../services/module.service.js";
 import { z } from "zod";
+import { authMiddleware } from "../middleware/auth.js";
 
 const createModuleSchema = z.object({
   name: z.string().min(1),
@@ -38,6 +39,8 @@ const updateSubModuleSchema = z.object({
 });
 
 export async function modulesRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
+
   // ==================== MODULES ====================
 
   // Listar todos os módulos

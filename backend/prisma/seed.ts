@@ -2,11 +2,28 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+const prismaAny = prisma as any;
 
 async function main() {
   console.log("🌱 Iniciando seed do banco de dados...");
 
+  const safeDeleteMany = async (label: string, action: () => Promise<unknown>) => {
+    try {
+      await action();
+    } catch (error: any) {
+      if (error?.code === "P2021") {
+        console.warn(`⚠️  Tabela ausente ao limpar ${label}. Execute as migrations.`);
+        return;
+      }
+      throw error;
+    }
+  };
+
   // Limpar dados existentes
+  await safeDeleteMany("grade_horaria", () => prismaAny.gradeHoraria.deleteMany());
+  await prisma.eventoCalendario.deleteMany();
+  await prisma.anoLetivo.deleteMany();
+  await prisma.sala.deleteMany();
   await prisma.turmaProfessor.deleteMany();
   await prisma.escolaProfissional.deleteMany();
   await prisma.matricula.deleteMany();
@@ -190,6 +207,45 @@ async function main() {
   ]);
   console.log(`✅ ${escolas.length} escolas criadas`);
 
+  // Criar salas (infraestrutura)
+  const salas = await Promise.all([
+    prisma.sala.create({
+      data: {
+        nome: "Sala 01",
+        tipo: "AULA",
+        capacidade: 25,
+        possuiVentilador: true,
+        escolaId: escolas[0].id,
+      },
+    }),
+    prisma.sala.create({
+      data: {
+        nome: "Sala 02",
+        tipo: "AULA",
+        capacidade: 25,
+        possuiProjetor: true,
+        escolaId: escolas[0].id,
+      },
+    }),
+    prisma.sala.create({
+      data: {
+        nome: "Biblioteca",
+        tipo: "LEITURA",
+        capacidade: 20,
+        escolaId: escolas[1].id,
+      },
+    }),
+    prisma.sala.create({
+      data: {
+        nome: "Sala AEE",
+        tipo: "AEE",
+        capacidade: 12,
+        escolaId: escolas[1].id,
+      },
+    }),
+  ]);
+  console.log(`✅ ${salas.length} salas criadas`);
+
   // Criar profissionais
   const profissionais = await Promise.all([
     prisma.profissionalEducacao.create({
@@ -325,6 +381,53 @@ async function main() {
     }),
   ]);
   console.log(`✅ ${turmas.length} turmas criadas`);
+
+  // Criar ano letivo e eventos do calendário
+  const anoLetivoAtual = await prisma.anoLetivo.create({
+    data: {
+      ano: anoLetivo,
+      ativo: true,
+    },
+  });
+
+  await prisma.eventoCalendario.createMany({
+    data: [
+      {
+        titulo: "Início do Ano Letivo",
+        dataInicio: new Date(`${anoLetivo}-02-05`),
+        tipo: "INICIO_ANO_LETIVO",
+        escopo: "REDE",
+        anoLetivoId: anoLetivoAtual.id,
+        cor: "#16A34A",
+      },
+      {
+        titulo: "Recesso Escolar",
+        dataInicio: new Date(`${anoLetivo}-07-01`),
+        dataFim: new Date(`${anoLetivo}-07-15`),
+        tipo: "RECESSO",
+        escopo: "REDE",
+        anoLetivoId: anoLetivoAtual.id,
+        cor: "#F59E0B",
+      },
+      {
+        titulo: "Conselho de Classe",
+        dataInicio: new Date(`${anoLetivo}-11-20`),
+        tipo: "CONSELHO_CLASSE",
+        escopo: "REDE",
+        anoLetivoId: anoLetivoAtual.id,
+        cor: "#3B82F6",
+      },
+      {
+        titulo: "Fim do Ano Letivo",
+        dataInicio: new Date(`${anoLetivo}-12-10`),
+        tipo: "FIM_ANO_LETIVO",
+        escopo: "REDE",
+        anoLetivoId: anoLetivoAtual.id,
+        cor: "#DC2626",
+      },
+    ],
+  });
+  console.log("✅ Calendário letivo criado");
 
   // Criar algumas matrículas de exemplo
   const matriculas = await Promise.all([
@@ -464,6 +567,60 @@ async function main() {
     ],
   });
   console.log("✅ Professores vinculados às turmas");
+
+  // Criar grade horária básica
+  let horarios: any[] = [];
+  try {
+    horarios = await Promise.all([
+      prismaAny.gradeHoraria.create({
+        data: {
+          turmaId: turmas[0].id,
+          diaSemana: "SEGUNDA",
+          horaInicio: "07:30",
+          horaFim: "08:20",
+          disciplina: "Português",
+          profissionalId: profissionais[0].id,
+        },
+      }),
+      prismaAny.gradeHoraria.create({
+        data: {
+          turmaId: turmas[0].id,
+          diaSemana: "SEGUNDA",
+          horaInicio: "08:30",
+          horaFim: "09:20",
+          disciplina: "Matemática",
+          profissionalId: profissionais[1].id,
+        },
+      }),
+      prismaAny.gradeHoraria.create({
+        data: {
+          turmaId: turmas[1].id,
+          diaSemana: "TERCA",
+          horaInicio: "13:00",
+          horaFim: "13:50",
+          disciplina: "Matemática",
+          profissionalId: profissionais[1].id,
+        },
+      }),
+      prismaAny.gradeHoraria.create({
+        data: {
+          turmaId: turmas[1].id,
+          diaSemana: "QUARTA",
+          horaInicio: "14:00",
+          horaFim: "14:50",
+          disciplina: "Português",
+          profissionalId: profissionais[4].id,
+        },
+      }),
+    ]);
+    console.log(`✅ ${horarios.length} horários criados`);
+  } catch (error: any) {
+    if (error?.code === "P2021") {
+      console.warn("⚠️  Tabela grade_horaria ausente. Execute as migrations.");
+    } else {
+      throw error;
+    }
+  }
 
   // ==================== MÓDULOS DO SISTEMA ====================
   console.log("\n📚 Criando módulos do sistema...");
@@ -925,9 +1082,11 @@ async function main() {
   console.log(`   - ${etapas.length} etapas de ensino`);
   console.log(`   - ${totalSeries} séries`);
   console.log(`   - ${escolas.length} escolas`);
+  console.log(`   - ${salas.length} salas`);
   console.log(`   - ${profissionais.length} profissionais`);
   console.log(`   - ${turmas.length} turmas`);
   console.log(`   - ${matriculas.length} matrículas`);
+  console.log(`   - ${horarios.length} horários`);
   console.log(`   - ${modulesData.length} módulos do sistema`);
   console.log(`   - ${totalSubModules} submódulos`);
   console.log(`   - ${phasesData.length} fases do cronograma`);

@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { escolaService } from "../services/index.js";
 import { createEscolaSchema, updateEscolaSchema } from "../schemas/index.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 export async function escolasRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
   // Listar todas as escolas
   app.get("/", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Buildings, GraduationCap, Users, UserPlus, CalendarDots } from '@phosphor-icons/react'
+import { Buildings, GraduationCap, Users, UserPlus, CalendarDots, Chalkboard } from '@phosphor-icons/react'
 import { EscolasManager } from '@/components/enrollment/EscolasManager'
 import { EscolaDetails } from '@/components/enrollment/EscolaDetails'
 import { EtapasManager } from '@/components/enrollment/EtapasManager'
 import { MatriculasManager } from '@/components/enrollment/MatriculasManager'
 import { ProfissionaisManager } from '@/components/enrollment/ProfissionaisManager'
 import { CalendarioLetivoManager } from '@/components/enrollment/CalendarioLetivoManager'
+import { TurmasManager } from '@/components/enrollment/TurmasManager'
 import type { Escola } from '@/lib/api'
 
 export function CadastrosTab() {
@@ -35,12 +36,12 @@ export function CadastrosTab() {
       <div>
         <h2 className="text-3xl font-bold">Sistema de Cadastros</h2>
         <p className="text-muted-foreground mt-2">
-          Gerencie escolas, etapas de ensino, profissionais e matrículas de alunos
+          Gerencie escolas, etapas de ensino, turmas, profissionais e matriculas de alunos
         </p>
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-6 h-auto">
           <TabsTrigger value="calendario" className="flex items-center gap-2 py-3">
             <CalendarDots className="h-4 w-4" />
             <span className="hidden sm:inline">Calendário</span>
@@ -54,6 +55,10 @@ export function CadastrosTab() {
           <TabsTrigger value="escolas" className="flex items-center gap-2 py-3">
             <Buildings className="h-4 w-4" />
             Escolas
+          </TabsTrigger>
+          <TabsTrigger value="turmas" className="flex items-center gap-2 py-3">
+            <Chalkboard className="h-4 w-4" />
+            Turmas
           </TabsTrigger>
           <TabsTrigger value="profissionais" className="flex items-center gap-2 py-3">
             <Users className="h-4 w-4" />
@@ -77,6 +82,10 @@ export function CadastrosTab() {
 
         <TabsContent value="escolas" className="mt-6">
           <EscolasManager onSelectEscola={handleSelectEscola} />
+        </TabsContent>
+
+        <TabsContent value="turmas" className="mt-6">
+          <TurmasManager />
         </TabsContent>
 
         <TabsContent value="profissionais" className="mt-6">

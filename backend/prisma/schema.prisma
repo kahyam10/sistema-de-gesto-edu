@@ -58,6 +58,8 @@ model EtapaEnsino {
   series     Serie[]
   escolas    EscolaEtapa[]
   matriculas Matricula[]
+  disciplinas Disciplina[]
+  configuracoes ConfiguracaoAvaliacao[]
 
   @@map("etapas_ensino")
 }
@@ -117,6 +119,7 @@ model Escola {
   users        User[]
   salas        Sala[]
   eventosCalendario EventoCalendario[]
+  configuracoes ConfiguracaoAvaliacao[]
 
   @@map("escolas")
 }
@@ -183,6 +186,8 @@ model Turma {
   matriculas    Matricula[]
   professores   TurmaProfessor[]
   horarios      GradeHoraria[]
+  frequencias   Frequencia[]
+  avaliacoes    Avaliacao[]
 
   @@map("turmas")
 }
@@ -250,6 +255,9 @@ model Matricula {
   turmaId String?
   turma   Turma? @relation(fields: [turmaId], references: [id])
 
+  frequencias Frequencia[]
+  notas       Nota[]
+
   @@map("matriculas")
 }
 
@@ -266,14 +274,25 @@ model ProfissionalEducacao {
   especialidade String?
   matricula     String?  @unique
   ativo         Boolean  @default(true)
+
+  // Dados adicionais
+  dataNascimento     DateTime?
+  dataAdmissao       DateTime?  // Data de admissão na rede
+  regimeContratacao  String?    // EFETIVO, CONTRATADO, TEMPORARIO, TERCEIRIZADO
+  escolaridade       String?    // FUNDAMENTAL, MEDIO, SUPERIOR, POS_GRADUACAO, MESTRADO, DOUTORADO
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relacionamentos
-  escolas   EscolaProfissional[]
-  turmas    TurmaProfessor[]
-  formacoes FormacaoProfissional[]
-  horarios  GradeHoraria[]
+  escolas        EscolaProfissional[]
+  turmas         TurmaProfessor[]
+  formacoes      FormacaoProfissional[]
+  certificacoes  CertificacaoProfissional[]
+  historicoContratacoes HistoricoContratacao[]
+  afastamentos   Afastamento[]
+  horarios       GradeHoraria[]
+  avaliacoes     Avaliacao[]
 
   @@map("profissionais_educacao")
 }
@@ -319,19 +338,85 @@ model FormacaoProfissional {
   @@map("formacoes_profissionais")
 }
 
+// Certificações e cursos complementares
+model CertificacaoProfissional {
+  id              String   @id @default(cuid())
+  profissionalId  String
+  nome            String   // Ex: "Certificação Google Educator", "Curso de Libras"
+  instituicao     String?  // Instituição emissora
+  dataEmissao     DateTime?
+  dataValidade    DateTime? // Para certificações com validade
+  cargaHoraria    Int?
+  urlCertificado  String?  // Link para o certificado digital
+  observacoes     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@map("certificacoes_profissionais")
+}
+
+// Histórico de contratações e vínculos
+model HistoricoContratacao {
+  id              String   @id @default(cuid())
+  profissionalId  String
+  tipo            String   // ADMISSAO, TRANSFERENCIA, PROMOCAO, REMANEJAMENTO, RESCISAO
+  descricao       String   // Descrição do evento
+  dataEvento      DateTime
+  cargo           String?  // Cargo na época
+  observacoes     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@index([profissionalId])
+  @@map("historico_contratacoes")
+}
+
+// Afastamentos, licenças e atestados
+model Afastamento {
+  id              String   @id @default(cuid())
+  profissionalId  String
+  tipo            String   // ATESTADO_MEDICO, LICENCA_SAUDE, LICENCA_MATERNIDADE, FERIAS, OUTROS
+  dataInicio      DateTime
+  dataFim         DateTime?
+  motivo          String?
+  observacoes     String?
+  documentoPath   String?  // Path para o documento (atestado digitalizado)
+  ativo           Boolean  @default(true) // Se o afastamento está vigente
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@index([profissionalId])
+  @@index([dataInicio, dataFim])
+  @@map("afastamentos")
+}
+
 // Tabela de junção: Escola <-> ProfissionalEducacao (N:M)
+// Representa lotação de profissionais em escolas
 model EscolaProfissional {
   id              String   @id @default(cuid())
   escolaId        String
   profissionalId  String
   funcao          String?  // Função específica nesta escola
   cargaHoraria    Int?     // Carga horária semanal
+  dataInicio      DateTime @default(now()) // Data de início da lotação
+  dataFim         DateTime? // Data de fim (null = lotação ativa)
+  ativo           Boolean  @default(true) // Se a lotação está ativa
+  observacoes     String?
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   escola       Escola               @relation(fields: [escolaId], references: [id], onDelete: Cascade)
   profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
 
-  @@unique([escolaId, profissionalId])
+  @@index([escolaId])
+  @@index([profissionalId])
+  @@index([ativo])
   @@map("escolas_profissionais")
 }
 
@@ -403,6 +488,32 @@ model Phase {
   @@map("phases")
 }
 
+// ==================== FREQUÊNCIA E AVALIAÇÕES ====================
+
+model Frequencia {
+  id             String   @id @default(cuid())
+  data           DateTime // Data da aula/frequência
+  status         String   // PRESENTE, FALTA, JUSTIFICADA
+  justificativa  String?  // Justificativa para faltas justificadas
+  observacao     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  matriculaId    String
+  matricula      Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  turmaId        String
+  turma          Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  // Índices para otimização
+  @@index([matriculaId])
+  @@index([turmaId])
+  @@index([data])
+  @@unique([matriculaId, turmaId, data]) // Um registro por aluno por turma por dia
+  @@map("frequencias")
+}
+
 // ==================== CALENDÁRIO LETIVO ====================
 
 // Ano Letivo - Define o período do ano letivo
@@ -462,4 +573,107 @@ model EventoCalendario {
   @@index([anoLetivoId, dataInicio])
   @@index([dataInicio, dataFim])
   @@map("eventos_calendario")
+}
+
+// ==================== DISCIPLINAS ====================
+
+model Disciplina {
+  id                  String   @id @default(cuid())
+  nome                String   // Ex: "Língua Portuguesa", "Matemática"
+  codigo              String   @unique // Ex: "PORT-EF", "MAT-EF"
+  descricao           String?
+  cargaHorariaSemanal Int?     // Horas por semana
+  obrigatoria         Boolean  @default(true)
+  ativo               Boolean  @default(true)
+  ordem               Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relacionamentos
+  etapaId    String
+  etapa      EtapaEnsino @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  avaliacoes Avaliacao[]
+
+  @@index([etapaId])
+  @@map("disciplinas")
+}
+
+// ==================== CONFIGURAÇÃO DE AVALIAÇÃO ====================
+
+model ConfiguracaoAvaliacao {
+  id                          String   @id @default(cuid())
+  anoLetivo                   Int
+  sistemaAvaliacao            String   @default("NOTA") // NOTA, CONCEITO
+  numeroPeriodos              Int      @default(4) // Bimestres
+  mediaMinima                 Float    @default(6.0)
+  percentualFrequenciaMinima  Float    @default(75.0)
+  recuperacaoParalela         Boolean  @default(false)
+  recuperacaoFinal            Boolean  @default(true)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Escopo opcional
+  escolaId String?
+  escola   Escola? @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  etapaId  String?
+  etapa    EtapaEnsino? @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  @@index([anoLetivo])
+  @@map("configuracoes_avaliacao")
+}
+
+// ==================== AVALIAÇÕES ====================
+
+model Avaliacao {
+  id           String   @id @default(cuid())
+  nome         String   // Ex: "Prova Bimestral 1", "Trabalho de Português"
+  tipo         String   // PROVA, TRABALHO, ATIVIDADE, PARTICIPACAO, RECUPERACAO
+  peso         Float    @default(1.0)
+  valorMaximo  Float    @default(10.0)
+  data         DateTime
+  bimestre     Int      // 1, 2, 3, 4
+  observacao   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relacionamentos
+  turmaId        String
+  turma          Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  disciplinaId   String
+  disciplina     Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+
+  profissionalId String?
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  notas          Nota[]
+
+  @@index([turmaId])
+  @@index([disciplinaId])
+  @@index([turmaId, disciplinaId, bimestre])
+  @@map("avaliacoes")
+}
+
+// ==================== NOTAS ====================
+
+model Nota {
+  id         String   @id @default(cuid())
+  valor      Float    // Valor da nota (0-10 por padrão)
+  observacao String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relacionamentos
+  avaliacaoId String
+  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+  matriculaId String
+  matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@unique([avaliacaoId, matriculaId])
+  @@index([matriculaId])
+  @@index([avaliacaoId])
+  @@map("notas")
 }

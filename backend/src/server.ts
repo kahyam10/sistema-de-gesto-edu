@@ -20,6 +20,11 @@ import {
   salasRoutes,
   gradeHorariaRoutes,
   uploadRoutes,
+  frequenciaRoutes,
+  disciplinasRoutes,
+  configuracaoAvaliacaoRoutes,
+  avaliacoesRoutes,
+  notasRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
 
@@ -117,6 +122,11 @@ async function buildApp() {
   app.register(calendarioRoutes, { prefix: "/api/calendario" });
   app.register(gradeHorariaRoutes, { prefix: "/api/grade-horaria" });
   app.register(uploadRoutes, { prefix: "/api/upload" });
+  app.register(frequenciaRoutes, { prefix: "/api/frequencia" });
+  app.register(disciplinasRoutes, { prefix: "/api/disciplinas" });
+  app.register(configuracaoAvaliacaoRoutes, { prefix: "/api/configuracao-avaliacao" });
+  app.register(avaliacoesRoutes, { prefix: "/api/avaliacoes" });
+  app.register(notasRoutes, { prefix: "/api/notas" });
 
   // Error handler global
   app.setErrorHandler((error, request, reply) => {

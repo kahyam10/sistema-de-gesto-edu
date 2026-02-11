@@ -54,6 +54,7 @@ import {
   useDeleteTurma,
   useAddAlunoToTurma,
   useRemoveAlunoFromTurma,
+  useCargaHorariaPorTurma,
 } from "@/hooks/useApi";
 
 interface TurmasManagerProps {
@@ -66,6 +67,7 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: series, isLoading: loadingSeries } = useSeries();
   const { data: matriculas } = useMatriculas();
+  const { data: cargaPorTurma = [] } = useCargaHorariaPorTurma();
 
   const createTurma = useCreateTurma();
   const updateTurma = useUpdateTurma();
@@ -257,6 +259,35 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
 
   return (
     <div className="space-y-6">
+      {cargaPorTurma.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Carga horária por turma</CardTitle>
+            <CardDescription>Resumo da grade horária cadastrada</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              {cargaPorTurma.map((item) => (
+                <div key={item.turmaId} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {item.turmaNome} • {item.escolaNome}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.totalAulas} aula(s)
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {Math.round(item.totalMinutos / 60)}h
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold">Gestão de Turmas</h3>

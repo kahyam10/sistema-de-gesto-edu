@@ -1,7 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { calendarioService } from "../services/calendario.service.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 export async function calendarioRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
   // ==================== ANO LETIVO ====================
 
   // Listar todos os anos letivos

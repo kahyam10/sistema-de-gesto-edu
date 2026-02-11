@@ -6,12 +6,19 @@ import {
   seriesApi,
   escolasApi,
   turmasApi,
+  gradeHorariaApi,
   matriculasApi,
   profissionaisApi,
   modulesApi,
   phasesApi,
   salasApi,
   calendarioApi,
+  frequenciaApi,
+  uploadApi,
+  disciplinasApi,
+  configuracaoAvaliacaoApi,
+  avaliacoesApi,
+  notasApi,
   EtapaEnsino,
   Serie,
   Escola,
@@ -21,6 +28,14 @@ import {
   Module,
   SubModule,
   Phase,
+  Frequencia,
+  EstatisticasFrequencia,
+  AlunoComBaixaFrequencia,
+  Disciplina,
+  ConfiguracaoAvaliacao,
+  Avaliacao,
+  Nota,
+  Boletim,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -263,11 +278,117 @@ export function useTurmas(filters?: {
   });
 }
 
+export function useVagasResumo(escolaId?: string, anoLetivo?: number) {
+  return useQuery({
+    queryKey: ["turmas", "vagas-resumo", escolaId, anoLetivo],
+    queryFn: () => turmasApi.getVagasResumo(escolaId, anoLetivo),
+  });
+}
+
 export function useTurma(id: string) {
   return useQuery({
     queryKey: ["turmas", id],
     queryFn: () => turmasApi.get(id),
     enabled: !!id,
+  });
+}
+
+// ==================== GRADE HORÁRIA ====================
+
+export function useGradeHoraria(turmaId?: string) {
+  return useQuery({
+    queryKey: ["grade-horaria", turmaId],
+    queryFn: () => gradeHorariaApi.list({ turmaId }),
+    enabled: !!turmaId,
+  });
+}
+
+export function useGradeHorariaByProfissional(profissionalId?: string) {
+  return useQuery({
+    queryKey: ["grade-horaria", "profissional", profissionalId],
+    queryFn: () => gradeHorariaApi.list({ profissionalId }),
+    enabled: !!profissionalId,
+  });
+}
+
+export function useCargaHorariaResumo(profissionalId?: string) {
+  return useQuery({
+    queryKey: ["grade-horaria", "carga", profissionalId],
+    queryFn: () => gradeHorariaApi.getCargaResumo(profissionalId),
+    enabled: profissionalId === undefined ? true : !!profissionalId,
+  });
+}
+
+export function useCargaHorariaPorEscola() {
+  return useQuery({
+    queryKey: ["grade-horaria", "carga", "escola"],
+    queryFn: () => gradeHorariaApi.getCargaResumoPorEscola(),
+  });
+}
+
+export function useCargaHorariaPorTurma() {
+  return useQuery({
+    queryKey: ["grade-horaria", "carga", "turma"],
+    queryFn: () => gradeHorariaApi.getCargaResumoPorTurma(),
+  });
+}
+
+export function useCreateGradeHorario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof gradeHorariaApi.create>[0]) =>
+      gradeHorariaApi.create(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["grade-horaria", variables.turmaId],
+      });
+      toast.success("Horário adicionado à grade!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao adicionar horário");
+    },
+  });
+}
+
+export function useUpdateGradeHorario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof gradeHorariaApi.update>[1];
+    }) => gradeHorariaApi.update(id, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: ["grade-horaria", data.turmaId],
+      });
+      toast.success("Horário atualizado!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar horário");
+    },
+  });
+}
+
+export function useDeleteGradeHorario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, turmaId }: { id: string; turmaId: string }) =>
+      gradeHorariaApi.delete(id).then(() => ({ turmaId })),
+    onSuccess: ({ turmaId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["grade-horaria", turmaId],
+      });
+      toast.success("Horário removido!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover horário");
+    },
   });
 }
 
@@ -456,6 +577,14 @@ export function useMatricula(id: string) {
   });
 }
 
+export function useMatriculasEstatisticas(anoLetivo: number, escolaId?: string) {
+  return useQuery({
+    queryKey: ["matriculas", "estatisticas", anoLetivo, escolaId],
+    queryFn: () => matriculasApi.getEstatisticas(anoLetivo, escolaId),
+    enabled: !!anoLetivo,
+  });
+}
+
 export function useCreateMatricula() {
   const queryClient = useQueryClient();
 
@@ -505,6 +634,62 @@ export function useDeleteMatricula() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao remover matrícula");
+    },
+  });
+}
+
+export function useCancelarMatricula() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => matriculasApi.cancelar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      toast.success("Matrícula cancelada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao cancelar matrícula");
+    },
+  });
+}
+
+export function useConfirmarMatricula() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, turmaId }: { id: string; turmaId: string }) =>
+      matriculasApi.confirmar(id, turmaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      queryClient.invalidateQueries({ queryKey: ["turmas"] });
+      toast.success("Matrícula confirmada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao confirmar matrícula");
+    },
+  });
+}
+
+export function useTransferirMatricula() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      escolaId,
+      turmaId,
+    }: {
+      id: string;
+      escolaId: string;
+      turmaId?: string;
+    }) => matriculasApi.transferir(id, escolaId, turmaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      queryClient.invalidateQueries({ queryKey: ["turmas"] });
+      toast.success("Matrícula transferida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao transferir matrícula");
     },
   });
 }
@@ -583,6 +768,13 @@ export function useProfissionaisByEscola(escolaId: string) {
     queryKey: ["profissionais", "escola", escolaId],
     queryFn: () => profissionaisApi.getByEscola(escolaId),
     enabled: !!escolaId,
+  });
+}
+
+export function useLotacaoResumo(escolaId?: string) {
+  return useQuery({
+    queryKey: ["profissionais", "lotacao", escolaId],
+    queryFn: () => profissionaisApi.getLotacaoResumo(escolaId),
   });
 }
 
@@ -1302,5 +1494,461 @@ export function useEstatisticasCalendario(
     enabled: !!anoLetivoId,
     staleTime: CALENDARIO_STALE_TIME,
     gcTime: CALENDARIO_CACHE_TIME,
+  });
+}
+
+// ==================== FREQUÊNCIA ====================
+
+export function useFrequencias(params?: {
+  turmaId?: string;
+  matriculaId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}) {
+  return useQuery({
+    queryKey: ["frequencias", params],
+    queryFn: () => frequenciaApi.list(params),
+    enabled: !!(params?.turmaId || params?.matriculaId),
+  });
+}
+
+export function useFrequencia(id: string | undefined) {
+  return useQuery({
+    queryKey: ["frequencias", id],
+    queryFn: () => frequenciaApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useFrequenciasPorData(turmaId: string, data: string) {
+  return useQuery({
+    queryKey: ["frequencias", "turma", turmaId, "data", data],
+    queryFn: () => frequenciaApi.buscarPorData(turmaId, data),
+    enabled: !!turmaId && !!data,
+  });
+}
+
+export function useEstatisticasFrequencia(
+  matriculaId: string | undefined,
+  turmaId: string | undefined,
+  dataInicio?: string,
+  dataFim?: string
+) {
+  return useQuery({
+    queryKey: ["frequencias", "estatisticas", matriculaId, turmaId, dataInicio, dataFim],
+    queryFn: () => frequenciaApi.getEstatisticas(matriculaId!, turmaId!, dataInicio, dataFim),
+    enabled: !!matriculaId && !!turmaId,
+  });
+}
+
+export function useAlunosBaixaFrequencia(
+  turmaId: string | undefined,
+  dataInicio?: string,
+  dataFim?: string
+) {
+  return useQuery({
+    queryKey: ["frequencias", "baixa-frequencia", turmaId, dataInicio, dataFim],
+    queryFn: () => frequenciaApi.listarBaixaFrequencia(turmaId!, dataInicio, dataFim),
+    enabled: !!turmaId,
+  });
+}
+
+export function useCreateFrequencia() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      matriculaId: string;
+      turmaId: string;
+      data: string;
+      status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+      justificativa?: string;
+      observacao?: string;
+    }) => frequenciaApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["frequencias"] });
+      toast.success("Frequência registrada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar frequência");
+    },
+  });
+}
+
+export function useRegistrarFrequenciaTurma() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      turmaId: string;
+      data: string;
+      presencas: Array<{
+        matriculaId: string;
+        status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+        justificativa?: string;
+        observacao?: string;
+      }>;
+    }) => frequenciaApi.registrarTurma(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["frequencias"] });
+      toast.success("Frequência da turma registrada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar frequência da turma");
+    },
+  });
+}
+
+export function useUpdateFrequencia() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        status?: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+        justificativa?: string;
+        observacao?: string;
+      };
+    }) => frequenciaApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["frequencias"] });
+      toast.success("Frequência atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar frequência");
+    },
+  });
+}
+
+export function useDeleteFrequencia() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => frequenciaApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["frequencias"] });
+      toast.success("Frequência removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover frequência");
+    },
+  });
+}
+
+// ==================== UPLOAD DE DOCUMENTOS ====================
+
+export function useDocumentosMatricula(matriculaId: string | undefined) {
+  return useQuery({
+    queryKey: ["documentos", matriculaId],
+    queryFn: () => uploadApi.getDocumentos(matriculaId!),
+    enabled: !!matriculaId,
+  });
+}
+
+export function useUploadDocumento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      matriculaId,
+      file,
+      tipo,
+    }: {
+      matriculaId: string;
+      file: File;
+      tipo: string;
+    }) => uploadApi.uploadDocumento(matriculaId, file, tipo),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["documentos", variables.matriculaId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      toast.success("Documento enviado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao enviar documento");
+    },
+  });
+}
+
+// ==================== DISCIPLINAS ====================
+
+export function useDisciplinas(filters?: { etapaId?: string; ativo?: boolean }) {
+  return useQuery({
+    queryKey: ["disciplinas", filters],
+    queryFn: () => disciplinasApi.list(filters),
+  });
+}
+
+export function useDisciplinasByEtapa(etapaId: string | undefined) {
+  return useQuery({
+    queryKey: ["disciplinas", "etapa", etapaId],
+    queryFn: () => disciplinasApi.getByEtapa(etapaId!),
+    enabled: !!etapaId,
+  });
+}
+
+export function useCreateDisciplina() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof disciplinasApi.create>[0]) =>
+      disciplinasApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["disciplinas"] });
+      toast.success("Disciplina cadastrada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao cadastrar disciplina");
+    },
+  });
+}
+
+export function useUpdateDisciplina() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof disciplinasApi.update>[1];
+    }) => disciplinasApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["disciplinas"] });
+      toast.success("Disciplina atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar disciplina");
+    },
+  });
+}
+
+export function useDeleteDisciplina() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => disciplinasApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["disciplinas"] });
+      toast.success("Disciplina removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover disciplina");
+    },
+  });
+}
+
+// ==================== CONFIGURAÇÃO DE AVALIAÇÃO ====================
+
+export function useConfiguracoesAvaliacao(filters?: {
+  anoLetivo?: number;
+  escolaId?: string;
+  etapaId?: string;
+}) {
+  return useQuery({
+    queryKey: ["configuracoes-avaliacao", filters],
+    queryFn: () => configuracaoAvaliacaoApi.list(filters),
+  });
+}
+
+export function useCreateConfiguracaoAvaliacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof configuracaoAvaliacaoApi.create>[0]) =>
+      configuracaoAvaliacaoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["configuracoes-avaliacao"] });
+      toast.success("Configuração criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar configuração");
+    },
+  });
+}
+
+export function useUpdateConfiguracaoAvaliacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof configuracaoAvaliacaoApi.update>[1];
+    }) => configuracaoAvaliacaoApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["configuracoes-avaliacao"] });
+      toast.success("Configuração atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar configuração");
+    },
+  });
+}
+
+export function useDeleteConfiguracaoAvaliacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => configuracaoAvaliacaoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["configuracoes-avaliacao"] });
+      toast.success("Configuração removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover configuração");
+    },
+  });
+}
+
+// ==================== AVALIAÇÕES ====================
+
+export function useAvaliacoes(filters?: {
+  turmaId?: string;
+  disciplinaId?: string;
+  bimestre?: number;
+}) {
+  return useQuery({
+    queryKey: ["avaliacoes", filters],
+    queryFn: () => avaliacoesApi.list(filters),
+    enabled: !!(filters?.turmaId),
+  });
+}
+
+export function useAvaliacao(id: string | undefined) {
+  return useQuery({
+    queryKey: ["avaliacoes", id],
+    queryFn: () => avaliacoesApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useCreateAvaliacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof avaliacoesApi.create>[0]) =>
+      avaliacoesApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      toast.success("Avaliação criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar avaliação");
+    },
+  });
+}
+
+export function useUpdateAvaliacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof avaliacoesApi.update>[1];
+    }) => avaliacoesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      toast.success("Avaliação atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar avaliação");
+    },
+  });
+}
+
+export function useDeleteAvaliacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => avaliacoesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      toast.success("Avaliação removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover avaliação");
+    },
+  });
+}
+
+// ==================== NOTAS ====================
+
+export function useLancarNotasTurma() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof notasApi.lancarTurma>[0]) =>
+      notasApi.lancarTurma(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notas"] });
+      queryClient.invalidateQueries({ queryKey: ["boletim"] });
+      toast.success("Notas lançadas com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao lançar notas");
+    },
+  });
+}
+
+export function useUpdateNota() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { valor?: number; observacao?: string };
+    }) => notasApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notas"] });
+      queryClient.invalidateQueries({ queryKey: ["boletim"] });
+      toast.success("Nota atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar nota");
+    },
+  });
+}
+
+export function useDeleteNota() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => notasApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notas"] });
+      queryClient.invalidateQueries({ queryKey: ["boletim"] });
+      toast.success("Nota removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover nota");
+    },
+  });
+}
+
+// ==================== BOLETIM ====================
+
+export function useBoletim(matriculaId: string | undefined, turmaId?: string) {
+  return useQuery({
+    queryKey: ["boletim", matriculaId, turmaId],
+    queryFn: () => notasApi.getBoletim(matriculaId!, turmaId),
+    enabled: !!matriculaId,
   });
 }

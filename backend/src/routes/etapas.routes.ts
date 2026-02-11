@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { etapaService } from "../services/index.js";
 import { createEtapaSchema, updateEtapaSchema } from "../schemas/index.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 export async function etapasRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
   // Listar todas as etapas
   app.get("/", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {

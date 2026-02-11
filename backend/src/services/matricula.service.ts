@@ -81,6 +81,46 @@ export class MatriculaService {
     });
   }
 
+  async findAllPaginated(
+    filters: {
+      escolaId?: string;
+      etapaId?: string;
+      turmaId?: string;
+      anoLetivo?: number;
+      status?: string;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where = filters;
+    const include = {
+      escola: true,
+      etapa: true,
+      turma: { include: { serie: true } },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.matricula.findMany({
+        where,
+        include,
+        orderBy: { nomeAluno: "asc" },
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.matricula.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async findById(id: string) {
     return prisma.matricula.findUnique({
       where: { id },

@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { uploadService } from "../services/upload.service.js";
 import { prisma } from "../lib/prisma.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 export async function uploadRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
   // Upload de documento para matrícula
   app.post(
     "/matricula/:matriculaId/documento",

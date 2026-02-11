@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma";
 import { z } from "zod";
+import { authMiddleware } from "../middleware/auth.js";
 
 // Schemas de validação
 const createSalaSchema = z.object({
@@ -29,6 +30,8 @@ const createSalaSchema = z.object({
 const updateSalaSchema = createSalaSchema.partial();
 
 export async function salasRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
+
   // Listar todas as salas de uma escola
   app.get(
     "/api/escolas/:escolaId/salas",

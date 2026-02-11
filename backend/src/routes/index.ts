@@ -10,3 +10,8 @@ export { phaseRoutes } from "./phase.routes.js";
 export { salasRoutes } from "./salas.routes.js";
 export { gradeHorariaRoutes } from "./grade-horaria.routes.js";
 export { uploadRoutes } from "./upload.routes.js";
+export { frequenciaRoutes } from "./frequencia.routes.js";
+export { disciplinasRoutes } from "./disciplinas.routes.js";
+export { configuracaoAvaliacaoRoutes } from "./configuracao-avaliacao.routes.js";
+export { avaliacoesRoutes } from "./avaliacoes.routes.js";
+export { notasRoutes } from "./notas.routes.js";

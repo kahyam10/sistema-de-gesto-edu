@@ -36,8 +36,10 @@ import {
   Wheelchair,
   Users,
   Clock,
+  UploadSimple,
+  Eye,
 } from "@phosphor-icons/react";
-import { Matricula } from "@/lib/api";
+import { Matricula, API_BASE_URL, DocumentoMatricula } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +56,10 @@ import {
   useEscolas,
   useEtapas,
   useTurmas,
+  useConfirmarMatricula,
+  useTransferirMatricula,
+  useDocumentosMatricula,
+  useUploadDocumento,
 } from "@/hooks/useApi";
 import { toast } from "sonner";
 
@@ -67,6 +73,7 @@ const statusLabels: Record<string, string> = {
   CANCELADA: "Cancelada",
   TRANSFERIDA: "Transferida",
   CONCLUIDA: "Concluída",
+  AGUARDANDO_VAGA: "Aguardando vaga",
 };
 
 const statusColors: Record<string, string> = {
@@ -74,6 +81,17 @@ const statusColors: Record<string, string> = {
   CANCELADA: "bg-red-100 text-red-800",
   TRANSFERIDA: "bg-amber-100 text-amber-800",
   CONCLUIDA: "bg-blue-100 text-blue-800",
+  AGUARDANDO_VAGA: "bg-slate-100 text-slate-800",
+};
+
+const parseDocumentos = (value?: string) => {
+  if (!value) return [] as string[];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [] as string[];
+  }
 };
 
 export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
@@ -82,8 +100,17 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
   const { data: etapas = [] } = useEtapas();
   const { data: turmas = [] } = useTurmas();
   const updateMatricula = useUpdateMatricula();
+  const confirmarMatricula = useConfirmarMatricula();
+  const transferirMatricula = useTransferirMatricula();
+  const { data: documentos } = useDocumentosMatricula(matriculaId);
+  const uploadDocumento = useUploadDocumento();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEnturmarOpen, setIsEnturmarOpen] = useState(false);
+  const [turmaSelecionada, setTurmaSelecionada] = useState("");
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [escolaDestino, setEscolaDestino] = useState("");
+  const [turmaDestino, setTurmaDestino] = useState("");
   const [formData, setFormData] = useState({
     nomeAluno: "",
     dataNascimento: "",
@@ -109,6 +136,24 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
   const turmaVinculada = turmas.find((t) => 
     t.matriculas?.some((m) => m.id === matriculaId)
   );
+
+  const turmasDisponiveis = turmas.filter((turma) => {
+    if (!matricula) return false;
+    return (
+      turma.escolaId === matricula.escolaId &&
+      turma.anoLetivo === matricula.anoLetivo &&
+      turma.ativo !== false
+    );
+  });
+
+  const turmasDestinoDisponiveis = turmas.filter((turma) => {
+    if (!matricula || !escolaDestino) return false;
+    return (
+      turma.escolaId === escolaDestino &&
+      turma.anoLetivo === matricula.anoLetivo &&
+      turma.ativo !== false
+    );
+  });
 
   // Calcular idade
   const calcularIdade = (dataNascimento: string): number => {
@@ -219,6 +264,9 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
   }
 
   const idade = calcularIdade(matricula.dataNascimento);
+  const documentosEntregues = parseDocumentos(matricula.documentosEntregues);
+  const podeEnturmar =
+    matricula.status === "AGUARDANDO_VAGA" || !turmaVinculada;
 
   return (
     <div className="space-y-6">
@@ -239,6 +287,16 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {podeEnturmar && (
+            <Button variant="outline" onClick={() => setIsEnturmarOpen(true)}>
+              <Chalkboard className="h-4 w-4 mr-2" />
+              Enturmar
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => setIsTransferOpen(true)}>
+            <Buildings className="h-4 w-4 mr-2" />
+            Transferir
+          </Button>
           <Button variant="outline" onClick={openEdit}>
             <Pencil className="h-4 w-4 mr-2" />
             Editar
@@ -394,6 +452,127 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
                 <span>{matricula.emailResponsavel}</span>
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Documentos e observações */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <IdentificationCard className="h-5 w-5" />
+            Documentação e Observações
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Documentos entregues</p>
+              {documentosEntregues.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum documento informado.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {documentosEntregues.map((doc) => (
+                    <Badge key={doc} variant="outline">
+                      {doc}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            {matricula.observacoes && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Observações</p>
+                <p className="text-sm">{matricula.observacoes}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Documentos Digitalizados */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <UploadSimple className="h-5 w-5" />
+            Documentos Digitalizados
+          </CardTitle>
+          <CardDescription>
+            Envie os documentos do aluno (JPG, PNG, PDF - max 5MB)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { key: "foto", label: "Foto 3x4", accept: "image/*" },
+              { key: "rg", label: "RG", accept: "image/*,application/pdf" },
+              { key: "cpf", label: "CPF", accept: "image/*,application/pdf" },
+              { key: "comprovante", label: "Comprovante de Residencia", accept: "image/*,application/pdf" },
+              { key: "certidao", label: "Certidao de Nascimento", accept: "image/*,application/pdf" },
+              { key: "historico", label: "Historico Escolar", accept: "image/*,application/pdf" },
+            ].map(({ key, label, accept }) => {
+              const docPath = documentos?.[key as keyof DocumentoMatricula] as string | null;
+              return (
+                <div key={key} className="p-4 border rounded-lg space-y-2">
+                  <p className="text-sm font-medium">{label}</p>
+                  {docPath ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-green-600 border-green-300">
+                        Enviado
+                      </Badge>
+                      <a
+                        href={`${API_BASE_URL}${docPath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                      >
+                        <Eye className="h-3 w-3" />
+                        Visualizar
+                      </a>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept={accept}
+                        id={`doc-${key}`}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error("Arquivo muito grande. Maximo: 5MB");
+                            return;
+                          }
+                          await uploadDocumento.mutateAsync({
+                            matriculaId,
+                            file,
+                            tipo: key,
+                          });
+                          e.target.value = "";
+                        }}
+                        disabled={uploadDocumento.isPending}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById(`doc-${key}`)?.click()}
+                        disabled={uploadDocumento.isPending}
+                      >
+                        {uploadDocumento.isPending ? (
+                          <Spinner className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <UploadSimple className="h-4 w-4 mr-2" />
+                        )}
+                        Enviar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -653,6 +832,136 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
               )}
               Salvar
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Enturmação */}
+      <Dialog open={isEnturmarOpen} onOpenChange={setIsEnturmarOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Enturmar aluno</DialogTitle>
+            <DialogDescription>
+              Selecione uma turma disponível para confirmar a matrícula.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Turma</Label>
+              <Select
+                value={turmaSelecionada}
+                onValueChange={(value) => setTurmaSelecionada(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a turma" />
+                </SelectTrigger>
+                <SelectContent>
+                  {turmasDisponiveis.map((turma) => (
+                    <SelectItem key={turma.id} value={turma.id}>
+                      {turma.nome} • {turma.turno}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsEnturmarOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!turmaSelecionada) return;
+                  await confirmarMatricula.mutateAsync({
+                    id: matricula.id,
+                    turmaId: turmaSelecionada,
+                  });
+                  setIsEnturmarOpen(false);
+                  setTurmaSelecionada("");
+                }}
+                disabled={confirmarMatricula.isPending || !turmaSelecionada}
+              >
+                {confirmarMatricula.isPending ? "Confirmando..." : "Confirmar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Transferência */}
+      <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Transferir matrícula</DialogTitle>
+            <DialogDescription>
+              Selecione a escola e a turma de destino.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Escola de destino</Label>
+              <Select
+                value={escolaDestino}
+                onValueChange={(value) => {
+                  setEscolaDestino(value);
+                  setTurmaDestino("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a escola" />
+                </SelectTrigger>
+                <SelectContent>
+                  {escolas
+                    .filter((item) => item.ativo)
+                    .map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Turma de destino (opcional)</Label>
+              <Select
+                value={turmaDestino}
+                onValueChange={(value) => setTurmaDestino(value)}
+                disabled={!escolaDestino}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a turma" />
+                </SelectTrigger>
+                <SelectContent>
+                  {turmasDestinoDisponiveis.map((turma) => (
+                    <SelectItem key={turma.id} value={turma.id}>
+                      {turma.nome} • {turma.turno}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsTransferOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!matricula || !escolaDestino) return;
+                  await transferirMatricula.mutateAsync({
+                    id: matricula.id,
+                    escolaId: escolaDestino,
+                    turmaId: turmaDestino || undefined,
+                  });
+                  setIsTransferOpen(false);
+                  setEscolaDestino("");
+                  setTurmaDestino("");
+                }}
+                disabled={transferirMatricula.isPending || !escolaDestino}
+              >
+                {transferirMatricula.isPending
+                  ? "Transferindo..."
+                  : "Transferir"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

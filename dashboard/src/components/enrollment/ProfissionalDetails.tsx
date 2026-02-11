@@ -54,6 +54,8 @@ import {
   useAddFormacao,
   useUpdateFormacao,
   useDeleteFormacao,
+  useGradeHorariaByProfissional,
+  useCargaHorariaResumo,
 } from "@/hooks/useApi";
 import { toast } from "sonner";
 
@@ -86,6 +88,34 @@ const turnoLabels: Record<string, string> = {
   NOTURNO: "Noturno",
   INTEGRAL: "Integral",
 };
+
+function toMinutes(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function detectConflicts(horarios: { diaSemana: string; horaInicio: string; horaFim: string; id: string }[]) {
+  const conflitos = new Set<string>();
+  const porDia = horarios.reduce((acc, item) => {
+    acc[item.diaSemana] = acc[item.diaSemana] || [];
+    acc[item.diaSemana].push(item);
+    return acc;
+  }, {} as Record<string, typeof horarios>);
+
+  Object.values(porDia).forEach((lista) => {
+    const ordenado = [...lista].sort((a, b) => toMinutes(a.horaInicio) - toMinutes(b.horaInicio));
+    for (let i = 1; i < ordenado.length; i++) {
+      const anterior = ordenado[i - 1];
+      const atual = ordenado[i];
+      if (toMinutes(atual.horaInicio) < toMinutes(anterior.horaFim)) {
+        conflitos.add(anterior.id);
+        conflitos.add(atual.id);
+      }
+    }
+  });
+
+  return conflitos;
+}
 
 // Subcomponente: Lista de Escolas Vinculadas
 function EscolasVinculadasView({ 
@@ -706,11 +736,13 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
   const { data: profissionais, isLoading: loadingProfissionais } = useProfissionais();
   const { data: escolas = [], isLoading: loadingEscolas } = useEscolas();
   const { data: allTurmas = [] } = useTurmas();
+  const { data: horarios = [] } = useGradeHorariaByProfissional(profissionalId);
+  const { data: cargaResumo = [] } = useCargaHorariaResumo(profissionalId);
   const updateProfissional = useUpdateProfissional();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [buscaEscola, setBuscaEscola] = useState("");
-  const [currentView, setCurrentView] = useState<"main" | "escolas" | "turmas" | "formacao">("main");
+  const [currentView, setCurrentView] = useState<"main" | "escolas" | "turmas" | "formacao" | "horarios">("main");
   const [formData, setFormData] = useState({
     nome: "",
     cpf: "",
@@ -750,6 +782,7 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
     const turma = allTurmas.find((t) => t.id === tv.turma?.id);
     return acc + (turma?.matriculas?.length || 0);
   }, 0);
+  const cargaAtual = cargaResumo[0];
 
   // Abrir modal de edição
   const openEdit = () => {
@@ -874,6 +907,68 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
     );
   }
 
+  if (currentView === "horarios") {
+    const conflitos = detectConflicts(horarios);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setCurrentView("main")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <BookOpen className="h-6 w-6" />
+              Horários do Profissional
+            </h2>
+            <p className="text-muted-foreground">
+              Grade de aulas vinculadas ao professor
+            </p>
+          </div>
+          <Badge variant="secondary">{horarios.length} horário(s)</Badge>
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {horarios.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum horário cadastrado</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {horarios.map((horario) => (
+                  <div
+                    key={horario.id}
+                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {horario.diaSemana} • {horario.horaInicio} - {horario.horaFim}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {horario.disciplina}
+                        {horario.turma?.nome ? ` • ${horario.turma.nome}` : ""}
+                      </p>
+                      {horario.turma?.escola?.nome && (
+                        <p className="text-xs text-muted-foreground">
+                          {horario.turma.escola.nome}
+                        </p>
+                      )}
+                    </div>
+                    {conflitos.has(horario.id) && (
+                      <Badge variant="destructive">Conflito</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header com botão voltar - estilo igual ao EscolaDetails */}
@@ -900,6 +995,10 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
             <Chalkboard className="h-4 w-4 mr-2" />
             Turmas
           </Button>
+          <Button variant="outline" onClick={() => setCurrentView("horarios")}>
+            <BookOpen className="h-4 w-4 mr-2" />
+            Horários
+          </Button>
           <Button variant="outline" onClick={() => setCurrentView("formacao")}>
             <Certificate className="h-4 w-4 mr-2" />
             Formação
@@ -925,6 +1024,22 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
               <div>
                 <p className="text-2xl font-bold">{totalEscolas}</p>
                 <p className="text-sm text-muted-foreground">Escolas Vinculadas</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-100 rounded-lg">
+                <BookOpen className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {cargaAtual ? Math.round(cargaAtual.totalMinutos / 60) : 0}h
+                </p>
+                <p className="text-sm text-muted-foreground">Carga Horária</p>
               </div>
             </div>
           </CardContent>

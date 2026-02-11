@@ -57,6 +57,9 @@ import {
   useUpdateProfissional,
   useDeleteProfissional,
   useEscolas,
+  useLotacaoResumo,
+  useCargaHorariaResumo,
+  useCargaHorariaPorEscola,
 } from "@/hooks/useApi";
 import type { ProfissionalEducacao } from "@/lib/api";
 import { ProfissionalDetails } from "./ProfissionalDetails";
@@ -114,6 +117,9 @@ export function ProfissionaisManager() {
   // API Hooks
   const { data: profissionais = [], isLoading } = useProfissionais();
   const { data: escolas = [] } = useEscolas();
+  const { data: lotacaoResumo = [] } = useLotacaoResumo();
+  const { data: cargaResumo = [] } = useCargaHorariaResumo();
+  const { data: cargaPorEscola = [] } = useCargaHorariaPorEscola();
   const createMutation = useCreateProfissional();
   const updateMutation = useUpdateProfissional();
   const deleteMutation = useDeleteProfissional();
@@ -552,6 +558,103 @@ export function ProfissionaisManager() {
         </div>
       </CardHeader>
       <CardContent>
+        {lotacaoResumo.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+              Relatório de lotação por escola
+            </h4>
+            <div className="grid gap-3 md:grid-cols-2">
+              {lotacaoResumo.map((item) => (
+                <div
+                  key={item.escolaId}
+                  className="rounded-lg border p-4 bg-muted/20"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        {item.escolaNome}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.total} profissional(is)
+                      </p>
+                    </div>
+                    <Badge variant="outline">Total: {item.total}</Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {Object.entries(item.porTipo).map(([tipo, total]) => (
+                      <Badge key={tipo} variant="secondary" className="text-xs">
+                        {tipoLabels[tipo as TipoProfissional] || tipo}: {total}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cargaResumo.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+              Carga horária por profissional
+            </h4>
+            <div className="grid gap-3 md:grid-cols-2">
+              {cargaResumo.map((item) => (
+                <div
+                  key={item.profissionalId}
+                  className="rounded-lg border p-4 bg-muted/20"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        {item.profissionalNome}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.totalAulas} aula(s)
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {Math.round(item.totalMinutos / 60)}h
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cargaPorEscola.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+              Carga horária por escola
+            </h4>
+            <div className="grid gap-3 md:grid-cols-2">
+              {cargaPorEscola.map((item) => (
+                <div
+                  key={item.escolaId}
+                  className="rounded-lg border p-4 bg-muted/20"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        {item.escolaNome}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.totalAulas} aula(s)
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {Math.round(item.totalMinutos / 60)}h
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mb-4 flex items-center gap-4">
           <div className="w-48">
             <Select value={filtroTipo} onValueChange={setFiltroTipo}>

@@ -179,6 +179,71 @@ export class TurmaService {
       limitePCD: turma.limitePCD,
     };
   }
+
+  async getVagasResumo(escolaId?: string, anoLetivo?: number) {
+    const turmas = await prisma.turma.findMany({
+      where: {
+        ...(escolaId && { escolaId }),
+        ...(anoLetivo && { anoLetivo }),
+      },
+      include: {
+        escola: true,
+        matriculas: { select: { possuiDeficiencia: true } },
+      },
+    });
+
+    const resumoMap = new Map<
+      string,
+      {
+        escolaId: string;
+        escolaNome: string;
+        totalTurmas: number;
+        capacidadeTotal: number;
+        alunosTotal: number;
+        pcdTotal: number;
+        vagasDisponiveis: number;
+        vagasPCDDisponiveis: number;
+        turmasLotadas: number;
+      }
+    >();
+
+    turmas.forEach((turma) => {
+      const totalAlunos = turma.matriculas.length;
+      const totalPCD = turma.matriculas.filter(
+        (m: { possuiDeficiencia: boolean }) => m.possuiDeficiencia
+      ).length;
+      const vagas = Math.max(turma.capacidadeMaxima - totalAlunos, 0);
+      const vagasPCD = Math.max(turma.limitePCD - totalPCD, 0);
+      const lotada = totalAlunos >= turma.capacidadeMaxima;
+
+      const current = resumoMap.get(turma.escolaId) || {
+        escolaId: turma.escolaId,
+        escolaNome: turma.escola?.nome || "N/A",
+        totalTurmas: 0,
+        capacidadeTotal: 0,
+        alunosTotal: 0,
+        pcdTotal: 0,
+        vagasDisponiveis: 0,
+        vagasPCDDisponiveis: 0,
+        turmasLotadas: 0,
+      };
+
+      resumoMap.set(turma.escolaId, {
+        ...current,
+        totalTurmas: current.totalTurmas + 1,
+        capacidadeTotal: current.capacidadeTotal + turma.capacidadeMaxima,
+        alunosTotal: current.alunosTotal + totalAlunos,
+        pcdTotal: current.pcdTotal + totalPCD,
+        vagasDisponiveis: current.vagasDisponiveis + vagas,
+        vagasPCDDisponiveis: current.vagasPCDDisponiveis + vagasPCD,
+        turmasLotadas: current.turmasLotadas + (lotada ? 1 : 0),
+      });
+    });
+
+    return Array.from(resumoMap.values()).sort((a, b) =>
+      a.escolaNome.localeCompare(b.escolaNome)
+    );
+  }
 }
 
 export const turmaService = new TurmaService();

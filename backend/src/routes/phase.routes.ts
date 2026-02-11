@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { phaseService } from "../services/phase.service";
+import { authMiddleware } from "../middleware/auth.js";
 
 interface CreatePhaseBody {
   name: string;
@@ -26,6 +27,8 @@ interface IdParams {
 }
 
 export async function phaseRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", authMiddleware);
+
   // GET /api/phases - Listar todas as fases
   app.get(
     "/api/phases",
