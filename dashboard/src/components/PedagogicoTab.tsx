@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, PencilLine, Certificate, GearSix, CalendarCheck, Clock } from "@phosphor-icons/react";
+import { BookOpen, PencilLine, Certificate, GearSix, CalendarCheck, Clock, FileText } from "@phosphor-icons/react";
 import { DisciplinasManager } from "@/components/enrollment/DisciplinasManager";
 import { FrequenciaManager } from "@/components/enrollment/FrequenciaManager";
 import { NotasManager } from "@/components/enrollment/NotasManager";
 import { BoletimDigital } from "@/components/enrollment/BoletimDigital";
 import { ConfiguracaoAvaliacaoManager } from "@/components/enrollment/ConfiguracaoAvaliacaoManager";
 import { GradeHorariaManager } from "@/components/enrollment/GradeHorariaManager";
+import { RelatorioFrequenciaMensal } from "@/components/enrollment/RelatorioFrequenciaMensal";
 
 export function PedagogicoTab() {
   const [activeSubTab, setActiveSubTab] = useState("frequencia");
@@ -25,7 +26,7 @@ export function PedagogicoTab() {
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-7 h-auto">
           <TabsTrigger
             value="frequencia"
             className="flex items-center gap-2 py-3"
@@ -33,6 +34,14 @@ export function PedagogicoTab() {
             <CalendarCheck className="h-4 w-4" />
             <span className="hidden sm:inline">Frequencia</span>
             <span className="sm:hidden">Freq.</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="relatorio-freq"
+            className="flex items-center gap-2 py-3"
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Relat. Freq.</span>
+            <span className="sm:hidden">Relat.</span>
           </TabsTrigger>
           <TabsTrigger
             value="grade"
@@ -78,6 +87,10 @@ export function PedagogicoTab() {
 
         <TabsContent value="frequencia" className="mt-6">
           <FrequenciaManager />
+        </TabsContent>
+
+        <TabsContent value="relatorio-freq" className="mt-6">
+          <RelatorioFrequenciaMensal />
         </TabsContent>
 
         <TabsContent value="grade" className="mt-6">

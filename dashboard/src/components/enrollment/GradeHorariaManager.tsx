@@ -54,6 +54,7 @@ import {
   useDisciplinas,
 } from "@/hooks/useApi";
 import type { GradeHorario } from "@/lib/api";
+import { ImpressaoGradeHoraria } from "@/components/enrollment/ImpressaoGradeHoraria";
 
 const DIAS_SEMANA = [
   { value: "SEGUNDA", label: "Segunda-feira" },
@@ -247,10 +248,20 @@ export function GradeHorariaManager() {
                 {gradeHoraria.length} aulas cadastradas na grade
               </CardDescription>
             </div>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Horario
-            </Button>
+            <div className="flex gap-2">
+              <ImpressaoGradeHoraria
+                turmaNome={turmas.find((t) => t.id === selectedTurmaId)?.nome || ""}
+                turno={turmas.find((t) => t.id === selectedTurmaId)?.turno || ""}
+                escolaNome={escolas.find((e) => e.id === selectedEscolaId)?.nome || ""}
+                gradeHoraria={gradeHoraria}
+                gradeByDia={gradeByDia}
+                getProfissionalNome={getProfissionalNome}
+              />
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Horario
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingGrade ? (
