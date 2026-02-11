@@ -133,6 +133,59 @@ FUTURO (nao prioritario para v1.0):
 [ ] Paginacao server-side (atual: client-side funcional)
 ```
 
+### Componentes Principais - Modulo 1
+
+#### Geracao de PDFs (@react-pdf/renderer)
+- **FichaMatriculaPDF.tsx** (217 linhas)
+  - Ficha oficial formatada em A4
+  - Secoes: Dados do Aluno, Escola, Responsavel, Saude, Emergencia
+  - Logo/cabecalho da Prefeitura Municipal
+  - Estilo profissional com bordas e espacamento
+  - Download via `pdf().toBlob()` + nomenclatura automatica
+
+- **DeclaracaoMatriculaPDF.tsx** (217 linhas)
+  - Declaracao oficial de matricula
+  - Texto formal da Secretaria Municipal
+  - Dados escolares formatados como lista
+  - Linha de assinatura
+  - Rodape com data e origem eletron ica
+
+#### Relatorios e Consultas
+- **RelatorioPCD.tsx** (387 linhas)
+  - Filtros: Escola (select) + Ano Letivo (select)
+  - 3 Cards de resumo: Total PCD, Escolas com PCD, Percentual
+  - Tabelas agrupadas automaticamente por escola
+  - Botao "Exportar PDF" por escola
+  - PDF interno com mesmo layout profissional
+  - Empty state quando nao ha alunos PCD
+
+- **HistoricoMatriculas.tsx** (231 linhas)
+  - Busca automatica de todas as matriculas do aluno
+  - Filtragem inteligente: CPF (prioridade) > Nome
+  - Tabela ordenada por ano (mais recente primeiro)
+  - Destaque visual da matricula atual (bg-blue-50)
+  - 4 Cards de resumo: Anos no Sistema, Ativas, Concluidas, Escolas
+  - Informacoes completas: matricula, escola, etapa, serie, turma, data, status
+
+- **AlertasTurmas.tsx** (316 linhas)
+  - Monitoramento automatico de ocupacao >= 75%
+  - Classificacao por nivel:
+    - Atencao (75-89%): badge amarelo
+    - Critico (90-99%): badge laranja
+    - Lotada (100%+): badge vermelho
+  - 4 Cards de resumo: Total Turmas, Lotadas, Criticas, Atencao
+  - Tabela com Progress bars coloridas dinamicamente
+  - Secao de recomendacoes contextuais
+  - Empty state positivo quando tudo OK
+
+#### Integracao no Dashboard
+- **CadastrosTab.tsx**: Nova aba "Relatorio PCD" (grid-cols-7)
+- **OverviewTab.tsx**: AlertasTurmas exibido antes do progresso do sistema
+- **AlunoDetails.tsx**:
+  - Botoes "Ficha" e "Declaracao" no header
+  - HistoricoMatriculas substituindo timeline simples
+  - Handlers de download com toast notifications
+
 ---
 
 ## MODULO 2: GESTAO PEDAGOGICA
