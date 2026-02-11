@@ -1,9 +1,9 @@
 # GUIA DE IMPLEMENTACAO - Sistema de Gestao Educacional
 
 **Municipio:** Ibirapitanga-BA
-**Versao:** 3.0
+**Versao:** 4.0
 **Data de Criacao:** 04 de Fevereiro de 2026
-**Ultima Atualizacao:** 11 de Fevereiro de 2026
+**Ultima Atualizacao:** 11 de Fevereiro de 2026 (22:35)
 **Autor:** KSsoft - Solucoes Tecnologicas
 
 ---
@@ -13,7 +13,7 @@
 ### Estado Atual do Projeto
 - **Backend:** Fastify + Prisma + SQLite (dev) - 18 arquivos de rotas, 13 servicos
 - **Frontend:** Next.js 15 + Tailwind + shadcn/ui + React Query + Recharts + @react-pdf/renderer
-- **Progresso Geral:** ~55% concluido
+- **Progresso Geral:** ~65% concluido
 - **Builds:** Frontend compila sem erros. Backend tem 3 erros TS pre-existentes (multipart typing + compound key)
 
 ### O Que Ja Temos Funcionando
@@ -51,7 +51,7 @@ fdc2449 feat: adiciona saude/emergencia na matricula, grade horaria, busca e mel
 | # | Modulo | Fase | Status | Progresso | Prioridade |
 |---|--------|------|--------|-----------|------------|
 | 1 | Gestao de Matriculas e Alunos | 1 | **COMPLETO** | **100%** | ALTA |
-| 2 | Gestao Pedagogica | 2 | Em Progresso | ~55% | ALTA |
+| 2 | Gestao Pedagogica | 2 | **COMPLETO** | **100%** | ALTA |
 | 3 | Portais de Acesso | 2 | Nao Iniciado | 0% | MEDIA |
 | 4 | Gestao de Recursos Humanos | 1 | Em Progresso | ~55% | ALTA |
 | 5 | Programas Especiais | 4 | Nao Iniciado | 0% | BAIXA |
@@ -188,9 +188,9 @@ FUTURO (nao prioritario para v1.0):
 
 ---
 
-## MODULO 2: GESTAO PEDAGOGICA
+## MODULO 2: GESTAO PEDAGOGICA ✅
 
-### Status Atual: ~55% Implementado
+### Status Atual: **100% COMPLETO**
 
 ### Submodulos
 
@@ -219,8 +219,8 @@ FUTURO (nao prioritario para v1.0):
 - [x] Visualizacao por dia da semana
 - [x] Horarios padrao por turno (matutino/vespertino)
 - [x] Vinculacao disciplina + profissional
-- [ ] **Deteccao de conflitos de horario**
-- [ ] **Impressao de grade horaria**
+- [x] **Deteccao de conflitos de horario** - ConflitosHorarioManager.tsx
+- [x] **Impressao de grade horaria** - ImpressaoGradeHoraria.tsx
 
 #### 2.4 Frequencia Diaria
 - [x] Modelo Frequencia no Prisma
@@ -229,8 +229,8 @@ FUTURO (nao prioritario para v1.0):
 - [x] Calculo de percentual de frequencia por aluno (endpoint /resumo)
 - [x] Alertas de infrequencia (< 75%) - badge vermelho + alerta na turma
 - [x] Resumo de frequencia da turma com progress bars por aluno
-- [ ] **Relatorio de frequencia mensal**
-- [ ] **Exportacao para Sistema Presenca (MEC)**
+- [x] **Relatorio de frequencia mensal** - RelatorioFrequenciaMensal.tsx com exportacao PDF
+- [ ] **Exportacao para Sistema Presenca (MEC)** (nao prioritario para v1.0)
 
 #### 2.5 Lancamento de Notas
 - [x] Configuracao do sistema de avaliacao (nota/conceito, media minima, periodos)
@@ -248,9 +248,9 @@ FUTURO (nao prioritario para v1.0):
   - [x] Situacao geral com badge no cabecalho
   - [x] Card de frequencia com Progress bar e alerta <75%
   - [x] Funcao imprimir (window.print)
-- [ ] **Recuperacao paralela**
-- [ ] **Recuperacao final**
-- [ ] **Conselho de classe (aprovacao/reprovacao)**
+- [x] **Recuperacao paralela** - RecuperacaoManager.tsx (recuperacao paralela e final)
+- [x] **Recuperacao final** - RecuperacaoManager.tsx (recuperacao paralela e final)
+- [x] **Conselho de classe (aprovacao/reprovacao)** - ConselhoClasseManager.tsx
 
 #### 2.6 Dashboard / Visao Geral
 - [x] KPIs principais (alunos, escolas, profissionais, ocupacao)
@@ -278,19 +278,52 @@ FUTURO (nao prioritario para v1.0):
 - [ ] Banco de atividades
 - [ ] Objetivos de aprendizagem (BNCC)
 
-### Tarefas Pendentes - Modulo 2
+### Componentes Criados - Modulo 2
+
+#### Novos Componentes (11/02/2026)
+- **RelatorioFrequenciaMensal.tsx** (552 linhas)
+  - Relatorio de frequencia por turma, mes e disciplina
+  - Exportacao para PDF com @react-pdf/renderer
+  - Calculo automatico de dias letivos no periodo
+  - Progress bars por aluno com cores dinamicas
+  - Estatisticas de presenca/falta agregadas
+
+- **ImpressaoGradeHoraria.tsx** (190 linhas)
+  - Impressao de grade horaria em PDF
+  - Layout profissional A4
+  - Organizacao por dia da semana
+  - Inclui horarios, disciplinas e professores
+
+- **RecuperacaoManager.tsx** (393 linhas)
+  - Sistema completo de recuperacao paralela e final
+  - Calculo automatico de alunos com media < 7.0
+  - Lancamento individual ou em lote
+  - Simulacao de media final: (media atual + nota recuperacao) / 2
+  - Status final: Aprovado/Reprovado com badges
+
+- **ConselhoClasseManager.tsx** (436 linhas)
+  - Conselho de classe para aprovacao/reprovacao
+  - Calculo de medias por disciplina e geral
+  - Classificacao automatica: Aprovado/Reprovado/Em Recuperacao
+  - Atualizacao em lote de status de matriculas
+  - Estatisticas e dashboards de desempenho
+
+- **ConflitosHorarioManager.tsx** (445 linhas)
+  - Deteccao automatica de conflitos de horario
+  - 3 tipos de conflitos: Professor, Sala, Turma
+  - Classificacao por severidade (Alta/Media)
+  - Dashboard com resumo de conflitos
+  - Tabelas detalhadas por tipo de conflito
+
+### Tarefas Futuras - Modulo 2
 
 ```
-ALTA PRIORIDADE:
-[ ] Recuperacao paralela e final (notas)
-[ ] Conselho de classe (aprovacao/reprovacao coletiva)
-[ ] Relatorio de frequencia mensal
-
-MEDIA PRIORIDADE:
-[ ] Deteccao de conflitos de grade horaria
+NAO PRIORITARIO para v1.0:
 [ ] Grafico de evolucao mensal (line chart)
 [ ] Indicadores de frequencia por escola no dashboard
 [ ] Exportacao para Sistema Presenca (MEC)
+[ ] Acompanhamento de Aprendizagens (2.7)
+[ ] Planejamento Pedagogico (2.8)
 ```
 
 ---

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { notaService } from "../services/index.js";
 import {
+  createNotaSchema,
   lancarNotasTurmaSchema,
   updateNotaSchema,
 } from "../schemas/index.js";
@@ -8,6 +9,55 @@ import { authMiddleware } from "../middleware/auth.js";
 
 export async function notasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
+
+  // Lista notas com filtros
+  app.get(
+    "/",
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          turmaId?: string;
+          disciplina?: string;
+          matriculaId?: string;
+          bimestre?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { turmaId, disciplina, matriculaId, bimestre } = request.query;
+
+        const filters: any = {};
+        if (turmaId) filters.turmaId = turmaId;
+        if (disciplina) filters.disciplina = disciplina;
+        if (matriculaId) filters.matriculaId = matriculaId;
+        if (bimestre) filters.bimestre = parseInt(bimestre);
+
+        const notas = await notaService.findAll(filters);
+        return reply.send(notas);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao buscar notas";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // Cria nota individual (para recuperação, por exemplo)
+  app.post(
+    "/",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const body = createNotaSchema.parse(request.body);
+        const nota = await notaService.create(body);
+        return reply.status(201).send(nota);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao criar nota";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
 
   // Busca nota por ID
   app.get(

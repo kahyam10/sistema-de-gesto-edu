@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
+import { CreateNotaInput, LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
 import { frequenciaService } from "./frequencia.service.js";
 
 interface BoletimDisciplina {
@@ -64,6 +64,86 @@ export class NotaService {
     });
   }
 
+  async findAll(filters?: {
+    turmaId?: string;
+    disciplina?: string;
+    matriculaId?: string;
+    bimestre?: number;
+  }) {
+    const where: any = {};
+
+    if (filters?.turmaId) where.turmaId = filters.turmaId;
+    if (filters?.disciplina) where.disciplina = filters.disciplina;
+    if (filters?.matriculaId) where.matriculaId = filters.matriculaId;
+    if (filters?.bimestre) where.bimestre = filters.bimestre;
+
+    return prisma.nota.findMany({
+      where,
+      include: {
+        avaliacao: {
+          select: {
+            id: true,
+            nome: true,
+            tipo: true,
+            peso: true,
+            valorMaximo: true,
+          },
+        },
+        matricula: {
+          select: { id: true, nomeAluno: true, numeroMatricula: true },
+        },
+      },
+      orderBy: [
+        { disciplina: "asc" },
+        { bimestre: "asc" },
+        { createdAt: "asc" },
+      ],
+    });
+  }
+
+  async create(data: CreateNotaInput) {
+    // Verifica se matrícula existe e pertence à turma
+    const matricula = await prisma.matricula.findUnique({
+      where: { id: data.matriculaId },
+      include: { turma: true },
+    });
+
+    if (!matricula) {
+      throw new Error("Matrícula não encontrada");
+    }
+
+    if (matricula.turmaId !== data.turmaId) {
+      throw new Error("Matrícula não pertence à turma especificada");
+    }
+
+    // Cria a nota
+    return prisma.nota.create({
+      data: {
+        matriculaId: data.matriculaId,
+        turmaId: data.turmaId,
+        disciplina: data.disciplina,
+        bimestre: data.bimestre,
+        avaliacaoId: data.avaliacaoId ?? undefined,
+        valor: data.valor,
+        observacao: data.observacao,
+      },
+      include: {
+        avaliacao: {
+          select: {
+            id: true,
+            nome: true,
+            tipo: true,
+            peso: true,
+            valorMaximo: true,
+          },
+        },
+        matricula: {
+          select: { id: true, nomeAluno: true, numeroMatricula: true },
+        },
+      },
+    });
+  }
+
   /**
    * Lança notas em lote para uma avaliação.
    * Faz upsert: cria se não existe, atualiza se já existe.
@@ -74,6 +154,7 @@ export class NotaService {
       where: { id: data.avaliacaoId },
       include: {
         turma: { include: { matriculas: { where: { status: "ATIVA" } } } },
+        disciplina: true,
       },
     });
 
@@ -113,6 +194,9 @@ export class NotaService {
           create: {
             avaliacaoId: data.avaliacaoId,
             matriculaId: nota.matriculaId,
+            turmaId: avaliacao.turmaId,
+            disciplina: avaliacao.disciplina.nome,
+            bimestre: avaliacao.bimestre,
             valor: nota.valor,
             observacao: nota.observacao,
           },
@@ -137,7 +221,7 @@ export class NotaService {
       throw new Error("Nota não encontrada");
     }
 
-    if (data.valor !== undefined) {
+    if (data.valor !== undefined && nota.avaliacaoId) {
       const avaliacao = await prisma.avaliacao.findUnique({
         where: { id: nota.avaliacaoId },
       });

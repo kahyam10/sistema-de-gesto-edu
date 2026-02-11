@@ -325,8 +325,11 @@ export const updateAvaliacaoSchema = z.object({
 export const createNotaSchema = z.object({
   valor: z.number().min(0),
   observacao: z.string().optional(),
-  avaliacaoId: z.string().min(1, "Avaliação é obrigatória"),
+  avaliacaoId: z.string().nullable().optional(),
   matriculaId: z.string().min(1, "Matrícula é obrigatória"),
+  turmaId: z.string().min(1, "Turma é obrigatória"),
+  disciplina: z.string().min(1, "Disciplina é obrigatória"),
+  bimestre: z.number().int().min(1).max(5), // 1-4 bimestres regulares, 5 = recuperação final
 });
 
 export const updateNotaSchema = z.object({

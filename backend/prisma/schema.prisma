@@ -188,6 +188,7 @@ model Turma {
   horarios      GradeHoraria[]
   frequencias   Frequencia[]
   avaliacoes    Avaliacao[]
+  notas         Nota[]
 
   @@map("turmas")
 }
@@ -683,9 +684,15 @@ model Nota {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // Campos adicionais para notas de recuperação (quando avaliacaoId é null)
+  turmaId    String
+  turma      Turma  @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  disciplina String
+  bimestre   Int    // 1-4 bimestres regulares, 5 = recuperação final
+
   // Relacionamentos
-  avaliacaoId String
-  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  avaliacaoId String?
+  avaliacao   Avaliacao? @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
 
   matriculaId String
   matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
@@ -693,5 +700,7 @@ model Nota {
   @@unique([avaliacaoId, matriculaId])
   @@index([matriculaId])
   @@index([avaliacaoId])
+  @@index([turmaId])
+  @@index([turmaId, disciplina])
   @@map("notas")
 }

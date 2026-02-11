@@ -657,6 +657,7 @@ export interface MatriculaEstatisticas {
 
 export interface CreateMatriculaData {
   anoLetivo: number;
+  status?: "ATIVA" | "TRANSFERIDA" | "CANCELADA" | "CONCLUIDA" | "AGUARDANDO_VAGA";
   nomeAluno: string;
   dataNascimento: string;
   cpfAluno?: string;
@@ -1639,7 +1640,10 @@ export interface Nota {
   id: string;
   valor: number;
   observacao?: string;
-  avaliacaoId: string;
+  turmaId: string;
+  disciplina: string;
+  bimestre: number;
+  avaliacaoId?: string | null;
   avaliacao?: Avaliacao;
   matriculaId: string;
   matricula?: Matricula;
@@ -1691,6 +1695,29 @@ export interface Boletim {
 }
 
 export const notasApi = {
+  list: (filters?: {
+    turmaId?: string;
+    disciplina?: string;
+    matriculaId?: string;
+    bimestre?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.disciplina) params.append("disciplina", filters.disciplina);
+    if (filters?.matriculaId) params.append("matriculaId", filters.matriculaId);
+    if (filters?.bimestre) params.append("bimestre", filters.bimestre.toString());
+    const queryString = params.toString();
+    return request<Nota[]>(`/api/notas${queryString ? `?${queryString}` : ""}`);
+  },
+  create: (data: {
+    matriculaId: string;
+    turmaId: string;
+    disciplina: string;
+    bimestre: number;
+    avaliacaoId: string | null;
+    valor: number;
+    observacao?: string;
+  }) => request<Nota>("/api/notas", { method: "POST", body: data }),
   get: (id: string) => request<Nota>(`/api/notas/${id}`),
   lancarTurma: (data: {
     avaliacaoId: string;

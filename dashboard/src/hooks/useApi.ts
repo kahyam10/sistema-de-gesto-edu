@@ -1897,6 +1897,36 @@ export function useDeleteAvaliacao() {
 
 // ==================== NOTAS ====================
 
+export function useNotas(filters?: {
+  turmaId?: string;
+  disciplina?: string;
+  matriculaId?: string;
+  bimestre?: number;
+}) {
+  return useQuery({
+    queryKey: ["notas", filters],
+    queryFn: () => notasApi.list(filters),
+    enabled: !!filters,
+  });
+}
+
+export function useCreateNota() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof notasApi.create>[0]) =>
+      notasApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notas"] });
+      queryClient.invalidateQueries({ queryKey: ["boletim"] });
+      toast.success("Nota criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar nota");
+    },
+  });
+}
+
 export function useLancarNotasTurma() {
   const queryClient = useQueryClient();
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, PencilLine, Certificate, GearSix, CalendarCheck, Clock, FileText } from "@phosphor-icons/react";
+import { BookOpen, PencilLine, Certificate, GearSix, CalendarCheck, Clock, FileText, ArrowCounterClockwise, Users, WarningCircle } from "@phosphor-icons/react";
 import { DisciplinasManager } from "@/components/enrollment/DisciplinasManager";
 import { FrequenciaManager } from "@/components/enrollment/FrequenciaManager";
 import { NotasManager } from "@/components/enrollment/NotasManager";
@@ -10,6 +10,9 @@ import { BoletimDigital } from "@/components/enrollment/BoletimDigital";
 import { ConfiguracaoAvaliacaoManager } from "@/components/enrollment/ConfiguracaoAvaliacaoManager";
 import { GradeHorariaManager } from "@/components/enrollment/GradeHorariaManager";
 import { RelatorioFrequenciaMensal } from "@/components/enrollment/RelatorioFrequenciaMensal";
+import { RecuperacaoManager } from "@/components/enrollment/RecuperacaoManager";
+import { ConselhoClasseManager } from "@/components/enrollment/ConselhoClasseManager";
+import { ConflitosHorarioManager } from "@/components/enrollment/ConflitosHorarioManager";
 
 export function PedagogicoTab() {
   const [activeSubTab, setActiveSubTab] = useState("frequencia");
@@ -26,7 +29,7 @@ export function PedagogicoTab() {
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full grid-cols-7 h-auto">
+        <TabsList className="grid w-full grid-cols-10 h-auto">
           <TabsTrigger
             value="frequencia"
             className="flex items-center gap-2 py-3"
@@ -76,6 +79,30 @@ export function PedagogicoTab() {
             <span className="sm:hidden">Boletim</span>
           </TabsTrigger>
           <TabsTrigger
+            value="recuperacao"
+            className="flex items-center gap-2 py-3"
+          >
+            <ArrowCounterClockwise className="h-4 w-4" />
+            <span className="hidden sm:inline">Recuperacao</span>
+            <span className="sm:hidden">Recup.</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="conselho"
+            className="flex items-center gap-2 py-3"
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Conselho</span>
+            <span className="sm:hidden">Cons.</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="conflitos"
+            className="flex items-center gap-2 py-3"
+          >
+            <WarningCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Conflitos</span>
+            <span className="sm:hidden">Conf.</span>
+          </TabsTrigger>
+          <TabsTrigger
             value="configuracao"
             className="flex items-center gap-2 py-3"
           >
@@ -107,6 +134,18 @@ export function PedagogicoTab() {
 
         <TabsContent value="boletim" className="mt-6">
           <BoletimDigital />
+        </TabsContent>
+
+        <TabsContent value="recuperacao" className="mt-6">
+          <RecuperacaoManager />
+        </TabsContent>
+
+        <TabsContent value="conselho" className="mt-6">
+          <ConselhoClasseManager />
+        </TabsContent>
+
+        <TabsContent value="conflitos" className="mt-6">
+          <ConflitosHorarioManager />
         </TabsContent>
 
         <TabsContent value="configuracao" className="mt-6">
