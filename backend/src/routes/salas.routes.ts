@@ -35,6 +35,65 @@ export async function salasRoutes(app: FastifyInstance) {
   // Listar todas as salas de uma escola
   app.get(
     "/api/escolas/:escolaId/salas",
+    {
+      schema: {
+        tags: ["Salas"],
+        summary: "Listar todas as salas de uma escola",
+        description:
+          "Retorna a lista completa de salas cadastradas para uma escola específica, ordenadas por tipo e nome.",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["escolaId"],
+          properties: {
+            escolaId: {
+              type: "string",
+              format: "uuid",
+              description: "ID da escola",
+            },
+          },
+        },
+        response: {
+          200: {
+            description: "Lista de salas retornada com sucesso",
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string", format: "uuid" },
+                nome: { type: "string", example: "Sala 1A" },
+                tipo: {
+                  type: "string",
+                  enum: ["AULA", "INFORMATICA", "LEITURA", "LABORATORIO", "MULTIUSO", "AEE"],
+                  example: "AULA",
+                },
+                capacidade: { type: "number", example: 30 },
+                possuiArCondicionado: { type: "boolean", example: true },
+                possuiVentilador: { type: "boolean", example: true },
+                possuiTV: { type: "boolean", example: true },
+                possuiProjetor: { type: "boolean", example: false },
+                possuiQuadro: { type: "boolean", example: true },
+                metragem: { type: "number", nullable: true, example: 45.5 },
+                andar: { type: "number", example: 0 },
+                acessivel: { type: "boolean", example: true },
+                observacoes: { type: "string", nullable: true },
+                ativo: { type: "boolean", example: true },
+                escolaId: { type: "string", format: "uuid" },
+                createdAt: { type: "string", format: "date-time" },
+                updatedAt: { type: "string", format: "date-time" },
+              },
+            },
+          },
+          500: {
+            description: "Erro interno do servidor",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Params: { escolaId: string } }>,
       reply: FastifyReply
@@ -58,6 +117,73 @@ export async function salasRoutes(app: FastifyInstance) {
   // Buscar sala por ID
   app.get(
     "/api/salas/:id",
+    {
+      schema: {
+        tags: ["Salas"],
+        summary: "Buscar sala por ID",
+        description:
+          "Retorna uma sala específica pelo seu identificador único, incluindo informações da escola.",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "ID da sala",
+            },
+          },
+        },
+        response: {
+          200: {
+            description: "Sala encontrada",
+            type: "object",
+            properties: {
+              id: { type: "string", format: "uuid" },
+              nome: { type: "string", example: "Sala 1A" },
+              tipo: { type: "string", example: "AULA" },
+              capacidade: { type: "number", example: 30 },
+              possuiArCondicionado: { type: "boolean" },
+              possuiVentilador: { type: "boolean" },
+              possuiTV: { type: "boolean" },
+              possuiProjetor: { type: "boolean" },
+              possuiQuadro: { type: "boolean" },
+              metragem: { type: "number", nullable: true },
+              andar: { type: "number" },
+              acessivel: { type: "boolean" },
+              observacoes: { type: "string", nullable: true },
+              ativo: { type: "boolean" },
+              escolaId: { type: "string", format: "uuid" },
+              escola: {
+                type: "object",
+                properties: {
+                  id: { type: "string", format: "uuid" },
+                  nome: { type: "string" },
+                  codigo: { type: "string" },
+                },
+              },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+          404: {
+            description: "Sala não encontrada",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+          500: {
+            description: "Erro interno do servidor",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply

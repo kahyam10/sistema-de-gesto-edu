@@ -238,20 +238,72 @@ export async function authRoutes(app: FastifyInstance) {
   );
 
   // Obter usuário logado
-  app.get("/me", { preHandler: [app.authenticate] }, async (request, reply) => {
-    try {
-      const userPayload = request.user as { id: string };
-      const user = await authService.getUserById(userPayload.id);
+  app.get(
+    "/me",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        tags: ["Autenticação"],
+        summary: "Obter dados do usuário autenticado",
+        description: `Retorna os dados completos do usuário autenticado pelo token JWT.
 
-      if (!user) {
-        return reply.status(404).send({ error: "Usuário não encontrado" });
+**Uso:**
+- Endpoint protegido que requer autenticação
+- Útil para verificar se o token ainda é válido
+- Retorna informações atualizadas do usuário logado
+
+**Requer autenticação:**
+- Token JWT válido no header Authorization
+        `,
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            description: "Dados do usuário autenticado",
+            type: "object",
+            properties: {
+              id: { type: "string", example: "clx1234567890" },
+              email: { type: "string", example: "diretor@escola.com" },
+              nome: { type: "string", example: "João da Silva" },
+              role: { type: "string", example: "DIRETOR" },
+              ativo: { type: "boolean", example: true },
+              escolaId: { type: "string", nullable: true },
+              escola: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  id: { type: "string" },
+                  nome: { type: "string" },
+                  codigo: { type: "string" },
+                },
+              },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          404: {
+            description: "Usuário não encontrado",
+            type: "object",
+            properties: { error: { type: "string" } },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userPayload = request.user as { id: string };
+        const user = await authService.getUserById(userPayload.id);
+
+        if (!user) {
+          return reply.status(404).send({ error: "Usuário não encontrado" });
+        }
+
+        return reply.send(user);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao buscar usuário";
+        return reply.status(500).send({ error: message });
       }
-
-      return reply.send(user);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Erro ao buscar usuário";
-      return reply.status(500).send({ error: message });
     }
-  });
+  );
 }
