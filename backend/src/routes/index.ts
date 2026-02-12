@@ -20,3 +20,7 @@ export { licencasRoutes } from "./licencas.routes.js";
 export { buscaAtivaRoutes } from "./busca-ativa.routes.js";
 export { aeeRoutes } from "./aee.routes.js";
 export { acompanhamentoRoutes } from "./acompanhamento.routes.js";
+export { plantaoPedagogicoRoutes } from "./plantao-pedagogico.routes.js";
+export { reuniaoPaisRoutes } from "./reuniao-pais.routes.js";
+export { comunicadoRoutes } from "./comunicado.routes.js";
+export { notificacaoRoutes } from "./notificacao.routes.js";

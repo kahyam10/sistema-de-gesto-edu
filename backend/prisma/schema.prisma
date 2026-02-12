@@ -67,6 +67,9 @@ model EtapaEnsino {
   disciplinas Disciplina[]
   configuracoes ConfiguracaoAvaliacao[]
 
+  // Módulo 9: Comunicação e Eventos
+  comunicados Comunicado[]
+
   @@map("etapas_ensino")
 }
 
@@ -131,6 +134,11 @@ model Escola {
   buscasAtivas        BuscaAtiva[]
   salasRecursos       SalaRecursos[]
   acompanhamentos     AcompanhamentoIndividualizado[]
+
+  // Módulo 9: Comunicação e Eventos
+  plantoesPedagogicos PlantaoPedagogico[] @relation("PlantaoEscola")
+  reunioesPais        ReuniaoPais[] @relation("ReuniaoEscola")
+  comunicados         Comunicado[] @relation("ComunicadoEscola")
 
   @@map("escolas")
 }
@@ -200,6 +208,11 @@ model Turma {
   frequencias   Frequencia[]
   avaliacoes    Avaliacao[]
   notas         Nota[]
+
+  // Módulo 9: Comunicação e Eventos
+  plantoesPedagogicos PlantaoPedagogico[]
+  reunioesPais        ReuniaoPais[]
+  comunicados         Comunicado[]
 
   @@map("turmas")
 }
@@ -294,6 +307,9 @@ model Matricula {
   pei            PlanoEducacionalIndividualizado?
   acompanhamentos AcompanhamentoIndividualizado[]
 
+  // Módulo 9: Comunicação e Eventos
+  presencasReunioes PresencaReuniao[]
+
   @@map("matriculas")
 }
 
@@ -345,6 +361,10 @@ model ProfissionalEducacao {
   buscasAtivasResponsavel    BuscaAtiva[]
   atendimentosAEE            AtendimentoAEE[]
   acompanhamentosResponsavel AcompanhamentoIndividualizado[]
+
+  // Módulo 9: Comunicação e Eventos
+  reunioesPaisResponsavel ReuniaoPais[]
+  comunicadosAutor        Comunicado[]
 
   @@map("profissionais_educacao")
 }
@@ -1028,4 +1048,223 @@ model AcompanhamentoIndividualizado {
   @@index([status])
   @@index([escolaId])
   @@map("acompanhamentos_individualizados")
+}
+
+// ==================== COMUNICAÇÃO E EVENTOS (MÓDULO 9) ====================
+
+// Plantão Pedagógico - Atendimento aos pais/responsáveis
+model PlantaoPedagogico {
+  id              String   @id @default(cuid())
+  escolaId        String
+  data            DateTime
+  tipo            String   // INDIVIDUAL, COLETIVO, POR_TURMA
+  descricao       String?
+
+  // Horários
+  horarioInicio   String   // Ex: "14:00"
+  horarioFim      String   // Ex: "17:00"
+
+  // Participantes
+  profissionais   String?  // IDs dos profissionais disponíveis (JSON array)
+  turmaId         String?  // Se for específico de uma turma
+
+  // Local
+  local           String?  // Sala, auditório, etc.
+
+  // Observações
+  observacoes     String?
+  ativo           Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  escola          Escola   @relation("PlantaoEscola", fields: [escolaId], references: [id], onDelete: Cascade)
+  turma           Turma?   @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+
+  @@index([escolaId])
+  @@index([data])
+  @@index([turmaId])
+  @@map("plantoes_pedagogicos")
+}
+
+// Reunião de Pais e Mestres
+model ReuniaoPais {
+  id              String   @id @default(cuid())
+  escolaId        String
+  turmaId         String?  // Se null, é reunião geral da escola
+
+  // Informações básicas
+  titulo          String
+  descricao       String?
+  data            DateTime
+  horario         String   // Ex: "19:00"
+  duracao         Int?     // Duração estimada em minutos
+  local           String?  // Auditório, sala, etc.
+
+  // Tipo e finalidade
+  tipo            String   // BIMESTRAL, TRIMESTRAL, EXTRAORDINARIA, CONSELHO_PARTICIPATIVO
+  finalidade      String?  // Assuntos principais a serem tratados
+
+  // Pauta
+  pauta           String?  // Itens da pauta (pode ser JSON array)
+
+  // Ata
+  ata             String?  // Ata da reunião (preenchida depois)
+  encaminhamentos String?  // Encaminhamentos e decisões
+
+  // Status
+  status          String   @default("AGENDADA") // AGENDADA, REALIZADA, CANCELADA
+
+  // Responsável
+  profissionalId  String?  // Coordenador/diretor responsável
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  escola          Escola   @relation("ReuniaoEscola", fields: [escolaId], references: [id], onDelete: Cascade)
+  turma           Turma?   @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  profissional    ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  presencas       PresencaReuniao[]
+
+  @@index([escolaId])
+  @@index([turmaId])
+  @@index([data])
+  @@index([status])
+  @@map("reunioes_pais")
+}
+
+// Presença em Reuniões
+model PresencaReuniao {
+  id              String   @id @default(cuid())
+  reuniaoId       String
+  matriculaId     String   // Aluno relacionado
+  nomeResponsavel String   // Nome do responsável que compareceu
+  parentesco      String?  // Pai, mãe, avó, etc.
+  presente        Boolean  @default(false)
+  horarioChegada  String?  // Ex: "19:15"
+  observacoes     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reuniao         ReuniaoPais @relation(fields: [reuniaoId], references: [id], onDelete: Cascade)
+  matricula       Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@index([reuniaoId])
+  @@index([matriculaId])
+  @@unique([reuniaoId, matriculaId]) // Um registro por aluno por reunião
+  @@map("presencas_reunioes")
+}
+
+// Comunicados Gerais
+model Comunicado {
+  id              String   @id @default(cuid())
+  escolaId        String?  // Se null, é comunicado da SEMEC para toda rede
+
+  // Conteúdo
+  titulo          String
+  mensagem        String   // Conteúdo do comunicado
+  tipo            String   // INFORMATIVO, URGENTE, AVISO, CONVITE, ALERTA
+
+  // Categorização
+  categoria       String?  // ACADEMICO, ADMINISTRATIVO, EVENTO, SAUDE, TRANSPORTE, ALIMENTACAO, GERAL
+
+  // Destinatários
+  destinatarios   String   // TODOS, PAIS, PROFESSORES, FUNCIONARIOS, ALUNOS, TURMA_ESPECIFICA, ETAPA_ESPECIFICA
+  turmaId         String?  // Se destinatário for turma específica
+  etapaId         String?  // Se destinatário for etapa específica
+
+  // Anexos
+  anexoUrl        String?  // URL de arquivo anexo (PDF, imagem, etc.)
+
+  // Publicação
+  dataPublicacao  DateTime @default(now())
+  dataExpiracao   DateTime? // Data em que o comunicado expira
+  ativo           Boolean  @default(true)
+  destaque        Boolean  @default(false) // Se deve ser destacado
+
+  // Autor
+  autorId         String?  // Profissional que criou
+  autorNome       String   // Nome do autor/setor
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  escola          Escola?  @relation("ComunicadoEscola", fields: [escolaId], references: [id], onDelete: Cascade)
+  turma           Turma?   @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+  etapa           EtapaEnsino? @relation(fields: [etapaId], references: [id], onDelete: SetNull)
+  autor           ProfissionalEducacao? @relation(fields: [autorId], references: [id], onDelete: SetNull)
+
+  destinatariosLeitura ComunicadoDestinatario[]
+
+  @@index([escolaId])
+  @@index([tipo])
+  @@index([dataPublicacao])
+  @@index([turmaId])
+  @@index([etapaId])
+  @@map("comunicados")
+}
+
+// Controle de leitura de comunicados
+model ComunicadoDestinatario {
+  id            String    @id @default(cuid())
+  comunicadoId  String
+  userId        String    // Usuário que recebeu
+
+  // Status de leitura
+  lido          Boolean   @default(false)
+  dataLeitura   DateTime?
+
+  // Confirmação (para comunicados que exigem confirmação)
+  confirmado    Boolean   @default(false)
+  dataConfirmacao DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  comunicado    Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+
+  @@index([comunicadoId])
+  @@index([userId])
+  @@unique([comunicadoId, userId]) // Um registro por usuário por comunicado
+  @@map("comunicados_destinatarios")
+}
+
+// Sistema de Notificações
+model Notificacao {
+  id            String    @id @default(cuid())
+  userId        String    // Destinatário
+
+  // Conteúdo
+  titulo        String
+  mensagem      String
+  tipo          String    // SISTEMA, ACADEMICO, FINANCEIRO, COMUNICADO, LEMBRETE, URGENTE
+
+  // Prioridade
+  prioridade    String    @default("NORMAL") // BAIXA, NORMAL, ALTA, URGENTE
+
+  // Canais de envio
+  canais        String    // JSON array: ["APP", "EMAIL", "SMS", "PUSH"]
+
+  // Link/Ação
+  link          String?   // Link para mais detalhes ou ação
+  acaoTipo      String?   // VISUALIZAR_COMUNICADO, CONFIRMAR_PRESENCA, VER_BOLETIM, etc.
+  acaoId        String?   // ID do recurso relacionado
+
+  // Status
+  lida          Boolean   @default(false)
+  dataLeitura   DateTime?
+  enviadaEmail  Boolean   @default(false)
+  enviadaSMS    Boolean   @default(false)
+  enviadaPush   Boolean   @default(false)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([tipo])
+  @@index([lida])
+  @@index([createdAt])
+  @@map("notificacoes")
 }

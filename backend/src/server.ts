@@ -30,6 +30,10 @@ import {
   buscaAtivaRoutes,
   aeeRoutes,
   acompanhamentoRoutes,
+  plantaoPedagogicoRoutes,
+  reuniaoPaisRoutes,
+  comunicadoRoutes,
+  notificacaoRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
 import { errorHandler } from "./middleware/error-handler.js";
@@ -139,6 +143,10 @@ async function buildApp() {
   app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
   app.register(aeeRoutes, { prefix: "/api/aee" });
   app.register(acompanhamentoRoutes, { prefix: "/api/acompanhamento" });
+  app.register(plantaoPedagogicoRoutes, { prefix: "/api/plantoes-pedagogicos" });
+  app.register(reuniaoPaisRoutes, { prefix: "/api/reunioes-pais" });
+  app.register(comunicadoRoutes, { prefix: "/api/comunicados" });
+  app.register(notificacaoRoutes, { prefix: "/api/notificacoes" });
 
   // Error handler global com sistema estruturado
   app.setErrorHandler(errorHandler);

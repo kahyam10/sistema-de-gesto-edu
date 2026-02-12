@@ -239,6 +239,36 @@
       "message": "Acompanhamento Individualizado não encontrado",
       "statusCode": 404,
       "category": "NAO_ENCONTRADO"
+    },
+    "NF_024": {
+      "code": "NF_024",
+      "message": "Plantão Pedagógico não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_025": {
+      "code": "NF_025",
+      "message": "Reunião de Pais não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_026": {
+      "code": "NF_026",
+      "message": "Presença em Reunião não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_027": {
+      "code": "NF_027",
+      "message": "Comunicado não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_028": {
+      "code": "NF_028",
+      "message": "Notificação não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
     }
   },
   "BUSINESS": {
@@ -341,6 +371,12 @@
     "BIZ_017": {
       "code": "BIZ_017",
       "message": "Apenas acompanhamentos suspensos podem ser reativados",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_018": {
+      "code": "BIZ_018",
+      "message": "Não é possível deletar reunião com presenças já registradas",
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
     },
