@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { createError } from "../errors/AppError";
+import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
 const prisma = new PrismaClient();
 
@@ -26,7 +26,7 @@ export class ReuniaoPaisService {
       where: { id: data.escolaId },
     });
     if (!escola) {
-      throw createError("NOT_FOUND", "NF_003");
+      throw new NotFoundError("NF_003");
     }
 
     // Validar turma se fornecida
@@ -35,7 +35,7 @@ export class ReuniaoPaisService {
         where: { id: data.turmaId },
       });
       if (!turma) {
-        throw createError("NOT_FOUND", "NF_005");
+        throw new NotFoundError("NF_005");
       }
     }
 
@@ -45,7 +45,7 @@ export class ReuniaoPaisService {
         where: { id: data.profissionalId },
       });
       if (!profissional) {
-        throw createError("NOT_FOUND", "NF_006");
+        throw new NotFoundError("NF_006");
       }
     }
 
@@ -184,7 +184,7 @@ export class ReuniaoPaisService {
     });
 
     if (!reuniao) {
-      throw createError("NOT_FOUND", "NF_025");
+      throw new NotFoundError("NF_025");
     }
 
     return reuniao;
@@ -216,7 +216,7 @@ export class ReuniaoPaisService {
     });
 
     if (!reuniao) {
-      throw createError("NOT_FOUND", "NF_025");
+      throw new NotFoundError("NF_025");
     }
 
     // Validar profissional se fornecido
@@ -225,7 +225,7 @@ export class ReuniaoPaisService {
         where: { id: data.profissionalId },
       });
       if (!profissional) {
-        throw createError("NOT_FOUND", "NF_003");
+        throw new NotFoundError("NF_003");
       }
     }
 
@@ -272,7 +272,7 @@ export class ReuniaoPaisService {
     });
 
     if (!reuniao) {
-      throw createError("NOT_FOUND", "NF_025");
+      throw new NotFoundError("NF_025");
     }
 
     // Não permite deletar se já tem presenças registradas
@@ -304,7 +304,7 @@ export class ReuniaoPaisService {
       where: { id: data.reuniaoId },
     });
     if (!reuniao) {
-      throw createError("NOT_FOUND", "NF_025");
+      throw new NotFoundError("NF_025");
     }
 
     // Validar matrícula
@@ -312,7 +312,7 @@ export class ReuniaoPaisService {
       where: { id: data.matriculaId },
     });
     if (!matricula) {
-      throw createError("NOT_FOUND", "NF_004");
+      throw new NotFoundError("NF_004");
     }
 
     // Verificar se já existe presença registrada
@@ -416,7 +416,7 @@ export class ReuniaoPaisService {
     });
 
     if (!presenca) {
-      throw createError("NOT_FOUND", "NF_026");
+      throw new NotFoundError("NF_026");
     }
 
     await prisma.presencaReuniao.delete({

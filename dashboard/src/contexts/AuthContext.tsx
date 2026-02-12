@@ -1,112 +1,64 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
-export type UserRole =
-  | "ADMIN"
-  | "SEMEC"
-  | "DIRETOR"
-  | "COORDENADOR"
-  | "SECRETARIA"
-  | "PROFESSOR"
-  | "RESPONSAVEL";
-
-export interface User {
+interface User {
   id: string;
   email: string;
   nome: string;
-  role: UserRole;
-  escolaId?: string;
-  profissionalId?: string;
-  matriculaId?: string;
+  role: string;
+  escolaId?: string | null;
+  escola?: any;
 }
 
-interface AuthContextType {
+interface AuthContextData {
   user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  token: string | null;
+  loading: boolean;
   logout: () => void;
-  hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Carrega o usuário do localStorage
-    const token = localStorage.getItem("auth_token");
+    // Carrega os dados do localStorage
+    const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
 
-    if (token && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user");
-      }
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    } else if (pathname !== "/login") {
+      // Redireciona para login se não estiver autenticado
+      router.push("/login");
     }
-    setIsLoading(false);
-  }, []);
 
-  const login = async (email: string, password: string) => {
-    // Simula login - em produção, fazer chamada real à API
-    const mockUser: User = {
-      id: "1",
-      email,
-      nome: "Usuário Teste",
-      role: "ADMIN", // Pode ser qualquer role para teste
-    };
-
-    const mockToken = "mock-jwt-token";
-
-    localStorage.setItem("auth_token", mockToken);
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    setUser(mockUser);
-  };
+    setLoading(false);
+  }, [pathname, router]);
 
   const logout = () => {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
+    setToken(null);
     setUser(null);
     router.push("/login");
   };
 
-  const hasPermission = (requiredRole: UserRole | UserRole[]) => {
-    if (!user) return false;
-
-    const roleHierarchy: Record<UserRole, number> = {
-      ADMIN: 7,
-      SEMEC: 6,
-      DIRETOR: 5,
-      COORDENADOR: 4,
-      SECRETARIA: 3,
-      PROFESSOR: 2,
-      RESPONSAVEL: 1,
-    };
-
-    if (Array.isArray(requiredRole)) {
-      return requiredRole.includes(user.role);
-    }
-
-    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
-  };
-
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, token, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return useContext(AuthContext);
 }

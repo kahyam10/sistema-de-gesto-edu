@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { createError } from "../errors/AppError";
+import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
 const prisma = new PrismaClient();
 
@@ -131,7 +131,7 @@ export class NotificacaoService {
     });
 
     if (!notificacao) {
-      throw createError("NOT_FOUND", "NF_028");
+      throw new NotFoundError("NF_028");
     }
 
     return notificacao;
@@ -146,7 +146,7 @@ export class NotificacaoService {
     });
 
     if (!notificacao) {
-      throw createError("NOT_FOUND", "NF_028");
+      throw new NotFoundError("NF_028");
     }
 
     const updated = await prisma.notificacao.update({
@@ -190,7 +190,7 @@ export class NotificacaoService {
     });
 
     if (!notificacao) {
-      throw createError("NOT_FOUND", "NF_028");
+      throw new NotFoundError("NF_028");
     }
 
     await prisma.notificacao.delete({
@@ -287,7 +287,7 @@ export class NotificacaoService {
     });
 
     if (!notificacao) {
-      throw createError("NOT_FOUND", "NF_028");
+      throw new NotFoundError("NF_028");
     }
 
     const updateData: any = {};

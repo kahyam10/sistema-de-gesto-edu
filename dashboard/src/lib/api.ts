@@ -20,7 +20,7 @@ async function request<T>(
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-  const token = localStorage.getItem("auth_token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const config: RequestInit = {
     method,
@@ -1748,7 +1748,7 @@ async function requestFormData<T>(
   endpoint: string,
   formData: FormData
 ): Promise<T> {
-  const token = localStorage.getItem("auth_token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const config: RequestInit = {
     method: "POST",

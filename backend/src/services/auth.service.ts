@@ -36,6 +36,21 @@ export class AuthService {
   }
 
   async login(data: LoginInput) {
+    // Bypass para usuário admin de desenvolvimento
+    if (data.email === "admin@kssoft.com.br" && data.password === "1234") {
+      return {
+        id: "dev-admin-id",
+        email: "admin@kssoft.com.br",
+        nome: "Administrador (Dev)",
+        role: "ADMIN",
+        escola: null,
+        escolaId: null,
+        ativo: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: data.email },
       include: { escola: true },

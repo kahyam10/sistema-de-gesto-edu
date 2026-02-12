@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { createError } from "../errors/AppError";
+import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
 const prisma = new PrismaClient();
 
@@ -29,7 +29,7 @@ export class ComunicadoService {
         where: { id: data.escolaId },
       });
       if (!escola) {
-        throw createError("NOT_FOUND", "NF_003");
+        throw new NotFoundError("NF_003");
       }
     }
 
@@ -39,7 +39,7 @@ export class ComunicadoService {
         where: { id: data.turmaId },
       });
       if (!turma) {
-        throw createError("NOT_FOUND", "NF_005");
+        throw new NotFoundError("NF_005");
       }
     }
 
@@ -49,7 +49,7 @@ export class ComunicadoService {
         where: { id: data.etapaId },
       });
       if (!etapa) {
-        throw createError("NOT_FOUND", "NF_007");
+        throw new NotFoundError("NF_007");
       }
     }
 
@@ -59,7 +59,7 @@ export class ComunicadoService {
         where: { id: data.autorId },
       });
       if (!autor) {
-        throw createError("NOT_FOUND", "NF_006");
+        throw new NotFoundError("NF_006");
       }
     }
 
@@ -193,7 +193,7 @@ export class ComunicadoService {
     });
 
     if (!comunicado) {
-      throw createError("NOT_FOUND", "NF_027");
+      throw new NotFoundError("NF_027");
     }
 
     return comunicado;
@@ -223,7 +223,7 @@ export class ComunicadoService {
     });
 
     if (!comunicado) {
-      throw createError("NOT_FOUND", "NF_027");
+      throw new NotFoundError("NF_027");
     }
 
     // Validar turma se fornecida
@@ -232,7 +232,7 @@ export class ComunicadoService {
         where: { id: data.turmaId },
       });
       if (!turma) {
-        throw createError("NOT_FOUND", "NF_002");
+        throw new NotFoundError("NF_002");
       }
     }
 
@@ -242,7 +242,7 @@ export class ComunicadoService {
         where: { id: data.etapaId },
       });
       if (!etapa) {
-        throw createError("NOT_FOUND", "NF_005");
+        throw new NotFoundError("NF_005");
       }
     }
 
@@ -282,7 +282,7 @@ export class ComunicadoService {
     });
 
     if (!comunicado) {
-      throw createError("NOT_FOUND", "NF_027");
+      throw new NotFoundError("NF_027");
     }
 
     await prisma.comunicado.delete({
@@ -301,7 +301,7 @@ export class ComunicadoService {
       where: { id: comunicadoId },
     });
     if (!comunicado) {
-      throw createError("NOT_FOUND", "NF_027");
+      throw new NotFoundError("NF_027");
     }
 
     // Verificar se já existe registro

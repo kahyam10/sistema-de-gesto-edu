@@ -314,7 +314,7 @@ export function BuscaAtivaManager() {
                     </TableCell>
                     <TableCell>{busca.motivo}</TableCell>
                     <TableCell>
-                      {busca.escola?.nome || busca.matricula?.escola?.nome || "-"}
+                      {busca.escola?.nome || "-"}
                     </TableCell>
                     <TableCell>{getPrioridadeBadge(busca.prioridade)}</TableCell>
                     <TableCell>{getStatusBadge(busca.status)}</TableCell>

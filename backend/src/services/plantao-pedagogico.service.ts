@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { createError } from "../errors/AppError";
+import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
 const prisma = new PrismaClient();
 
@@ -24,7 +24,7 @@ export class PlantaoPedagogicoService {
       where: { id: data.escolaId },
     });
     if (!escola) {
-      throw createError("NOT_FOUND", "NF_003");
+      throw new NotFoundError("NF_003");
     }
 
     // Validar turma se fornecida
@@ -33,7 +33,7 @@ export class PlantaoPedagogicoService {
         where: { id: data.turmaId },
       });
       if (!turma) {
-        throw createError("NOT_FOUND", "NF_005");
+        throw new NotFoundError("NF_005");
       }
     }
 
@@ -134,7 +134,7 @@ export class PlantaoPedagogicoService {
     });
 
     if (!plantao) {
-      throw createError("NOT_FOUND", "NF_024");
+      throw new NotFoundError("NF_024");
     }
 
     return plantao;
@@ -163,7 +163,7 @@ export class PlantaoPedagogicoService {
     });
 
     if (!plantao) {
-      throw createError("NOT_FOUND", "NF_024");
+      throw new NotFoundError("NF_024");
     }
 
     // Validar turma se fornecida
@@ -172,7 +172,7 @@ export class PlantaoPedagogicoService {
         where: { id: data.turmaId },
       });
       if (!turma) {
-        throw createError("NOT_FOUND", "NF_002");
+        throw new NotFoundError("NF_002");
       }
     }
 
@@ -205,7 +205,7 @@ export class PlantaoPedagogicoService {
     });
 
     if (!plantao) {
-      throw createError("NOT_FOUND", "NF_024");
+      throw new NotFoundError("NF_024");
     }
 
     await prisma.plantaoPedagogico.delete({
