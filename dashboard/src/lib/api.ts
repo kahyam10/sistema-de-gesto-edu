@@ -2444,4 +2444,432 @@ export const acompanhamentoApi = {
   },
 };
 
+// ==================== MÓDULO 9: COMUNICAÇÃO E EVENTOS ====================
+
+export interface PlantaoPedagogico {
+  id: string;
+  escolaId: string;
+  escola?: Escola;
+  data: string;
+  tipo: string;
+  descricao?: string;
+  horarioInicio: string;
+  horarioFim: string;
+  profissionais?: string;
+  turmaId?: string;
+  turma?: Turma;
+  local?: string;
+  observacoes?: string;
+  ativo: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReuniaoPais {
+  id: string;
+  escolaId: string;
+  escola?: Escola;
+  turmaId?: string;
+  turma?: Turma;
+  titulo: string;
+  descricao?: string;
+  data: string;
+  horario: string;
+  duracao?: number;
+  local?: string;
+  tipo: string;
+  finalidade?: string;
+  pauta?: string;
+  ata?: string;
+  encaminhamentos?: string;
+  status: string;
+  profissionalId?: string;
+  profissional?: ProfissionalEducacao;
+  presencas?: PresencaReuniao[];
+  _count?: {
+    presencas: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PresencaReuniao {
+  id: string;
+  reuniaoId: string;
+  reuniao?: ReuniaoPais;
+  matriculaId: string;
+  matricula?: Matricula;
+  nomeResponsavel: string;
+  parentesco?: string;
+  presente: boolean;
+  horarioChegada?: string;
+  observacoes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comunicado {
+  id: string;
+  escolaId?: string;
+  escola?: Escola;
+  titulo: string;
+  mensagem: string;
+  tipo: string;
+  categoria?: string;
+  destinatarios: string;
+  turmaId?: string;
+  turma?: Turma;
+  etapaId?: string;
+  etapa?: EtapaEnsino;
+  anexoUrl?: string;
+  dataPublicacao: string;
+  dataExpiracao?: string;
+  ativo: boolean;
+  destaque: boolean;
+  autorId?: string;
+  autor?: ProfissionalEducacao;
+  autorNome: string;
+  destinatariosLeitura?: ComunicadoDestinatario[];
+  _count?: {
+    destinatariosLeitura: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComunicadoDestinatario {
+  id: string;
+  comunicadoId: string;
+  userId: string;
+  lido: boolean;
+  dataLeitura?: string;
+  confirmado: boolean;
+  dataConfirmacao?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notificacao {
+  id: string;
+  userId: string;
+  titulo: string;
+  mensagem: string;
+  tipo: string;
+  prioridade: string;
+  canais: string;
+  link?: string;
+  acaoTipo?: string;
+  acaoId?: string;
+  lida: boolean;
+  dataLeitura?: string;
+  enviadaEmail: boolean;
+  enviadaSMS: boolean;
+  enviadaPush: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== PLANTÃO PEDAGÓGICO API ====================
+
+export const plantaoPedagogicoApi = {
+  list: (filters?: {
+    escolaId?: string;
+    turmaId?: string;
+    tipo?: string;
+    dataInicio?: string;
+    dataFim?: string;
+    ativo?: boolean;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
+    if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+    if (filters?.ativo !== undefined) params.append("ativo", String(filters.ativo));
+    const queryString = params.toString();
+    return request<PlantaoPedagogico[]>(
+      `/api/plantoes-pedagogicos${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getById: (id: string) =>
+    request<PlantaoPedagogico>(`/api/plantoes-pedagogicos/${id}`),
+
+  create: (data: Omit<PlantaoPedagogico, "id" | "createdAt" | "updatedAt">) =>
+    request<PlantaoPedagogico>("/api/plantoes-pedagogicos", {
+      method: "POST",
+      body: data,
+    }),
+
+  update: (id: string, data: Partial<PlantaoPedagogico>) =>
+    request<PlantaoPedagogico>(`/api/plantoes-pedagogicos/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/plantoes-pedagogicos/${id}`, {
+      method: "DELETE",
+    }),
+
+  porEscolaEPeriodo: (escolaId: string, dataInicio: string, dataFim: string) => {
+    const params = new URLSearchParams();
+    params.append("dataInicio", dataInicio);
+    params.append("dataFim", dataFim);
+    return request<PlantaoPedagogico[]>(
+      `/api/plantoes-pedagogicos/escola/${escolaId}/periodo?${params.toString()}`
+    );
+  },
+
+  estatisticas: (escolaId?: string) => {
+    const params = new URLSearchParams();
+    if (escolaId) params.append("escolaId", escolaId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/plantoes-pedagogicos/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+};
+
+// ==================== REUNIÃO DE PAIS API ====================
+
+export const reuniaoPaisApi = {
+  list: (filters?: {
+    escolaId?: string;
+    turmaId?: string;
+    tipo?: string;
+    status?: string;
+    dataInicio?: string;
+    dataFim?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
+    if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+    const queryString = params.toString();
+    return request<ReuniaoPais[]>(
+      `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getById: (id: string) =>
+    request<ReuniaoPais>(`/api/reunioes-pais/${id}`),
+
+  create: (data: Omit<ReuniaoPais, "id" | "createdAt" | "updatedAt" | "presencas" | "_count">) =>
+    request<ReuniaoPais>("/api/reunioes-pais", {
+      method: "POST",
+      body: data,
+    }),
+
+  update: (id: string, data: Partial<ReuniaoPais>) =>
+    request<ReuniaoPais>(`/api/reunioes-pais/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/reunioes-pais/${id}`, {
+      method: "DELETE",
+    }),
+
+  registrarPresenca: (data: Omit<PresencaReuniao, "id" | "createdAt" | "updatedAt">) =>
+    request<PresencaReuniao>("/api/reunioes-pais/presencas", {
+      method: "POST",
+      body: data,
+    }),
+
+  getPresencas: (reuniaoId: string) =>
+    request<PresencaReuniao[]>(`/api/reunioes-pais/${reuniaoId}/presencas`),
+
+  deletePresenca: (id: string) =>
+    request<{ message: string }>(`/api/reunioes-pais/presencas/${id}`, {
+      method: "DELETE",
+    }),
+
+  estatisticas: (escolaId?: string) => {
+    const params = new URLSearchParams();
+    if (escolaId) params.append("escolaId", escolaId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/reunioes-pais/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+};
+
+// ==================== COMUNICADO API ====================
+
+export const comunicadoApi = {
+  list: (filters?: {
+    escolaId?: string;
+    turmaId?: string;
+    etapaId?: string;
+    tipo?: string;
+    categoria?: string;
+    destinatarios?: string;
+    ativo?: boolean;
+    destaque?: boolean;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.etapaId) params.append("etapaId", filters.etapaId);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.categoria) params.append("categoria", filters.categoria);
+    if (filters?.destinatarios) params.append("destinatarios", filters.destinatarios);
+    if (filters?.ativo !== undefined) params.append("ativo", String(filters.ativo));
+    if (filters?.destaque !== undefined) params.append("destaque", String(filters.destaque));
+    const queryString = params.toString();
+    return request<Comunicado[]>(
+      `/api/comunicados${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getById: (id: string) =>
+    request<Comunicado>(`/api/comunicados/${id}`),
+
+  create: (data: Omit<Comunicado, "id" | "createdAt" | "updatedAt" | "destinatariosLeitura" | "_count">) =>
+    request<Comunicado>("/api/comunicados", {
+      method: "POST",
+      body: data,
+    }),
+
+  update: (id: string, data: Partial<Comunicado>) =>
+    request<Comunicado>(`/api/comunicados/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/comunicados/${id}`, {
+      method: "DELETE",
+    }),
+
+  marcarLido: (id: string, userId: string) =>
+    request<ComunicadoDestinatario>(`/api/comunicados/${id}/marcar-lido`, {
+      method: "POST",
+      body: { userId },
+    }),
+
+  confirmar: (id: string, userId: string) =>
+    request<ComunicadoDestinatario>(`/api/comunicados/${id}/confirmar`, {
+      method: "POST",
+      body: { userId },
+    }),
+
+  porUsuario: (userId: string, filtro?: "NAO_LIDOS" | "LIDOS" | "TODOS") => {
+    const params = new URLSearchParams();
+    if (filtro) params.append("filtro", filtro);
+    const queryString = params.toString();
+    return request<Comunicado[]>(
+      `/api/comunicados/usuario/${userId}${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  estatisticas: (escolaId?: string) => {
+    const params = new URLSearchParams();
+    if (escolaId) params.append("escolaId", escolaId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/comunicados/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+};
+
+// ==================== NOTIFICAÇÃO API ====================
+
+export const notificacaoApi = {
+  list: (filters?: {
+    userId?: string;
+    tipo?: string;
+    prioridade?: string;
+    lida?: boolean;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.userId) params.append("userId", filters.userId);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.prioridade) params.append("prioridade", filters.prioridade);
+    if (filters?.lida !== undefined) params.append("lida", String(filters.lida));
+    const queryString = params.toString();
+    return request<Notificacao[]>(
+      `/api/notificacoes${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  porUsuario: (userId: string, filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS") => {
+    const params = new URLSearchParams();
+    if (filtro) params.append("filtro", filtro);
+    const queryString = params.toString();
+    return request<Notificacao[]>(
+      `/api/notificacoes/usuario/${userId}${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getById: (id: string) =>
+    request<Notificacao>(`/api/notificacoes/${id}`),
+
+  create: (data: Omit<Notificacao, "id" | "createdAt" | "updatedAt" | "lida" | "dataLeitura" | "enviadaEmail" | "enviadaSMS" | "enviadaPush">) =>
+    request<Notificacao>("/api/notificacoes", {
+      method: "POST",
+      body: data,
+    }),
+
+  createBulk: (data: {
+    userIds: string[];
+    titulo: string;
+    mensagem: string;
+    tipo: string;
+    prioridade?: string;
+    canais: string;
+    link?: string;
+    acaoTipo?: string;
+    acaoId?: string;
+  }) =>
+    request<Notificacao[]>("/api/notificacoes/bulk", {
+      method: "POST",
+      body: data,
+    }),
+
+  marcarLida: (id: string) =>
+    request<Notificacao>(`/api/notificacoes/${id}/marcar-lida`, {
+      method: "POST",
+    }),
+
+  marcarTodasLidas: (userId: string) =>
+    request<{ message: string; count: number }>(`/api/notificacoes/usuario/${userId}/marcar-todas-lidas`, {
+      method: "POST",
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/notificacoes/${id}`, {
+      method: "DELETE",
+    }),
+
+  deletarLidas: (userId: string) =>
+    request<{ message: string; count: number }>(`/api/notificacoes/usuario/${userId}/lidas`, {
+      method: "DELETE",
+    }),
+
+  countNaoLidas: (userId: string) =>
+    request<{ count: number }>(`/api/notificacoes/usuario/${userId}/count-nao-lidas`),
+
+  estatisticas: (userId?: string) => {
+    const params = new URLSearchParams();
+    if (userId) params.append("userId", userId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/notificacoes/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  atualizarStatusEnvio: (id: string, canal: "EMAIL" | "SMS" | "PUSH", enviado: boolean) =>
+    request<Notificacao>(`/api/notificacoes/${id}/status-envio`, {
+      method: "PUT",
+      body: { canal, enviado },
+    }),
+};
+
 export { ApiError };
