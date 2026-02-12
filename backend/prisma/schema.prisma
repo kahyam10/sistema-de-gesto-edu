@@ -127,6 +127,11 @@ model Escola {
   eventosCalendario EventoCalendario[]
   configuracoes ConfiguracaoAvaliacao[]
 
+  // Módulo 5: Programas Especiais
+  buscasAtivas        BuscaAtiva[]
+  salasRecursos       SalaRecursos[]
+  acompanhamentos     AcompanhamentoIndividualizado[]
+
   @@map("escolas")
 }
 
@@ -284,6 +289,11 @@ model Matricula {
   notas       Nota[]
   user        User?
 
+  // Módulo 5: Programas Especiais
+  buscasAtivas   BuscaAtiva[]
+  pei            PlanoEducacionalIndividualizado?
+  acompanhamentos AcompanhamentoIndividualizado[]
+
   @@map("matriculas")
 }
 
@@ -330,6 +340,11 @@ model ProfissionalEducacao {
   pontos         Ponto[]
   licencas       Licenca[]
   user           User?
+
+  // Módulo 5: Programas Especiais
+  buscasAtivasResponsavel    BuscaAtiva[]
+  atendimentosAEE            AtendimentoAEE[]
+  acompanhamentosResponsavel AcompanhamentoIndividualizado[]
 
   @@map("profissionais_educacao")
 }
@@ -785,4 +800,232 @@ model Nota {
   @@index([turmaId])
   @@index([turmaId, disciplina])
   @@map("notas")
+}
+
+// ==================== MÓDULO 5: PROGRAMAS ESPECIAIS ====================
+
+// Busca Ativa Escolar - Identificação e acompanhamento de alunos faltosos/evadidos
+model BuscaAtiva {
+  id              String   @id @default(cuid())
+  matriculaId     String
+  motivo          String   // INFREQUENCIA, EVASAO, ABANDONO, RISCO_SOCIAL
+  descricao       String?
+  status          String   @default("ATIVA") // ATIVA, EM_ACOMPANHAMENTO, RESOLVIDA, ENCAMINHADA
+  prioridade      String   @default("MEDIA") // BAIXA, MEDIA, ALTA, URGENTE
+
+  // Responsável pelo caso
+  responsavelId   String?  // ID do profissional responsável
+  escolaId        String?
+
+  // Resultado
+  resultado       String?  // Descrição do resultado final
+  dataResolucao   DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  matricula       Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  responsavel     ProfissionalEducacao? @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
+  escola          Escola? @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  visitas         VisitaDomiciliar[]
+  encaminhamentos EncaminhamentoExterno[]
+
+  @@index([matriculaId])
+  @@index([status])
+  @@index([prioridade])
+  @@index([escolaId])
+  @@map("busca_ativa")
+}
+
+// Visitas Domiciliares realizadas
+model VisitaDomiciliar {
+  id             String   @id @default(cuid())
+  buscaAtivaId   String
+  data           DateTime
+  horario        String?  // Ex: "14:30"
+  responsavel    String   // Nome do profissional que realizou a visita
+  situacao       String   // REALIZADA, NAO_ATENDEU, RECUSOU, MUDOU_ENDERECO
+  relato         String?  // Relato detalhado da visita
+  observacoes    String?
+  proximaVisita  DateTime? // Data da próxima visita agendada
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  buscaAtiva     BuscaAtiva @relation(fields: [buscaAtivaId], references: [id], onDelete: Cascade)
+
+  @@index([buscaAtivaId])
+  @@index([data])
+  @@map("visitas_domiciliares")
+}
+
+// Encaminhamentos externos (Conselho Tutelar, assistência social, saúde, etc.)
+model EncaminhamentoExterno {
+  id             String   @id @default(cuid())
+  buscaAtivaId   String
+  orgao          String   // CONSELHO_TUTELAR, ASSISTENCIA_SOCIAL, SAUDE, CREAS, CRAS, MINISTERIO_PUBLICO
+  motivo         String
+  dataEnvio      DateTime
+  protocolo      String?  // Número do protocolo
+  status         String   @default("ENVIADO") // ENVIADO, EM_ANALISE, ATENDIDO, NAO_ATENDIDO
+  retorno        String?  // Resposta do órgão
+  dataRetorno    DateTime?
+  observacoes    String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  buscaAtiva     BuscaAtiva @relation(fields: [buscaAtivaId], references: [id], onDelete: Cascade)
+
+  @@index([buscaAtivaId])
+  @@index([orgao])
+  @@index([status])
+  @@map("encaminhamentos_externos")
+}
+
+// Plano Educacional Individualizado (PEI) - Educação Especial/AEE
+model PlanoEducacionalIndividualizado {
+  id                  String   @id @default(cuid())
+  matriculaId         String   @unique
+  anoLetivo           Int
+
+  // Identificação
+  deficiencia         String   // Tipo de deficiência ou necessidade especial
+  cid                 String?  // Código CID da condição
+  laudoMedico         Boolean  @default(false)
+  laudoPath           String?  // Path para o laudo médico
+
+  // Atendimento
+  necessitaAEE        Boolean  @default(false)
+  frequenciaAEE       String?  // Ex: "2x por semana"
+  profissionalAEE     String?  // Nome do professor do AEE
+
+  // Objetivos e Ações
+  objetivosGerais     String?  // Objetivos gerais do PEI
+  objetivosEspecificos String? // Objetivos específicos
+  estrategias         String?  // Estratégias pedagógicas
+  recursos            String?  // Recursos e adaptações necessárias
+  avaliacaoDiagnostica String? // Avaliação diagnóstica inicial
+
+  // Participantes
+  elaboradoPor        String?  // Profissionais que elaboraram
+  dataElaboracao      DateTime @default(now())
+  dataRevisao         DateTime?
+
+  // Status
+  status              String   @default("ATIVO") // ATIVO, REVISADO, FINALIZADO
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  matricula           Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  atendimentos        AtendimentoAEE[]
+
+  @@index([matriculaId])
+  @@index([anoLetivo])
+  @@index([status])
+  @@map("planos_educacionais_individualizados")
+}
+
+// Sala de Recursos (Atendimento Educacional Especializado)
+model SalaRecursos {
+  id                String   @id @default(cuid())
+  escolaId          String
+  nome              String   // Ex: "Sala de Recursos Multifuncionais"
+  tipo              String   // TIPO_I, TIPO_II (DV/DA/Surdocegueira)
+  turno             String   // MATUTINO, VESPERTINO, NOTURNO, INTEGRAL
+  capacidade        Int      @default(10)
+  ativa             Boolean  @default(true)
+
+  // Recursos disponíveis
+  recursos          String?  // Lista de recursos/equipamentos disponíveis
+
+  // Profissionais
+  profissionais     String?  // IDs dos profissionais (JSON array)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  escola            Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  atendimentos      AtendimentoAEE[]
+
+  @@index([escolaId])
+  @@index([turno])
+  @@map("salas_recursos")
+}
+
+// Atendimentos AEE realizados
+model AtendimentoAEE {
+  id             String   @id @default(cuid())
+  peiId          String
+  salaRecursosId String
+  data           DateTime
+  horario        String?  // Ex: "14:00"
+  duracao        Int?     // Duração em minutos
+
+  // Conteúdo do atendimento
+  objetivo       String?  // Objetivo do atendimento
+  atividades     String?  // Atividades realizadas
+  recursos       String?  // Recursos utilizados
+  observacoes    String?  // Observações sobre o desenvolvimento
+
+  // Presença
+  presenca       Boolean  @default(true)
+  justificativa  String?  // Se faltou, justificativa
+
+  profissionalId String?  // Profissional que realizou o atendimento
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  pei            PlanoEducacionalIndividualizado @relation(fields: [peiId], references: [id], onDelete: Cascade)
+  salaRecursos   SalaRecursos @relation(fields: [salaRecursosId], references: [id], onDelete: Cascade)
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  @@index([peiId])
+  @@index([salaRecursosId])
+  @@index([data])
+  @@map("atendimentos_aee")
+}
+
+// Acompanhamento Individualizado (para qualquer aluno que necessite)
+model AcompanhamentoIndividualizado {
+  id              String   @id @default(cuid())
+  matriculaId     String
+  tipo            String   // PEDAGOGICO, COMPORTAMENTAL, SOCIO_EMOCIONAL, APRENDIZAGEM
+  motivo          String   // Motivo do acompanhamento
+  objetivos       String?  // Objetivos do acompanhamento
+
+  // Responsável
+  profissionalId  String?  // Professor/coordenador responsável
+  escolaId        String?
+
+  // Ações e estratégias
+  acoes           String?  // Ações realizadas
+  estrategias     String?  // Estratégias utilizadas
+
+  // Datas
+  dataInicio      DateTime @default(now())
+  dataFim         DateTime?
+
+  // Evolução
+  evolucoes       String?  // Registros de evolução (JSON array)
+
+  // Status
+  status          String   @default("EM_ANDAMENTO") // EM_ANDAMENTO, CONCLUIDO, SUSPENSO
+  resultado       String?  // Resultado final do acompanhamento
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  matricula       Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  profissional    ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+  escola          Escola? @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  @@index([matriculaId])
+  @@index([tipo])
+  @@index([status])
+  @@index([escolaId])
+  @@map("acompanhamentos_individualizados")
 }

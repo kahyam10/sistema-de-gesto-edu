@@ -27,6 +27,9 @@ import {
   notasRoutes,
   pontosRoutes,
   licencasRoutes,
+  buscaAtivaRoutes,
+  aeeRoutes,
+  acompanhamentoRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
 import { errorHandler } from "./middleware/error-handler.js";
@@ -133,6 +136,9 @@ async function buildApp() {
   app.register(notasRoutes, { prefix: "/api/notas" });
   app.register(pontosRoutes, { prefix: "/api/pontos" });
   app.register(licencasRoutes, { prefix: "/api/licencas" });
+  app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
+  app.register(aeeRoutes, { prefix: "/api/aee" });
+  app.register(acompanhamentoRoutes, { prefix: "/api/acompanhamento" });
 
   // Error handler global com sistema estruturado
   app.setErrorHandler(errorHandler);

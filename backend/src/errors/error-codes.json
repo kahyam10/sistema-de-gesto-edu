@@ -197,6 +197,48 @@
       "message": "Evento do calendário não encontrado",
       "statusCode": 404,
       "category": "NAO_ENCONTRADO"
+    },
+    "NF_017": {
+      "code": "NF_017",
+      "message": "Busca Ativa não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_018": {
+      "code": "NF_018",
+      "message": "Visita Domiciliar não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_019": {
+      "code": "NF_019",
+      "message": "Encaminhamento Externo não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_020": {
+      "code": "NF_020",
+      "message": "PEI (Plano Educacional Individualizado) não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_021": {
+      "code": "NF_021",
+      "message": "Sala de Recursos não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_022": {
+      "code": "NF_022",
+      "message": "Atendimento AEE não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_023": {
+      "code": "NF_023",
+      "message": "Acompanhamento Individualizado não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
     }
   },
   "BUSINESS": {
@@ -269,6 +311,36 @@
     "BIZ_012": {
       "code": "BIZ_012",
       "message": "Não é possível alterar licença já aprovada ou rejeitada",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_013": {
+      "code": "BIZ_013",
+      "message": "Já existe busca ativa em andamento para esta matrícula",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_014": {
+      "code": "BIZ_014",
+      "message": "Já existe PEI (Plano Educacional Individualizado) para esta matrícula",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_015": {
+      "code": "BIZ_015",
+      "message": "Acompanhamento não está em andamento - não é possível registrar evolução",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_016": {
+      "code": "BIZ_016",
+      "message": "Acompanhamento já está concluído",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_017": {
+      "code": "BIZ_017",
+      "message": "Apenas acompanhamentos suspensos podem ser reativados",
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
     },

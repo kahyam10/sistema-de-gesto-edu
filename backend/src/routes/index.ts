@@ -17,3 +17,6 @@ export { avaliacoesRoutes } from "./avaliacoes.routes.js";
 export { notasRoutes } from "./notas.routes.js";
 export { pontosRoutes } from "./pontos.routes.js";
 export { licencasRoutes } from "./licencas.routes.js";
+export { buscaAtivaRoutes } from "./busca-ativa.routes.js";
+export { aeeRoutes } from "./aee.routes.js";
+export { acompanhamentoRoutes } from "./acompanhamento.routes.js";

@@ -14,3 +14,6 @@ export { avaliacaoService } from "./avaliacao.service.js";
 export { notaService } from "./nota.service.js";
 export { pontoService } from "./ponto.service.js";
 export { licencaService } from "./licenca.service.js";
+export { BuscaAtivaService } from "./busca-ativa.service.js";
+export { AEEService } from "./aee.service.js";
+export { AcompanhamentoService } from "./acompanhamento.service.js";
