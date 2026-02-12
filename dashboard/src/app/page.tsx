@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
-import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Wrench, Notebook, MagnifyingGlass, Bell, GearSix, UserCircle, BookOpenText } from '@phosphor-icons/react'
+import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Wrench, Notebook, MagnifyingGlass, Bell, GearSix, UserCircle, BookOpenText, Clock } from '@phosphor-icons/react'
 import { kpis, techStack } from '@/lib/data'
 import { OverviewTab } from '@/components/OverviewTab'
 import { ModulesTab } from '@/components/ModulesTab'
@@ -13,6 +13,7 @@ import { TechStackTab } from '@/components/TechStackTab'
 import { DevelopmentTab } from '@/components/DevelopmentTab'
 import { CadastrosTab } from '@/components/CadastrosTab'
 import { PedagogicoTab } from '@/components/PedagogicoTab'
+import { RHTab } from '@/components/RHTab'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function HomePage() {
@@ -54,6 +55,10 @@ export default function HomePage() {
                 <TabsTrigger value="pedagogico" className="justify-start gap-3 rounded-lg px-3 py-2.5 text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
                   <BookOpenText className="h-4 w-4" />
                   <span>Pedagogico</span>
+                </TabsTrigger>
+                <TabsTrigger value="rh" className="justify-start gap-3 rounded-lg px-3 py-2.5 text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+                  <Clock className="h-4 w-4" />
+                  <span>RH</span>
                 </TabsTrigger>
                 <TabsTrigger value="development" className="justify-start gap-3 rounded-lg px-3 py-2.5 text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
                   <Wrench className="h-4 w-4" />
@@ -128,6 +133,10 @@ export default function HomePage() {
                   <BookOpenText className="h-4 w-4" />
                   <span>Pedagogico</span>
                 </TabsTrigger>
+                <TabsTrigger value="rh" className="justify-start gap-2 rounded-lg border border-slate-200 bg-white py-2.5 text-slate-700 data-[state=active]:border-primary data-[state=active]:text-primary">
+                  <Clock className="h-4 w-4" />
+                  <span>RH</span>
+                </TabsTrigger>
                 <TabsTrigger value="development" className="justify-start gap-2 rounded-lg border border-slate-200 bg-white py-2.5 text-slate-700 data-[state=active]:border-primary data-[state=active]:text-primary">
                   <Wrench className="h-4 w-4" />
                   <span>Dev</span>
@@ -163,6 +172,10 @@ export default function HomePage() {
 
             <TabsContent value="pedagogico">
               <PedagogicoTab />
+            </TabsContent>
+
+            <TabsContent value="rh">
+              <RHTab />
             </TabsContent>
 
             <TabsContent value="development">

@@ -1797,4 +1797,186 @@ export const uploadApi = {
     ),
 };
 
+// ==================== PONTO DIGITAL ====================
+
+export interface Ponto {
+  id: string;
+  profissionalId: string;
+  escolaId?: string | null;
+  data: string;
+  entrada?: string | null;
+  saida?: string | null;
+  entrada2?: string | null;
+  saida2?: string | null;
+  horasTrabalhadas?: number | null;
+  tipoRegistro: string;
+  observacoes?: string | null;
+  justificativa?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt: string;
+  updatedAt: string;
+  profissional?: {
+    id: string;
+    nome: string;
+    cpf: string;
+    tipo: string;
+    matricula?: string | null;
+  };
+}
+
+export interface RelatorioMensal {
+  pontos: Ponto[];
+  totalHoras: number;
+  diasTrabalhados: number;
+  faltas: number;
+  atrasos: number;
+}
+
+export const pontosApi = {
+  list: (filters?: {
+    profissionalId?: string;
+    escolaId?: string;
+    dataInicio?: string;
+    dataFim?: string;
+    tipoRegistro?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.profissionalId) params.append("profissionalId", filters.profissionalId);
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
+    if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+    if (filters?.tipoRegistro) params.append("tipoRegistro", filters.tipoRegistro);
+
+    const queryString = params.toString();
+    return request<Ponto[]>(
+      `/api/pontos${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  create: (data: Partial<Ponto>) =>
+    request<Ponto>("/api/pontos", { method: "POST", body: data }),
+
+  registrar: (data: {
+    profissionalId: string;
+    escolaId?: string;
+    tipo: "ENTRADA" | "SAIDA" | "ENTRADA2" | "SAIDA2";
+    horario: string;
+    latitude?: number;
+    longitude?: number;
+  }) =>
+    request<Ponto>("/api/pontos/registrar", { method: "POST", body: data }),
+
+  getById: (id: string) => request<Ponto>(`/api/pontos/${id}`),
+
+  update: (id: string, data: Partial<Ponto>) =>
+    request<Ponto>(`/api/pontos/${id}`, { method: "PUT", body: data }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/pontos/${id}`, { method: "DELETE" }),
+
+  relatorioMensal: (profissionalId: string, mes: number, ano: number) =>
+    request<RelatorioMensal>(
+      `/api/pontos/relatorio/${profissionalId}/${mes}/${ano}`
+    ),
+};
+
+// ==================== LICENÇAS ====================
+
+export interface Licenca {
+  id: string;
+  profissionalId: string;
+  tipo: string;
+  dataInicio: string;
+  dataFim: string;
+  diasCorridos: number;
+  diasUteis?: number | null;
+  motivo?: string | null;
+  observacoes?: string | null;
+  status: string;
+  documentoPath?: string | null;
+  aprovadaPor?: string | null;
+  dataAprovacao?: string | null;
+  justificativaRejeicao?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  profissional?: {
+    id: string;
+    nome: string;
+    cpf: string;
+    tipo: string;
+    matricula?: string | null;
+    email?: string | null;
+    telefone?: string | null;
+  };
+}
+
+export interface RelatorioLicencas {
+  licencas: Licenca[];
+  totalDias: number;
+  porTipo: Record<string, number>;
+}
+
+export const licencasApi = {
+  list: (filters?: {
+    profissionalId?: string;
+    status?: string;
+    tipo?: string;
+    dataInicio?: string;
+    dataFim?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.profissionalId) params.append("profissionalId", filters.profissionalId);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
+    if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+
+    const queryString = params.toString();
+    return request<Licenca[]>(
+      `/api/licencas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  create: (data: Partial<Licenca>) =>
+    request<Licenca>("/api/licencas", { method: "POST", body: data }),
+
+  getById: (id: string) => request<Licenca>(`/api/licencas/${id}`),
+
+  update: (id: string, data: Partial<Licenca>) =>
+    request<Licenca>(`/api/licencas/${id}`, { method: "PUT", body: data }),
+
+  aprovar: (
+    id: string,
+    data: {
+      aprovadaPor: string;
+      status: "APROVADA" | "REJEITADA";
+      justificativaRejeicao?: string;
+    }
+  ) =>
+    request<Licenca>(`/api/licencas/${id}/aprovar`, {
+      method: "POST",
+      body: data,
+    }),
+
+  cancelar: (id: string) =>
+    request<Licenca>(`/api/licencas/${id}/cancelar`, { method: "POST" }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/licencas/${id}`, { method: "DELETE" }),
+
+  listAtivas: () => request<Licenca[]>("/api/licencas/status/ativas"),
+
+  relatorio: (profissionalId: string, anoInicio?: number, anoFim?: number) => {
+    const params = new URLSearchParams();
+    if (anoInicio) params.append("anoInicio", anoInicio.toString());
+    if (anoFim) params.append("anoFim", anoFim.toString());
+
+    const queryString = params.toString();
+    return request<RelatorioLicencas>(
+      `/api/licencas/relatorio/${profissionalId}${queryString ? `?${queryString}` : ""}`
+    );
+  },
+};
+
 export { ApiError };
