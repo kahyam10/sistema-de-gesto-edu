@@ -1,0 +1,410 @@
+{
+  "AUTH": {
+    "AUTH_001": {
+      "code": "AUTH_001",
+      "message": "Email ou senha inválidos",
+      "statusCode": 401,
+      "category": "AUTENTICACAO"
+    },
+    "AUTH_002": {
+      "code": "AUTH_002",
+      "message": "Token de autenticação inválido ou expirado",
+      "statusCode": 401,
+      "category": "AUTENTICACAO"
+    },
+    "AUTH_003": {
+      "code": "AUTH_003",
+      "message": "Token de autenticação não fornecido",
+      "statusCode": 401,
+      "category": "AUTENTICACAO"
+    },
+    "AUTH_004": {
+      "code": "AUTH_004",
+      "message": "Email já cadastrado no sistema",
+      "statusCode": 409,
+      "category": "AUTENTICACAO"
+    },
+    "AUTH_005": {
+      "code": "AUTH_005",
+      "message": "Usuário inativo no sistema",
+      "statusCode": 403,
+      "category": "AUTENTICACAO"
+    }
+  },
+  "PERMISSION": {
+    "PERM_001": {
+      "code": "PERM_001",
+      "message": "Acesso negado - Permissão insuficiente",
+      "statusCode": 403,
+      "category": "PERMISSAO"
+    },
+    "PERM_002": {
+      "code": "PERM_002",
+      "message": "Acesso negado - Role não permitido para esta operação",
+      "statusCode": 403,
+      "category": "PERMISSAO"
+    },
+    "PERM_003": {
+      "code": "PERM_003",
+      "message": "Acesso negado - Recurso pertence a outra escola",
+      "statusCode": 403,
+      "category": "PERMISSAO"
+    },
+    "PERM_004": {
+      "code": "PERM_004",
+      "message": "Acesso negado - Você não é o proprietário deste recurso",
+      "statusCode": 403,
+      "category": "PERMISSAO"
+    }
+  },
+  "VALIDATION": {
+    "VAL_001": {
+      "code": "VAL_001",
+      "message": "Dados de entrada inválidos",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    },
+    "VAL_002": {
+      "code": "VAL_002",
+      "message": "CPF inválido",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    },
+    "VAL_003": {
+      "code": "VAL_003",
+      "message": "Email inválido",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    },
+    "VAL_004": {
+      "code": "VAL_004",
+      "message": "Data inválida",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    },
+    "VAL_005": {
+      "code": "VAL_005",
+      "message": "Formato de horário inválido (esperado HH:MM)",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    },
+    "VAL_006": {
+      "code": "VAL_006",
+      "message": "Arquivo inválido ou formato não suportado",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    },
+    "VAL_007": {
+      "code": "VAL_007",
+      "message": "Tamanho do arquivo excede o limite permitido",
+      "statusCode": 400,
+      "category": "VALIDACAO"
+    }
+  },
+  "NOTFOUND": {
+    "NF_001": {
+      "code": "NF_001",
+      "message": "Recurso não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_002": {
+      "code": "NF_002",
+      "message": "Usuário não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_003": {
+      "code": "NF_003",
+      "message": "Escola não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_004": {
+      "code": "NF_004",
+      "message": "Matrícula não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_005": {
+      "code": "NF_005",
+      "message": "Turma não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_006": {
+      "code": "NF_006",
+      "message": "Profissional não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_007": {
+      "code": "NF_007",
+      "message": "Etapa de ensino não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_008": {
+      "code": "NF_008",
+      "message": "Série não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_009": {
+      "code": "NF_009",
+      "message": "Disciplina não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_010": {
+      "code": "NF_010",
+      "message": "Avaliação não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_011": {
+      "code": "NF_011",
+      "message": "Nota não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_012": {
+      "code": "NF_012",
+      "message": "Registro de frequência não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_013": {
+      "code": "NF_013",
+      "message": "Ponto não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_014": {
+      "code": "NF_014",
+      "message": "Licença não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_015": {
+      "code": "NF_015",
+      "message": "Sala não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_016": {
+      "code": "NF_016",
+      "message": "Evento do calendário não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    }
+  },
+  "BUSINESS": {
+    "BIZ_001": {
+      "code": "BIZ_001",
+      "message": "Turma está lotada - capacidade máxima atingida",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_002": {
+      "code": "BIZ_002",
+      "message": "Limite de vagas PCD atingido para esta turma",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_003": {
+      "code": "BIZ_003",
+      "message": "CPF já cadastrado no sistema",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_004": {
+      "code": "BIZ_004",
+      "message": "Matrícula já existe para este aluno neste ano letivo",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_005": {
+      "code": "BIZ_005",
+      "message": "Não é possível alterar matrícula com status CONCLUÍDA",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_006": {
+      "code": "BIZ_006",
+      "message": "Não é possível alterar matrícula com status CANCELADA",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_007": {
+      "code": "BIZ_007",
+      "message": "Conflito de horário - Professor já alocado neste horário",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_008": {
+      "code": "BIZ_008",
+      "message": "Conflito de horário - Sala já ocupada neste horário",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_009": {
+      "code": "BIZ_009",
+      "message": "Período de avaliação não corresponde ao bimestre configurado",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_010": {
+      "code": "BIZ_010",
+      "message": "Nota fora do intervalo permitido (0-10)",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_011": {
+      "code": "BIZ_011",
+      "message": "Frequência já registrada para este aluno nesta data",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_012": {
+      "code": "BIZ_012",
+      "message": "Não é possível alterar licença já aprovada ou rejeitada",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_013": {
+      "code": "BIZ_013",
+      "message": "Não é possível excluir licença aprovada",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_014": {
+      "code": "BIZ_014",
+      "message": "Data de início deve ser anterior à data de fim",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_015": {
+      "code": "BIZ_015",
+      "message": "Calendário letivo não possui 200 dias letivos mínimos",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    }
+  },
+  "DATABASE": {
+    "DB_001": {
+      "code": "DB_001",
+      "message": "Erro ao conectar com o banco de dados",
+      "statusCode": 500,
+      "category": "BANCO_DADOS"
+    },
+    "DB_002": {
+      "code": "DB_002",
+      "message": "Erro ao executar consulta no banco de dados",
+      "statusCode": 500,
+      "category": "BANCO_DADOS"
+    },
+    "DB_003": {
+      "code": "DB_003",
+      "message": "Violação de constraint única no banco de dados",
+      "statusCode": 409,
+      "category": "BANCO_DADOS"
+    },
+    "DB_004": {
+      "code": "DB_004",
+      "message": "Violação de chave estrangeira no banco de dados",
+      "statusCode": 409,
+      "category": "BANCO_DADOS"
+    },
+    "DB_005": {
+      "code": "DB_005",
+      "message": "Timeout ao executar operação no banco de dados",
+      "statusCode": 504,
+      "category": "BANCO_DADOS"
+    }
+  },
+  "FILE": {
+    "FILE_001": {
+      "code": "FILE_001",
+      "message": "Erro ao fazer upload do arquivo",
+      "statusCode": 500,
+      "category": "ARQUIVO"
+    },
+    "FILE_002": {
+      "code": "FILE_002",
+      "message": "Arquivo não encontrado no servidor",
+      "statusCode": 404,
+      "category": "ARQUIVO"
+    },
+    "FILE_003": {
+      "code": "FILE_003",
+      "message": "Erro ao deletar arquivo",
+      "statusCode": 500,
+      "category": "ARQUIVO"
+    },
+    "FILE_004": {
+      "code": "FILE_004",
+      "message": "Tipo de arquivo não permitido",
+      "statusCode": 400,
+      "category": "ARQUIVO"
+    },
+    "FILE_005": {
+      "code": "FILE_005",
+      "message": "Arquivo corrompido ou inválido",
+      "statusCode": 400,
+      "category": "ARQUIVO"
+    }
+  },
+  "EXTERNAL": {
+    "EXT_001": {
+      "code": "EXT_001",
+      "message": "Erro ao comunicar com serviço externo",
+      "statusCode": 502,
+      "category": "SERVICO_EXTERNO"
+    },
+    "EXT_002": {
+      "code": "EXT_002",
+      "message": "Serviço externo indisponível",
+      "statusCode": 503,
+      "category": "SERVICO_EXTERNO"
+    },
+    "EXT_003": {
+      "code": "EXT_003",
+      "message": "Timeout ao comunicar com serviço externo",
+      "statusCode": 504,
+      "category": "SERVICO_EXTERNO"
+    }
+  },
+  "SYSTEM": {
+    "SYS_001": {
+      "code": "SYS_001",
+      "message": "Erro interno do servidor",
+      "statusCode": 500,
+      "category": "SISTEMA"
+    },
+    "SYS_002": {
+      "code": "SYS_002",
+      "message": "Serviço temporariamente indisponível",
+      "statusCode": 503,
+      "category": "SISTEMA"
+    },
+    "SYS_003": {
+      "code": "SYS_003",
+      "message": "Recurso não implementado",
+      "statusCode": 501,
+      "category": "SISTEMA"
+    },
+    "SYS_004": {
+      "code": "SYS_004",
+      "message": "Requisição muito grande",
+      "statusCode": 413,
+      "category": "SISTEMA"
+    },
+    "SYS_005": {
+      "code": "SYS_005",
+      "message": "Limite de requisições excedido",
+      "statusCode": 429,
+      "category": "SISTEMA"
+    }
+  }
+}

@@ -29,6 +29,8 @@ import {
   licencasRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
+import { errorHandler } from "./middleware/error-handler.js";
+import { logger } from "./utils/logger.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -132,21 +134,8 @@ async function buildApp() {
   app.register(pontosRoutes, { prefix: "/api/pontos" });
   app.register(licencasRoutes, { prefix: "/api/licencas" });
 
-  // Error handler global
-  app.setErrorHandler((error, request, reply) => {
-    app.log.error(error);
-
-    if (error.validation) {
-      return reply.status(400).send({
-        error: "Erro de validação",
-        details: error.validation,
-      });
-    }
-
-    return reply.status(error.statusCode || 500).send({
-      error: error.message || "Erro interno do servidor",
-    });
-  });
+  // Error handler global com sistema estruturado
+  app.setErrorHandler(errorHandler);
 
   return app;
 }
@@ -160,13 +149,19 @@ async function start() {
 
     await app.listen({ port, host });
 
+    logger.info("Servidor iniciado com sucesso", {
+      port,
+      host,
+      environment: process.env.NODE_ENV || "development",
+    });
+
     console.log(`
     🚀 Servidor rodando em http://localhost:${port}
     📚 Documentação: http://localhost:${port}/docs
     🏥 Health check: http://localhost:${port}/health
     `);
   } catch (err) {
-    console.error(err);
+    logger.error("Falha ao iniciar servidor", err as Error);
     process.exit(1);
   }
 }
