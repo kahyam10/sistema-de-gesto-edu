@@ -1,9 +1,9 @@
 # GUIA DE IMPLEMENTACAO - Sistema de Gestao Educacional
 
 **Municipio:** Ibirapitanga-BA
-**Versao:** 5.0
+**Versao:** 5.1
 **Data de Criacao:** 04 de Fevereiro de 2026
-**Ultima Atualizacao:** 12 de Fevereiro de 2026 (02:00)
+**Ultima Atualizacao:** 12 de Fevereiro de 2026 (04:15)
 **Autor:** KSsoft - Solucoes Tecnologicas
 
 ---
@@ -11,23 +11,26 @@
 ## RESUMO EXECUTIVO
 
 ### Estado Atual do Projeto
-- **Backend:** Fastify + Prisma + SQLite (dev) - 26 arquivos de rotas, 23 servicos
+- **Backend:** Fastify + Prisma + SQLite (dev) - 27 arquivos de rotas, 23 servicos
 - **Frontend:** Next.js 15 + Tailwind + shadcn/ui + React Query + Recharts + @react-pdf/renderer
-- **Progresso Geral:** ~82% concluido
+- **Progresso Geral:** ~88% concluido (Frontend Modulos 4, 5 e 9 completos!)
 - **Builds:** Frontend e Backend compilam corretamente. Erros TS pre-existentes (upload/multipart) corrigidos no Módulo 9
 - **Autenticação:** Sistema JWT implementado com bypass para desenvolvimento (admin@kssoft.com.br / 1234)
 
 ### O Que Ja Temos Funcionando
 | Componente | Status | Descricao |
 |------------|--------|-----------|
-| Schema Prisma | Completo | 20+ modelos (inclui Frequencia, Avaliacao, Nota, Disciplina, GradeHoraria, ConfiguracaoAvaliacao) |
-| Rotas Backend | Avancado | 18 arquivos de rotas (matriculas, turmas, escolas, profissionais, calendario, frequencia, notas, avaliacoes, disciplinas, grade-horaria, configuracao-avaliacao, salas, etapas, series, upload, modules, phases) |
-| Servicos Backend | Avancado | 13 servicos implementados |
-| Dashboard Frontend | Funcional | 3 abas principais: Overview (com graficos Recharts), Cadastros, Pedagogico |
+| Schema Prisma | Completo | 30+ modelos (inclui Ponto, Licenca, BuscaAtiva, AEE, Acompanhamento, PlantaoPedagogico, ReuniaoPais, Comunicado, Notificacao) |
+| Rotas Backend | Completo | 27 arquivos de rotas (todos os modulos 1-5 e 9 implementados) |
+| Servicos Backend | Completo | 23 servicos implementados (incluindo RH, Programas Especiais e Comunicacao) |
+| Dashboard Frontend | Completo | 8 abas: Overview, Cadastros, Pedagogico, RH, Programas Especiais, Comunicacao, Desenvolvimento, Tech |
 | Gestores de Cadastro | Funcional | Escolas, Etapas/Series, Turmas, Matriculas, Profissionais, Salas, Calendario Letivo |
-| Gestao Pedagogica | Em Progresso | Frequencia, Notas, Avaliacoes, Disciplinas, Grade Horaria, Configuracao Avaliacao, Boletim Digital |
+| Gestao Pedagogica | Completo | Frequencia, Notas, Avaliacoes, Disciplinas, Grade Horaria, Configuracao Avaliacao, Boletim Digital |
+| Modulo RH | Completo ✅ | Ponto Digital, Licencas e Afastamentos - Frontend + Backend 100% |
+| Modulo Programas | Completo ✅ | Busca Ativa, AEE, Acompanhamento - Frontend + Backend 100% |
+| Modulo Comunicacao | Completo ✅ | Plantao Pedagogico, Reunioes de Pais, Comunicados, Notificacoes - Frontend + Backend 100% |
 | Calendario Letivo | Avancado | CRUD eventos + contagem 200 dias LDB + alertas |
-| Autenticacao | Basico | JWT implementado |
+| Autenticacao | Basico | JWT implementado com bypass dev (admin@kssoft.com.br / 1234) |
 | Busca/Filtros | Implementado | Matriculas, Profissionais, Turmas - busca por texto |
 | Dados de Saude | Implementado | Tipo sanguineo, alergias, medicamentos, SUS, emergencia, autorizacoes |
 | Dashboard Graficos | Implementado | 4 graficos Recharts (matriculas por escola, status, turno, etapa) |
@@ -811,9 +814,37 @@ model Acompanhamento {
 }
 ```
 
+### Componentes Frontend - Modulo 4
+
+- **PontoDigitalManager.tsx** (completo)
+  - Interface de gestao de folha de ponto
+  - Filtros por profissional, mes e ano
+  - Relatorio mensal de frequencia
+  - Cards de estatisticas (presencas, faltas, percentual)
+  - Badges por tipo de registro
+  - Integracao com pontosApi via React Query
+
+- **LicencasManager.tsx** (479 linhas) ✅
+  - Gestao completa de licencas e afastamentos
+  - Filtros por profissional e status
+  - Cards de estatisticas (total, pendentes, aprovadas, dias)
+  - Listagem em tabela com todas as licencas
+  - Dialogs de aprovacao e rejeicao
+  - Cancelamento de licencas aprovadas
+  - Badges por status (PENDENTE, APROVADA, REJEITADA, CANCELADA)
+  - Integracao com licencasApi via React Query
+
+- **ProfissionaisManager.tsx** (integrado em RHTab)
+  - Gestao de profissionais da educacao
+  - Vinculacao com escolas
+
+**Integracao:** Componentes integrados em [RHTab.tsx](dashboard/src/components/RHTab.tsx) com 3 sub-abas (Ponto Digital, Licencas, Profissionais)
+
+---
+
 ### Componentes Frontend - Modulo 5
 
-- **BuscaAtivaManager.tsx** (535 linhas)
+- **BuscaAtivaManager.tsx** (535 linhas) ✅
   - Interface completa de gestao de busca ativa
   - Formularios de cadastro e edicao
   - Listagem com filtros e busca
@@ -821,6 +852,24 @@ model Acompanhamento {
   - Registro de visitas e encaminhamentos
   - Cards de estatisticas
   - Integracao com API via React Query
+
+- **EducacaoEspecialManager.tsx** (AEE) ✅
+  - Gestao de Atendimento Educacional Especializado
+  - Cadastro de alunos em atendimento
+  - Planos de atendimento (objetivos, estrategias)
+  - Registro de evolucao
+  - Cards de estatisticas
+  - Integracao com aeeApi via React Query
+
+- **AcompanhamentoManager.tsx** ✅
+  - Acompanhamento individualizado de alunos
+  - Tipos: PEDAGOGICO, PSICOLOGICO, SOCIAL, SAUDE
+  - Registro de situacao inicial e evolucoes
+  - Encaminhamentos externos
+  - Historico completo
+  - Integracao com acompanhamentoApi via React Query
+
+**Integracao:** Componentes integrados em [ProgramasEspeciaisTab.tsx](dashboard/src/components/ProgramasEspeciaisTab.tsx) com 3 sub-abas (Busca Ativa, Educacao Especial/AEE, Acompanhamento)
 
 ## MODULO 6: ALIMENTACAO ESCOLAR (Fase 4 - Nao Iniciado)
 
@@ -1023,6 +1072,52 @@ FUTURO (nao prioritario para v1.0):
   - GET /api/notificacao/user/:userId/count - Contar nao lidas
   - PUT /api/notificacao/:id/status-envio - Atualizar status de envio
   - GET /api/notificacao/estatisticas - Estatisticas
+
+### Componentes Frontend - Modulo 9
+
+- **PlantaoPedagogicoManager.tsx** ✅
+  - Gestao de plantoes pedagogicos
+  - Formulario de criacao/edicao com dialogs
+  - Filtros por escola e tipo
+  - Cards de estatisticas (total, proximos, por tipo)
+  - Listagem de plantoes com badges de status
+  - Integracao com plantaoPedagogicoApi via React Query
+
+- **ReuniaoPaisManager.tsx** (718 linhas) ✅
+  - Gestao completa de reunioes de pais
+  - Formulario de agendamento com todos os campos
+  - Filtros por escola e status
+  - Cards de estatisticas (total, agendadas, realizadas, taxa de presenca)
+  - Listagem de reunioes com badges
+  - **PresencasDialog** integrado - controle de presenca de responsaveis
+  - Registro de presenca com nome do responsavel
+  - Lista de presencas registradas
+  - Integracao com reuniaoPaisApi e presencasApi via React Query
+
+- **ComunicadoManager.tsx** ✅
+  - Gestao de comunicados gerais
+  - Criacao com segmentacao (escola, turma, etapa, destinatarios)
+  - Tipos: INFORMATIVO, URGENTE, AVISO, CONVOCACAO
+  - Upload de anexos
+  - Data de expiracao e destaque
+  - Cards de estatisticas
+  - Integracao com comunicadoApi via React Query
+
+- **NotificacaoManager.tsx** ✅
+  - Sistema de notificacoes individuais
+  - Criacao de notificacoes por usuario
+  - Tipos: INFORMACAO, ALERTA, URGENTE, ACADEMICO, FINANCEIRO, LEMBRETE
+  - Prioridade: BAIXA, NORMAL, ALTA, URGENTE
+  - Multicanal: EMAIL, SMS, PUSH (com indicadores de envio)
+  - Marcacao de lida/nao lida
+  - Cards de estatisticas
+  - Integracao com notificacaoApi via React Query
+
+**Integracao:** Componentes integrados em [ComunicacaoTab.tsx](dashboard/src/components/ComunicacaoTab.tsx) com:
+- Cards de resumo (Comunicados ativos, Reunioes agendadas, Plantoes, Notificacoes nao lidas)
+- 4 sub-abas (Plantoes Pedagogicos, Reunioes de Pais, Comunicados, Notificacoes)
+
+---
 
 ### Schema Prisma - Modulo 9
 
@@ -1484,17 +1579,19 @@ MEDIA PRIORIDADE:
 ### PROXIMAS ACOES RECOMENDADAS
 
 **ACAO IMEDIATA (proxima sessao):**
-1. Criar PontosManager.tsx e LicencasManager.tsx
-2. Criar AEEManager.tsx e AcompanhamentoManager.tsx
-3. Adicionar aba "RH" no dashboard com Ponto e Licencas
-4. Adicionar aba "Programas" no dashboard com Busca Ativa, AEE e Acompanhamento
-5. Testar todos os CRUDs criados
+1. ✅ ~~Criar PontosManager.tsx e LicencasManager.tsx~~ - **CONCLUIDO**
+2. ✅ ~~Criar AEEManager.tsx e AcompanhamentoManager.tsx~~ - **CONCLUIDO**
+3. ✅ ~~Adicionar aba "RH" no dashboard com Ponto e Licencas~~ - **CONCLUIDO**
+4. ✅ ~~Adicionar aba "Programas" no dashboard com Busca Ativa, AEE e Acompanhamento~~ - **CONCLUIDO**
+5. ✅ ~~Completar frontend do Modulo 9 (Comunicacao)~~ - **CONCLUIDO**
+6. Testar todos os CRUDs criados manualmente
+7. Validar fluxos completos de cada modulo
 
 **CURTO PRAZO (1-2 semanas):**
-1. Completar frontend do Modulo 9 (Comunicacao)
-2. Implementar paginacao server-side
-3. Adicionar skeleton loaders
-4. Melhorar tratamento de erros
+1. Implementar paginacao server-side em todas as listagens grandes
+2. Adicionar skeleton loaders em todas as operacoes assincronas
+3. Melhorar tratamento de erros com mensagens mais especificas
+4. Adicionar validacoes de formularios mais robustas
 
 **MEDIO PRAZO (3-4 semanas):**
 1. Implementar Modulo 6 (Alimentacao Escolar)
