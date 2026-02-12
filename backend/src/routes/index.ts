@@ -24,3 +24,4 @@ export { plantaoPedagogicoRoutes } from "./plantao-pedagogico.routes.js";
 export { reuniaoPaisRoutes } from "./reuniao-pais.routes.js";
 export { comunicadoRoutes } from "./comunicado.routes.js";
 export { notificacaoRoutes } from "./notificacao.routes.js";
+export { observabilityRoutes } from "./observability.routes.js";

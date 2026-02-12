@@ -1268,3 +1268,145 @@ model Notificacao {
   @@index([createdAt])
   @@map("notificacoes")
 }
+
+// ==================== OBSERVABILIDADE E MONITORAMENTO ====================
+
+// Logs de requisições HTTP
+model RequestLog {
+  id            String    @id @default(cuid())
+  
+  // Request
+  method        String    // GET, POST, PUT, DELETE
+  path          String    // /api/matriculas
+  query         String?   // Query string
+  statusCode    Int       // 200, 404, 500, etc.
+  
+  // Timing
+  duration      Int       // Tempo de resposta em ms
+  timestamp     DateTime  @default(now())
+  
+  // Usuario
+  userId        String?
+  userEmail     String?
+  userRole      String?
+  
+  // Request/Response
+  requestBody   String?   // JSON do body (opcional)
+  responseBody  String?   // JSON da resposta (apenas erros)
+  errorMessage  String?   // Mensagem de erro se houver
+  errorStack    String?   // Stack trace se houver erro
+  
+  // Metadata
+  ip            String?
+  userAgent     String?
+  module        String?   // MATRICULAS, PROFISSIONAIS, TURMAS, etc.
+  
+  // Indices para queries rápidas
+  @@index([path])
+  @@index([method])
+  @@index([statusCode])
+  @@index([timestamp])
+  @@index([userId])
+  @@index([module])
+  @@map("request_logs")
+}
+
+// Métricas agregadas por rota
+model RouteMetrics {
+  id            String    @id @default(cuid())
+  
+  // Identificação
+  method        String    // GET, POST, PUT, DELETE
+  path          String    // /api/matriculas
+  module        String?   // MATRICULAS, PROFISSIONAIS, etc.
+  
+  // Estatísticas do dia
+  date          DateTime  // Data do dia (00:00:00)
+  
+  // Contadores
+  totalRequests Int       @default(0)
+  successCount  Int       @default(0)  // Status 2xx
+  errorCount    Int       @default(0)  // Status 4xx + 5xx
+  error4xxCount Int       @default(0)  // Status 4xx
+  error5xxCount Int       @default(0)  // Status 5xx
+  
+  // Timing
+  avgDuration   Float     @default(0)  // Média em ms
+  minDuration   Int       @default(0)  // Mínimo em ms
+  maxDuration   Int       @default(0)  // Máximo em ms
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([method, path, date])
+  @@index([date])
+  @@index([module])
+  @@index([totalRequests])
+  @@map("route_metrics")
+}
+
+// Erros registrados
+model ErrorLog {
+  id            String    @id @default(cuid())
+  
+  // Classificação
+  type          String    // API_ERROR, DATABASE_ERROR, VALIDATION_ERROR, etc.
+  severity      String    // LOW, MEDIUM, HIGH, CRITICAL
+  module        String?   // MATRICULAS, PROFISSIONAIS, etc.
+  
+  // Error details
+  message       String
+  stack         String?
+  code          String?   // Error code se houver
+  
+  // Context
+  path          String?
+  method        String?
+  userId        String?
+  requestData   String?   // JSON dos dados da requisição
+  
+  // Metadata
+  count         Int       @default(1) // Quantas vezes ocorreu
+  firstSeen     DateTime  @default(now())
+  lastSeen      DateTime  @default(now())
+  resolved      Boolean   @default(false)
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  notes         String?   // Notas sobre a resolução
+  
+  @@index([type])
+  @@index([severity])
+  @@index([module])
+  @@index([resolved])
+  @@index([lastSeen])
+  @@map("error_logs")
+}
+
+// Métricas do sistema
+model SystemMetrics {
+  id            String    @id @default(cuid())
+  
+  // Timestamp
+  timestamp     DateTime  @default(now())
+  
+  // Performance
+  uptime        Int       // Segundos desde último restart
+  memoryUsage   Float     // MB
+  cpuUsage      Float     // Percentual
+  
+  // Database
+  dbConnections Int       // Conexões ativas
+  dbQueryTime   Float     // Tempo médio de query em ms
+  
+  // API
+  requestsPerMin Int      // Requests por minuto
+  avgResponseTime Float   // Tempo médio de resposta em ms
+  errorRate     Float     // Taxa de erro (0-100%)
+  
+  // Health status
+  status        String    // HEALTHY, DEGRADED, DOWN
+  
+  @@index([timestamp])
+  @@map("system_metrics")
+}

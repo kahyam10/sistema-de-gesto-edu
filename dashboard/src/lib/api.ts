@@ -7,6 +7,30 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+// Pagination types
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
+// Helper to add pagination params to URLSearchParams
+function addPaginationParams(params: URLSearchParams, pagination?: PaginationParams): void {
+  if (pagination?.page) params.append("page", pagination.page.toString());
+  if (pagination?.limit) params.append("limit", pagination.limit.toString());
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -453,19 +477,25 @@ export interface TurmaEstatisticas {
 }
 
 export const turmasApi = {
-  list: (filters?: {
-    escolaId?: string;
-    anoLetivo?: number;
-    ativo?: boolean;
-  }) => {
+  list: (
+    filters?: {
+      escolaId?: string;
+      anoLetivo?: number;
+      ativo?: boolean;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.anoLetivo)
       params.append("anoLetivo", filters.anoLetivo.toString());
     if (filters?.ativo !== undefined)
       params.append("ativo", filters.ativo.toString());
+    addPaginationParams(params, pagination);
     const query = params.toString();
-    return request<Turma[]>(`/api/turmas${query ? `?${query}` : ""}`);
+    return pagination
+      ? request<PaginatedResponse<Turma>>(`/api/turmas${query ? `?${query}` : ""}`)
+      : request<Turma[]>(`/api/turmas${query ? `?${query}` : ""}`);
   },
   get: (id: string) => request<Turma>(`/api/turmas/${id}`),
   getEstatisticas: (id: string) =>
@@ -702,13 +732,16 @@ export interface CreateMatriculaData {
 }
 
 export const matriculasApi = {
-  list: (filters?: {
-    escolaId?: string;
-    etapaId?: string;
-    turmaId?: string;
-    anoLetivo?: number;
-    status?: string;
-  }) => {
+  list: (
+    filters?: {
+      escolaId?: string;
+      etapaId?: string;
+      turmaId?: string;
+      anoLetivo?: number;
+      status?: string;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.etapaId) params.append("etapaId", filters.etapaId);
@@ -716,8 +749,11 @@ export const matriculasApi = {
     if (filters?.anoLetivo)
       params.append("anoLetivo", filters.anoLetivo.toString());
     if (filters?.status) params.append("status", filters.status);
+    addPaginationParams(params, pagination);
     const query = params.toString();
-    return request<Matricula[]>(`/api/matriculas${query ? `?${query}` : ""}`);
+    return pagination
+      ? request<PaginatedResponse<Matricula>>(`/api/matriculas${query ? `?${query}` : ""}`)
+      : request<Matricula[]>(`/api/matriculas${query ? `?${query}` : ""}`);
   },
   get: (id: string) => request<Matricula>(`/api/matriculas/${id}`),
   getByNumero: (numero: string) =>
@@ -804,15 +840,23 @@ export interface LotacaoResumo {
 }
 
 export const profissionaisApi = {
-  list: (filters?: { tipo?: string; ativo?: boolean }) => {
+  list: (
+    filters?: { tipo?: string; ativo?: boolean },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.ativo !== undefined)
       params.append("ativo", filters.ativo.toString());
+    addPaginationParams(params, pagination);
     const query = params.toString();
-    return request<ProfissionalEducacao[]>(
-      `/api/profissionais${query ? `?${query}` : ""}`
-    );
+    return pagination
+      ? request<PaginatedResponse<ProfissionalEducacao>>(
+          `/api/profissionais${query ? `?${query}` : ""}`
+        )
+      : request<ProfissionalEducacao[]>(
+          `/api/profissionais${query ? `?${query}` : ""}`
+        );
   },
   get: (id: string) =>
     request<ProfissionalEducacao>(`/api/profissionais/${id}`),
@@ -1834,24 +1878,32 @@ export interface RelatorioMensal {
 }
 
 export const pontosApi = {
-  list: (filters?: {
-    profissionalId?: string;
-    escolaId?: string;
-    dataInicio?: string;
-    dataFim?: string;
-    tipoRegistro?: string;
-  }) => {
+  list: (
+    filters?: {
+      profissionalId?: string;
+      escolaId?: string;
+      dataInicio?: string;
+      dataFim?: string;
+      tipoRegistro?: string;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.profissionalId) params.append("profissionalId", filters.profissionalId);
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
     if (filters?.dataFim) params.append("dataFim", filters.dataFim);
     if (filters?.tipoRegistro) params.append("tipoRegistro", filters.tipoRegistro);
+    addPaginationParams(params, pagination);
 
     const queryString = params.toString();
-    return request<Ponto[]>(
-      `/api/pontos${queryString ? `?${queryString}` : ""}`
-    );
+    return pagination
+      ? request<PaginatedResponse<Ponto>>(
+          `/api/pontos${queryString ? `?${queryString}` : ""}`
+        )
+      : request<Ponto[]>(
+          `/api/pontos${queryString ? `?${queryString}` : ""}`
+        );
   },
 
   create: (data: Partial<Ponto>) =>
@@ -1918,24 +1970,32 @@ export interface RelatorioLicencas {
 }
 
 export const licencasApi = {
-  list: (filters?: {
-    profissionalId?: string;
-    status?: string;
-    tipo?: string;
-    dataInicio?: string;
-    dataFim?: string;
-  }) => {
+  list: (
+    filters?: {
+      profissionalId?: string;
+      status?: string;
+      tipo?: string;
+      dataInicio?: string;
+      dataFim?: string;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.profissionalId) params.append("profissionalId", filters.profissionalId);
     if (filters?.status) params.append("status", filters.status);
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
     if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+    addPaginationParams(params, pagination);
 
     const queryString = params.toString();
-    return request<Licenca[]>(
-      `/api/licencas${queryString ? `?${queryString}` : ""}`
-    );
+    return pagination
+      ? request<PaginatedResponse<Licenca>>(
+          `/api/licencas${queryString ? `?${queryString}` : ""}`
+        )
+      : request<Licenca[]>(
+          `/api/licencas${queryString ? `?${queryString}` : ""}`
+        );
   },
 
   create: (data: Partial<Licenca>) =>
@@ -2635,14 +2695,17 @@ export const plantaoPedagogicoApi = {
 // ==================== REUNIÃO DE PAIS API ====================
 
 export const reuniaoPaisApi = {
-  list: (filters?: {
-    escolaId?: string;
-    turmaId?: string;
-    tipo?: string;
-    status?: string;
-    dataInicio?: string;
-    dataFim?: string;
-  }) => {
+  list: (
+    filters?: {
+      escolaId?: string;
+      turmaId?: string;
+      tipo?: string;
+      status?: string;
+      dataInicio?: string;
+      dataFim?: string;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.turmaId) params.append("turmaId", filters.turmaId);
@@ -2650,10 +2713,15 @@ export const reuniaoPaisApi = {
     if (filters?.status) params.append("status", filters.status);
     if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
     if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+    addPaginationParams(params, pagination);
     const queryString = params.toString();
-    return request<ReuniaoPais[]>(
-      `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`
-    );
+    return pagination
+      ? request<PaginatedResponse<ReuniaoPais>>(
+          `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`
+        )
+      : request<ReuniaoPais[]>(
+          `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`
+        );
   },
 
   getById: (id: string) =>
@@ -2703,16 +2771,19 @@ export const reuniaoPaisApi = {
 // ==================== COMUNICADO API ====================
 
 export const comunicadoApi = {
-  list: (filters?: {
-    escolaId?: string;
-    turmaId?: string;
-    etapaId?: string;
-    tipo?: string;
-    categoria?: string;
-    destinatarios?: string;
-    ativo?: boolean;
-    destaque?: boolean;
-  }) => {
+  list: (
+    filters?: {
+      escolaId?: string;
+      turmaId?: string;
+      etapaId?: string;
+      tipo?: string;
+      categoria?: string;
+      destinatarios?: string;
+      ativo?: boolean;
+      destaque?: boolean;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.turmaId) params.append("turmaId", filters.turmaId);
@@ -2722,10 +2793,15 @@ export const comunicadoApi = {
     if (filters?.destinatarios) params.append("destinatarios", filters.destinatarios);
     if (filters?.ativo !== undefined) params.append("ativo", String(filters.ativo));
     if (filters?.destaque !== undefined) params.append("destaque", String(filters.destaque));
+    addPaginationParams(params, pagination);
     const queryString = params.toString();
-    return request<Comunicado[]>(
-      `/api/comunicados${queryString ? `?${queryString}` : ""}`
-    );
+    return pagination
+      ? request<PaginatedResponse<Comunicado>>(
+          `/api/comunicados${queryString ? `?${queryString}` : ""}`
+        )
+      : request<Comunicado[]>(
+          `/api/comunicados${queryString ? `?${queryString}` : ""}`
+        );
   },
 
   getById: (id: string) =>
@@ -2782,21 +2858,29 @@ export const comunicadoApi = {
 // ==================== NOTIFICAÇÃO API ====================
 
 export const notificacaoApi = {
-  list: (filters?: {
-    userId?: string;
-    tipo?: string;
-    prioridade?: string;
-    lida?: boolean;
-  }) => {
+  list: (
+    filters?: {
+      userId?: string;
+      tipo?: string;
+      prioridade?: string;
+      lida?: boolean;
+    },
+    pagination?: PaginationParams
+  ) => {
     const params = new URLSearchParams();
     if (filters?.userId) params.append("userId", filters.userId);
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.prioridade) params.append("prioridade", filters.prioridade);
     if (filters?.lida !== undefined) params.append("lida", String(filters.lida));
+    addPaginationParams(params, pagination);
     const queryString = params.toString();
-    return request<Notificacao[]>(
-      `/api/notificacoes${queryString ? `?${queryString}` : ""}`
-    );
+    return pagination
+      ? request<PaginatedResponse<Notificacao>>(
+          `/api/notificacoes${queryString ? `?${queryString}` : ""}`
+        )
+      : request<Notificacao[]>(
+          `/api/notificacoes${queryString ? `?${queryString}` : ""}`
+        );
   },
 
   porUsuario: (userId: string, filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS") => {
@@ -2869,6 +2953,209 @@ export const notificacaoApi = {
     request<Notificacao>(`/api/notificacoes/${id}/status-envio`, {
       method: "PUT",
       body: { canal, enviado },
+    }),
+};
+
+// ==================== OBSERVABILITY API ====================
+
+export interface SystemOverview {
+  summary: {
+    totalRequests24h: number;
+    errors24h: number;
+    errorRate: number;
+    avgResponseTime: number;
+  };
+  systemHealth: {
+    status: string;
+    uptime: number;
+    memoryUsage: number;
+    cpuUsage: number;
+  };
+  topRoutes: Array<{
+    method: string;
+    path: string;
+    totalRequests: number;
+    errorCount: number;
+    avgDuration: number;
+  }>;
+}
+
+export interface RouteMetric {
+  id: string;
+  method: string;
+  path: string;
+  module: string | null;
+  date: string;
+  totalRequests: number;
+  successCount: number;
+  errorCount: number;
+  error4xxCount: number;
+  error5xxCount: number;
+  avgDuration: number;
+  minDuration: number;
+  maxDuration: number;
+}
+
+export interface ErrorLog {
+  id: string;
+  type: string;
+  severity: string;
+  module: string | null;
+  message: string;
+  stack: string | null;
+  count: number;
+  firstSeen: string;
+  lastSeen: string;
+  resolved: boolean;
+  resolvedBy: string | null;
+  notes: string | null;
+}
+
+export interface RequestLog {
+  id: string;
+  method: string;
+  path: string;
+  query: string | null;
+  statusCode: number;
+  duration: number;
+  timestamp: string;
+  userId: string | null;
+  userEmail: string | null;
+  userRole: string | null;
+  errorMessage: string | null;
+  errorStack: string | null;
+  ip: string | null;
+  userAgent: string | null;
+  module: string | null;
+}
+
+export interface TimelineData {
+  timestamp: string;
+  totalRequests: number;
+  successCount: number;
+  errorCount: number;
+  avgDuration: number;
+}
+
+export interface ModuleStats {
+  module: string;
+  totalRequests: number;
+  successCount: number;
+  errorCount: number;
+  avgDuration: number;
+  errorRate: number;
+}
+
+export const observabilityApi = {
+  getOverview: () =>
+    request<SystemOverview>("/api/observability/overview"),
+
+  getRoutes: (filters?: {
+    module?: string;
+    method?: string;
+    startDate?: string;
+    endDate?: string;
+    sortBy?: string;
+    order?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.module) params.append("module", filters.module);
+    if (filters?.method) params.append("method", filters.method);
+    if (filters?.startDate) params.append("startDate", filters.startDate);
+    if (filters?.endDate) params.append("endDate", filters.endDate);
+    if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+    if (filters?.order) params.append("order", filters.order);
+    const queryString = params.toString();
+    return request<RouteMetric[]>(
+      `/api/observability/routes${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getErrors: (filters?: {
+    module?: string;
+    severity?: string;
+    resolved?: boolean;
+    sortBy?: string;
+    order?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.module) params.append("module", filters.module);
+    if (filters?.severity) params.append("severity", filters.severity);
+    if (filters?.resolved !== undefined)
+      params.append("resolved", String(filters.resolved));
+    if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+    if (filters?.order) params.append("order", filters.order);
+    const queryString = params.toString();
+    return request<ErrorLog[]>(
+      `/api/observability/errors${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  resolveError: (id: string, data: { resolvedBy: string; notes?: string }) =>
+    request<ErrorLog>(`/api/observability/errors/${id}/resolve`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  getLogs: (
+    filters?: {
+      method?: string;
+      path?: string;
+      statusCode?: number;
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+    pagination?: PaginationParams
+  ) => {
+    const params = new URLSearchParams();
+    if (filters?.method) params.append("method", filters.method);
+    if (filters?.path) params.append("path", filters.path);
+    if (filters?.statusCode)
+      params.append("statusCode", String(filters.statusCode));
+    if (filters?.userId) params.append("userId", filters.userId);
+    if (filters?.startDate) params.append("startDate", filters.startDate);
+    if (filters?.endDate) params.append("endDate", filters.endDate);
+    addPaginationParams(params, pagination);
+    const queryString = params.toString();
+    return pagination
+      ? request<PaginatedResponse<RequestLog>>(
+          `/api/observability/logs${queryString ? `?${queryString}` : ""}`
+        )
+      : request<RequestLog[]>(
+          `/api/observability/logs${queryString ? `?${queryString}` : ""}`
+        );
+  },
+
+  getTimeline: (filters?: {
+    startDate?: string;
+    endDate?: string;
+    granularity?: "hour" | "day";
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append("startDate", filters.startDate);
+    if (filters?.endDate) params.append("endDate", filters.endDate);
+    if (filters?.granularity) params.append("granularity", filters.granularity);
+    const queryString = params.toString();
+    return request<TimelineData[]>(
+      `/api/observability/timeline${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getModules: (filters?: { startDate?: string; endDate?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append("startDate", filters.startDate);
+    if (filters?.endDate) params.append("endDate", filters.endDate);
+    const queryString = params.toString();
+    return request<ModuleStats[]>(
+      `/api/observability/modules${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  cleanupLogs: (days: number) =>
+    request<{ deleted: number }>(`/api/observability/logs/cleanup`, {
+      method: "DELETE",
+      body: { days },
     }),
 };
 

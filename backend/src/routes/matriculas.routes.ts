@@ -22,6 +22,105 @@ export async function matriculasRoutes(app: FastifyInstance) {
   // Listar todas as matrículas
   app.get(
     "/",
+    {
+      schema: {
+        tags: ["Matrículas"],
+        summary: "Listar matrículas",
+        description: `
+Lista todas as matrículas do sistema com filtros opcionais.
+
+**Filtros disponíveis:**
+- \`escolaId\`: Filtrar por escola específica
+- \`etapaId\`: Filtrar por etapa de ensino
+- \`turmaId\`: Filtrar por turma
+- \`anoLetivo\`: Filtrar por ano letivo
+- \`status\`: Filtrar por status (ATIVA, TRANSFERIDA, CANCELADA, CONCLUIDA)
+
+**Paginação:**
+- Adicione \`page\` e \`limit\` para ativar paginação
+- Sem paginação: retorna array de matrículas
+- Com paginação: retorna objeto com data e pagination
+
+**Permissões:**
+- Requer autenticação (Bearer token)
+- Todos os usuários autenticados podem listar
+        `,
+        security: [{ bearerAuth: [] }],
+        querystring: {
+          type: "object",
+          properties: {
+            escolaId: {
+              type: "string",
+              description: "ID da escola para filtrar",
+              example: "clx1234567890",
+            },
+            etapaId: {
+              type: "string",
+              description: "ID da etapa de ensino",
+            },
+            turmaId: {
+              type: "string",
+              description: "ID da turma",
+            },
+            anoLetivo: {
+              type: "string",
+              description: "Ano letivo (ex: 2026)",
+              example: "2026",
+            },
+            status: {
+              type: "string",
+              enum: ["ATIVA", "TRANSFERIDA", "CANCELADA", "CONCLUIDA"],
+              description: "Status da matrícula",
+            },
+            page: {
+              type: "string",
+              description: "Número da página para paginação",
+              example: "1",
+            },
+            limit: {
+              type: "string",
+              description: "Itens por página (máx: 100)",
+              example: "20",
+            },
+          },
+        },
+        response: {
+          200: {
+            description: "Lista de matrículas (paginada ou completa)",
+            type: "object",
+            properties: {
+              data: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    numeroMatricula: { type: "string" },
+                    nomeAluno: { type: "string" },
+                    dataNascimento: { type: "string", format: "date" },
+                    status: { type: "string" },
+                    anoLetivo: { type: "number" },
+                  },
+                },
+              },
+              pagination: {
+                $ref: "#/components/schemas/PaginationMeta",
+              },
+            },
+          },
+          401: {
+            $ref: "#/components/responses/Unauthorized",
+          },
+          500: {
+            description: "Erro interno do servidor",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Querystring: MatriculaFilters }>,
       reply: FastifyReply
