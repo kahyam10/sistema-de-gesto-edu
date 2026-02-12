@@ -17,14 +17,20 @@ model User {
   email     String   @unique
   password  String
   nome      String
-  role      String   @default("USER") // ADMIN, DIRETOR, PROFESSOR, SECRETARIA, SEMEC
+  role      String   @default("RESPONSAVEL") // ADMIN, SEMEC, DIRETOR, COORDENADOR, SECRETARIA, PROFESSOR, RESPONSAVEL
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relacionamentos
-  escolaId String?
-  escola   Escola? @relation(fields: [escolaId], references: [id])
+  // Relacionamentos para vinculação específica
+  escolaId        String?
+  escola          Escola? @relation(fields: [escolaId], references: [id])
+
+  profissionalId  String?              @unique
+  profissional    ProfissionalEducacao? @relation(fields: [profissionalId], references: [id])
+
+  matriculaId     String?              @unique
+  matricula       Matricula?           @relation(fields: [matriculaId], references: [id])
 
   @@map("users")
 }
@@ -276,6 +282,7 @@ model Matricula {
 
   frequencias Frequencia[]
   notas       Nota[]
+  user        User?
 
   @@map("matriculas")
 }
@@ -312,6 +319,7 @@ model ProfissionalEducacao {
   afastamentos   Afastamento[]
   horarios       GradeHoraria[]
   avaliacoes     Avaliacao[]
+  user           User?
 
   @@map("profissionais_educacao")
 }
