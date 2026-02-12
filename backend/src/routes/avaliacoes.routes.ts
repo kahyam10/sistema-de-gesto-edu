@@ -18,12 +18,14 @@ export async function avaliacoesRoutes(app: FastifyInstance) {
           turmaId?: string;
           disciplinaId?: string;
           bimestre?: string;
+          page?: string;
+          limit?: string;
         };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { turmaId, disciplinaId, bimestre } = request.query;
+        const { turmaId, disciplinaId, bimestre, page, limit } = request.query;
         const filters: {
           turmaId?: string;
           disciplinaId?: string;
@@ -32,6 +34,15 @@ export async function avaliacoesRoutes(app: FastifyInstance) {
         if (turmaId) filters.turmaId = turmaId;
         if (disciplinaId) filters.disciplinaId = disciplinaId;
         if (bimestre) filters.bimestre = parseInt(bimestre);
+
+        // Suporte a paginação
+        if (page && limit) {
+          const result = await avaliacaoService.findAllPaginated(filters, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+          });
+          return reply.send(result);
+        }
 
         const avaliacoes = await avaliacaoService.findAll(filters);
         return reply.send(avaliacoes);

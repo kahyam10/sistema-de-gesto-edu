@@ -133,6 +133,82 @@ export class AcompanhamentoService {
     });
   }
 
+  async findAllPaginated(
+    filters: {
+      escolaId?: string;
+      tipo?: string;
+      status?: string;
+      profissionalId?: string;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.escolaId) where.escolaId = filters.escolaId;
+    if (filters?.tipo) where.tipo = filters.tipo;
+    if (filters?.status) where.status = filters.status;
+    if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
+
+    const include = {
+      matricula: {
+        select: {
+          nomeAluno: true,
+          numeroMatricula: true,
+          escola: {
+            select: {
+              nome: true,
+            },
+          },
+          turma: {
+            select: {
+              nome: true,
+              serie: {
+                select: {
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      profissional: {
+        select: {
+          nome: true,
+        },
+      },
+      escola: {
+        select: {
+          nome: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.acompanhamentoIndividualizado.findMany({
+        where,
+        include,
+        orderBy: [
+          { status: "asc" },
+          { dataInicio: "desc" },
+        ],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.acompanhamentoIndividualizado.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async findById(id: string) {
     const acompanhamento = await prisma.acompanhamentoIndividualizado.findUnique({
       where: { id },

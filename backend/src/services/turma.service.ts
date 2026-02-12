@@ -23,6 +23,49 @@ export class TurmaService {
     });
   }
 
+  async findAllPaginated(
+    filters: {
+      escolaId?: string;
+      anoLetivo?: number;
+      ativo?: boolean;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where = filters;
+    const include = {
+      escola: true,
+      serie: { include: { etapa: true } },
+      matriculas: {
+        select: { id: true, nomeAluno: true, possuiDeficiencia: true },
+      },
+      professores: {
+        include: { profissional: true },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.turma.findMany({
+        where,
+        include,
+        orderBy: [{ escola: { nome: "asc" } }, { nome: "asc" }],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.turma.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async findById(id: string) {
     return prisma.turma.findUnique({
       where: { id },

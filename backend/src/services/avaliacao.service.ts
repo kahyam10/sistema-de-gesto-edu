@@ -31,6 +31,42 @@ export class AvaliacaoService {
     });
   }
 
+  async findAllPaginated(
+    filters: {
+      turmaId?: string;
+      disciplinaId?: string;
+      bimestre?: number;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+    if (filters?.turmaId) where.turmaId = filters.turmaId;
+    if (filters?.disciplinaId) where.disciplinaId = filters.disciplinaId;
+    if (filters?.bimestre) where.bimestre = filters.bimestre;
+
+    const [data, total] = await Promise.all([
+      prisma.avaliacao.findMany({
+        where,
+        include: avaliacaoInclude,
+        orderBy: [{ bimestre: "asc" }, { data: "asc" }],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.avaliacao.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async findById(id: string) {
     return prisma.avaliacao.findUnique({
       where: { id },

@@ -21,12 +21,14 @@ export async function pontosRoutes(app: FastifyInstance) {
           dataInicio?: string;
           dataFim?: string;
           tipoRegistro?: string;
+          page?: string;
+          limit?: string;
         };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { profissionalId, escolaId, dataInicio, dataFim, tipoRegistro } =
+        const { profissionalId, escolaId, dataInicio, dataFim, tipoRegistro, page, limit } =
           request.query;
 
         const filters: any = {};
@@ -35,6 +37,15 @@ export async function pontosRoutes(app: FastifyInstance) {
         if (tipoRegistro) filters.tipoRegistro = tipoRegistro;
         if (dataInicio) filters.dataInicio = new Date(dataInicio);
         if (dataFim) filters.dataFim = new Date(dataFim);
+
+        // Suporte a paginação
+        if (page && limit) {
+          const result = await pontoService.findAllPaginated(filters, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+          });
+          return reply.send(result);
+        }
 
         const pontos = await pontoService.findAll(filters);
         return reply.send(pontos);

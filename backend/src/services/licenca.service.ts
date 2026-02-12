@@ -64,6 +64,64 @@ export class LicencaService {
     });
   }
 
+  // Busca todas as licenças com paginação
+  async findAllPaginated(
+    filters: {
+      profissionalId?: string;
+      status?: string;
+      tipo?: string;
+      dataInicio?: Date;
+      dataFim?: Date;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
+    if (filters?.status) where.status = filters.status;
+    if (filters?.tipo) where.tipo = filters.tipo;
+
+    if (filters?.dataInicio || filters?.dataFim) {
+      where.dataInicio = {};
+      if (filters.dataInicio) where.dataInicio.gte = filters.dataInicio;
+      if (filters.dataFim) where.dataInicio.lte = filters.dataFim;
+    }
+
+    const include = {
+      profissional: {
+        select: {
+          id: true,
+          nome: true,
+          cpf: true,
+          tipo: true,
+          matricula: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.licenca.findMany({
+        where,
+        include,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.licenca.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   // Busca licença por ID
   async findById(id: string): Promise<Licenca | null> {
     return await prisma.licenca.findUnique({

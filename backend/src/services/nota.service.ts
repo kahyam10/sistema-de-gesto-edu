@@ -101,6 +101,64 @@ export class NotaService {
     });
   }
 
+  async findAllPaginated(
+    filters: {
+      turmaId?: string;
+      disciplina?: string;
+      matriculaId?: string;
+      bimestre?: number;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.turmaId) where.turmaId = filters.turmaId;
+    if (filters?.disciplina) where.disciplina = filters.disciplina;
+    if (filters?.matriculaId) where.matriculaId = filters.matriculaId;
+    if (filters?.bimestre) where.bimestre = filters.bimestre;
+
+    const include = {
+      avaliacao: {
+        select: {
+          id: true,
+          nome: true,
+          tipo: true,
+          peso: true,
+          valorMaximo: true,
+        },
+      },
+      matricula: {
+        select: { id: true, nomeAluno: true, numeroMatricula: true },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.nota.findMany({
+        where,
+        include,
+        orderBy: [
+          { disciplina: "asc" },
+          { bimestre: "asc" },
+          { createdAt: "asc" },
+        ],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.nota.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async create(data: CreateNotaInput) {
     // Verifica se matrícula existe e pertence à turma
     const matricula = await prisma.matricula.findUnique({

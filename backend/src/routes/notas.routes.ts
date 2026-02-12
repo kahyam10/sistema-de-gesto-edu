@@ -20,18 +20,29 @@ export async function notasRoutes(app: FastifyInstance) {
           disciplina?: string;
           matriculaId?: string;
           bimestre?: string;
+          page?: string;
+          limit?: string;
         };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { turmaId, disciplina, matriculaId, bimestre } = request.query;
+        const { turmaId, disciplina, matriculaId, bimestre, page, limit } = request.query;
 
         const filters: any = {};
         if (turmaId) filters.turmaId = turmaId;
         if (disciplina) filters.disciplina = disciplina;
         if (matriculaId) filters.matriculaId = matriculaId;
         if (bimestre) filters.bimestre = parseInt(bimestre);
+
+        // Suporte a paginação
+        if (page && limit) {
+          const result = await notaService.findAllPaginated(filters, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+          });
+          return reply.send(result);
+        }
 
         const notas = await notaService.findAll(filters);
         return reply.send(notas);

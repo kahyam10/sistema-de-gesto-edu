@@ -165,6 +165,85 @@ export class ComunicadoService {
   }
 
   /**
+   * Lista todos os comunicados com paginação
+   */
+  async findAllPaginated(
+    filters: {
+      escolaId?: string;
+      turmaId?: string;
+      etapaId?: string;
+      tipo?: string;
+      categoria?: string;
+      destinatarios?: string;
+      ativo?: boolean;
+      destaque?: boolean;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.escolaId) where.escolaId = filters.escolaId;
+    if (filters?.turmaId) where.turmaId = filters.turmaId;
+    if (filters?.etapaId) where.etapaId = filters.etapaId;
+    if (filters?.tipo) where.tipo = filters.tipo;
+    if (filters?.categoria) where.categoria = filters.categoria;
+    if (filters?.destinatarios) where.destinatarios = filters.destinatarios;
+    if (filters?.ativo !== undefined) where.ativo = filters.ativo;
+    if (filters?.destaque !== undefined) where.destaque = filters.destaque;
+
+    // Filtrar comunicados não expirados
+    where.OR = [
+      { dataExpiracao: null },
+      { dataExpiracao: { gte: new Date() } },
+    ];
+
+    const include = {
+      escola: true,
+      turma: {
+        include: {
+          serie: {
+            include: {
+              etapa: true,
+            },
+          },
+        },
+      },
+      etapa: true,
+      autor: true,
+      _count: {
+        select: {
+          destinatariosLeitura: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.comunicado.findMany({
+        where,
+        include,
+        orderBy: [
+          { destaque: "desc" },
+          { dataPublicacao: "desc" },
+        ],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.comunicado.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
+  /**
    * Busca um comunicado por ID
    */
   async findById(id: string) {

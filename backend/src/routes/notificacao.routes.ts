@@ -9,13 +9,22 @@ export async function notificacaoRoutes(app: FastifyInstance) {
 
   // GET /api/notificacoes - Lista todas as notificações
   app.get("/", async (request, reply) => {
-    const { userId, tipo, prioridade, lida } = request.query as any;
+    const { userId, tipo, prioridade, lida, page, limit } = request.query as any;
 
     const filters: any = {};
     if (userId) filters.userId = userId;
     if (tipo) filters.tipo = tipo;
     if (prioridade) filters.prioridade = prioridade;
     if (lida !== undefined) filters.lida = lida === "true";
+
+    // Suporte a paginação
+    if (page && limit) {
+      const result = await notificacaoService.findAllPaginated(filters, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+      return reply.status(200).send(result);
+    }
 
     const notificacoes = await notificacaoService.findAll(filters);
     return reply.status(200).send(notificacoes);

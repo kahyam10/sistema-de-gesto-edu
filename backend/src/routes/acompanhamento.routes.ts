@@ -10,13 +10,20 @@ export async function acompanhamentoRoutes(app: FastifyInstance) {
 
   // Listar todos os acompanhamentos
   app.get("/", async (request, reply) => {
-    const { escolaId, tipo, status, profissionalId } = request.query as any;
-    const acompanhamentos = await service.findAll({
-      escolaId,
-      tipo,
-      status,
-      profissionalId,
-    });
+    const { escolaId, tipo, status, profissionalId, page, limit } = request.query as any;
+
+    const filters = { escolaId, tipo, status, profissionalId };
+
+    // Suporte a paginação
+    if (page && limit) {
+      const result = await service.findAllPaginated(filters, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+      return reply.send(result);
+    }
+
+    const acompanhamentos = await service.findAll(filters);
     return reply.send(acompanhamentos);
   });
 

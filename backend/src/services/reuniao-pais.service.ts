@@ -137,6 +137,78 @@ export class ReuniaoPaisService {
   }
 
   /**
+   * Lista todas as reuniões com paginação
+   */
+  async findAllPaginated(
+    filters: {
+      escolaId?: string;
+      turmaId?: string;
+      tipo?: string;
+      status?: string;
+      dataInicio?: Date;
+      dataFim?: Date;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.escolaId) where.escolaId = filters.escolaId;
+    if (filters?.turmaId) where.turmaId = filters.turmaId;
+    if (filters?.tipo) where.tipo = filters.tipo;
+    if (filters?.status) where.status = filters.status;
+
+    if (filters?.dataInicio || filters?.dataFim) {
+      where.data = {};
+      if (filters.dataInicio) where.data.gte = filters.dataInicio;
+      if (filters.dataFim) where.data.lte = filters.dataFim;
+    }
+
+    const include = {
+      escola: true,
+      turma: {
+        include: {
+          serie: {
+            include: {
+              etapa: true,
+            },
+          },
+        },
+      },
+      profissional: true,
+      presencas: true,
+      _count: {
+        select: {
+          presencas: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.reuniaoPais.findMany({
+        where,
+        include,
+        orderBy: {
+          data: "desc",
+        },
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.reuniaoPais.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
+  /**
    * Busca uma reunião por ID
    */
   async findById(id: string) {

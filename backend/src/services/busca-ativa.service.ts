@@ -147,6 +147,87 @@ export class BuscaAtivaService {
     });
   }
 
+  async findAllPaginated(
+    filters: {
+      escolaId?: string;
+      status?: string;
+      prioridade?: string;
+      motivo?: string;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.escolaId) where.escolaId = filters.escolaId;
+    if (filters?.status) where.status = filters.status;
+    if (filters?.prioridade) where.prioridade = filters.prioridade;
+    if (filters?.motivo) where.motivo = filters.motivo;
+
+    const include = {
+      matricula: {
+        select: {
+          nomeAluno: true,
+          numeroMatricula: true,
+          turma: {
+            select: {
+              nome: true,
+              serie: {
+                select: {
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      responsavel: {
+        select: {
+          nome: true,
+        },
+      },
+      escola: {
+        select: {
+          nome: true,
+        },
+      },
+      visitas: {
+        orderBy: { data: "desc" as const },
+        take: 1, // Última visita
+      },
+      _count: {
+        select: {
+          visitas: true,
+          encaminhamentos: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.buscaAtiva.findMany({
+        where,
+        include,
+        orderBy: [
+          { prioridade: "desc" },
+          { createdAt: "desc" },
+        ],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.buscaAtiva.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async findById(id: string) {
     const buscaAtiva = await prisma.buscaAtiva.findUnique({
       where: { id },

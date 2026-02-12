@@ -168,6 +168,76 @@ export class AEEService {
     });
   }
 
+  async findAllPEIPaginated(
+    filters: { escolaId?: string; anoLetivo?: number; status?: string },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.anoLetivo) where.anoLetivo = filters.anoLetivo;
+    if (filters?.status) where.status = filters.status;
+
+    if (filters?.escolaId) {
+      where.matricula = {
+        escolaId: filters.escolaId,
+      };
+    }
+
+    const include = {
+      matricula: {
+        select: {
+          nomeAluno: true,
+          numeroMatricula: true,
+          dataNascimento: true,
+          escola: {
+            select: {
+              nome: true,
+            },
+          },
+          turma: {
+            select: {
+              nome: true,
+              serie: {
+                select: {
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          atendimentos: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.planoEducacionalIndividualizado.findMany({
+        where,
+        include,
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.planoEducacionalIndividualizado.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   async findPEIById(id: string) {
     const pei = await prisma.planoEducacionalIndividualizado.findUnique({
       where: { id },

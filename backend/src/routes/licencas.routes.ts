@@ -21,12 +21,14 @@ export async function licencasRoutes(app: FastifyInstance) {
           tipo?: string;
           dataInicio?: string;
           dataFim?: string;
+          page?: string;
+          limit?: string;
         };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { profissionalId, status, tipo, dataInicio, dataFim } =
+        const { profissionalId, status, tipo, dataInicio, dataFim, page, limit } =
           request.query;
 
         const filters: any = {};
@@ -35,6 +37,15 @@ export async function licencasRoutes(app: FastifyInstance) {
         if (tipo) filters.tipo = tipo;
         if (dataInicio) filters.dataInicio = new Date(dataInicio);
         if (dataFim) filters.dataFim = new Date(dataFim);
+
+        // Suporte a paginação
+        if (page && limit) {
+          const result = await licencaService.findAllPaginated(filters, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+          });
+          return reply.send(result);
+        }
 
         const licencas = await licencaService.findAll(filters);
         return reply.send(licencas);

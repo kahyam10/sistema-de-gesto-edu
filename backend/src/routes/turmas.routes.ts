@@ -12,6 +12,8 @@ interface TurmaFilters {
   escolaId?: string;
   anoLetivo?: string;
   ativo?: string;
+  page?: string;
+  limit?: string;
 }
 
 export async function turmasRoutes(app: FastifyInstance) {
@@ -51,7 +53,7 @@ export async function turmasRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { escolaId, anoLetivo, ativo } = request.query;
+        const { escolaId, anoLetivo, ativo, page, limit } = request.query;
         const filters: {
           escolaId?: string;
           anoLetivo?: number;
@@ -61,6 +63,15 @@ export async function turmasRoutes(app: FastifyInstance) {
         if (escolaId) filters.escolaId = escolaId;
         if (anoLetivo) filters.anoLetivo = parseInt(anoLetivo);
         if (ativo !== undefined) filters.ativo = ativo === "true";
+
+        // Suporte a paginação
+        if (page && limit) {
+          const result = await turmaService.findAllPaginated(filters, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+          });
+          return reply.send(result);
+        }
 
         const turmas = await turmaService.findAll(filters);
         return reply.send(turmas);

@@ -9,7 +9,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
 
   // GET /api/reunioes-pais - Lista todas as reuniões
   app.get("/", async (request, reply) => {
-    const { escolaId, turmaId, tipo, status, dataInicio, dataFim } =
+    const { escolaId, turmaId, tipo, status, dataInicio, dataFim, page, limit } =
       request.query as any;
 
     const filters: any = {};
@@ -19,6 +19,15 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
     if (status) filters.status = status;
     if (dataInicio) filters.dataInicio = new Date(dataInicio);
     if (dataFim) filters.dataFim = new Date(dataFim);
+
+    // Suporte a paginação
+    if (page && limit) {
+      const result = await reuniaoPaisService.findAllPaginated(filters, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+      return reply.status(200).send(result);
+    }
 
     const reunioes = await reuniaoPaisService.findAll(filters);
     return reply.status(200).send(reunioes);

@@ -18,6 +18,8 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       destinatarios,
       ativo,
       destaque,
+      page,
+      limit,
     } = request.query as any;
 
     const filters: any = {};
@@ -29,6 +31,15 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     if (destinatarios) filters.destinatarios = destinatarios;
     if (ativo !== undefined) filters.ativo = ativo === "true";
     if (destaque !== undefined) filters.destaque = destaque === "true";
+
+    // Suporte a paginação
+    if (page && limit) {
+      const result = await comunicadoService.findAllPaginated(filters, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+      return reply.status(200).send(result);
+    }
 
     const comunicados = await comunicadoService.findAll(filters);
     return reply.status(200).send(comunicados);

@@ -99,6 +99,51 @@ export class NotificacaoService {
   }
 
   /**
+   * Lista todas as notificações com paginação
+   */
+  async findAllPaginated(
+    filters: {
+      userId?: string;
+      tipo?: string;
+      prioridade?: string;
+      lida?: boolean;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.userId) where.userId = filters.userId;
+    if (filters?.tipo) where.tipo = filters.tipo;
+    if (filters?.prioridade) where.prioridade = filters.prioridade;
+    if (filters?.lida !== undefined) where.lida = filters.lida;
+
+    const [data, total] = await Promise.all([
+      prisma.notificacao.findMany({
+        where,
+        orderBy: [
+          { lida: "asc" }, // Não lidas primeiro
+          { prioridade: "desc" },
+          { createdAt: "desc" },
+        ],
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.notificacao.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
+  /**
    * Busca notificações de um usuário
    */
   async findByUser(userId: string, filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS") {

@@ -115,6 +115,63 @@ export class PontoService {
     });
   }
 
+  // Busca todos os pontos com paginação
+  async findAllPaginated(
+    filters: {
+      profissionalId?: string;
+      escolaId?: string;
+      dataInicio?: Date;
+      dataFim?: Date;
+      tipoRegistro?: string;
+    },
+    pagination: { page: number; limit: number }
+  ) {
+    const skip = (pagination.page - 1) * pagination.limit;
+    const where: any = {};
+
+    if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
+    if (filters?.escolaId) where.escolaId = filters.escolaId;
+    if (filters?.tipoRegistro) where.tipoRegistro = filters.tipoRegistro;
+
+    if (filters?.dataInicio || filters?.dataFim) {
+      where.data = {};
+      if (filters.dataInicio) where.data.gte = filters.dataInicio;
+      if (filters.dataFim) where.data.lte = filters.dataFim;
+    }
+
+    const include = {
+      profissional: {
+        select: {
+          id: true,
+          nome: true,
+          cpf: true,
+          tipo: true,
+        },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.ponto.findMany({
+        where,
+        include,
+        orderBy: { data: "desc" },
+        skip,
+        take: pagination.limit,
+      }),
+      prisma.ponto.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    };
+  }
+
   // Busca ponto por ID
   async findById(id: string): Promise<Ponto | null> {
     return await prisma.ponto.findUnique({

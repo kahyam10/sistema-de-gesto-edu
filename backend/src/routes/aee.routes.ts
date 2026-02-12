@@ -12,12 +12,24 @@ export async function aeeRoutes(app: FastifyInstance) {
 
   // Listar todos os PEIs
   app.get("/pei", async (request, reply) => {
-    const { escolaId, anoLetivo, status } = request.query as any;
-    const peis = await service.findAllPEI({
+    const { escolaId, anoLetivo, status, page, limit } = request.query as any;
+
+    const filters = {
       escolaId,
       anoLetivo: anoLetivo ? parseInt(anoLetivo) : undefined,
       status,
-    });
+    };
+
+    // Suporte a paginação
+    if (page && limit) {
+      const result = await service.findAllPEIPaginated(filters, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+      return reply.send(result);
+    }
+
+    const peis = await service.findAllPEI(filters);
     return reply.send(peis);
   });
 

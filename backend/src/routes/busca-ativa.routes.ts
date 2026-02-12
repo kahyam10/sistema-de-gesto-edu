@@ -12,13 +12,20 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
 
   // Listar todas as buscas ativas
   app.get("/", async (request, reply) => {
-    const { escolaId, status, prioridade, motivo } = request.query as any;
-    const buscasAtivas = await service.findAll({
-      escolaId,
-      status,
-      prioridade,
-      motivo,
-    });
+    const { escolaId, status, prioridade, motivo, page, limit } = request.query as any;
+
+    const filters = { escolaId, status, prioridade, motivo };
+
+    // Suporte a paginação
+    if (page && limit) {
+      const result = await service.findAllPaginated(filters, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
+      return reply.send(result);
+    }
+
+    const buscasAtivas = await service.findAll(filters);
     return reply.send(buscasAtivas);
   });
 
