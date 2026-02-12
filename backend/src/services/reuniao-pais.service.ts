@@ -277,7 +277,7 @@ export class ReuniaoPaisService {
 
     // Não permite deletar se já tem presenças registradas
     if (reuniao._count.presencas > 0) {
-      throw createError("BUSINESS", "BIZ_018");
+      throw new BusinessError("BIZ_018");
     }
 
     await prisma.reuniaoPais.delete({
