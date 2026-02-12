@@ -25,6 +25,8 @@ import {
   configuracaoAvaliacaoRoutes,
   avaliacoesRoutes,
   notasRoutes,
+  pontosRoutes,
+  licencasRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
 
@@ -127,6 +129,8 @@ async function buildApp() {
   app.register(configuracaoAvaliacaoRoutes, { prefix: "/api/configuracao-avaliacao" });
   app.register(avaliacoesRoutes, { prefix: "/api/avaliacoes" });
   app.register(notasRoutes, { prefix: "/api/notas" });
+  app.register(pontosRoutes, { prefix: "/api/pontos" });
+  app.register(licencasRoutes, { prefix: "/api/licencas" });
 
   // Error handler global
   app.setErrorHandler((error, request, reply) => {

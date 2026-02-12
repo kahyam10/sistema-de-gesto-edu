@@ -15,3 +15,5 @@ export { disciplinasRoutes } from "./disciplinas.routes.js";
 export { configuracaoAvaliacaoRoutes } from "./configuracao-avaliacao.routes.js";
 export { avaliacoesRoutes } from "./avaliacoes.routes.js";
 export { notasRoutes } from "./notas.routes.js";
+export { pontosRoutes } from "./pontos.routes.js";
+export { licencasRoutes } from "./licencas.routes.js";

@@ -304,8 +304,16 @@ model ProfissionalEducacao {
   // Dados adicionais
   dataNascimento     DateTime?
   dataAdmissao       DateTime?  // Data de admissão na rede
-  regimeContratacao  String?    // EFETIVO, CONTRATADO, TEMPORARIO, TERCEIRIZADO
+  regimeContratacao  String?    // EFETIVO, CONTRATADO, TEMPORARIO, TERCEIRIZADO, CEDIDO
   escolaridade       String?    // FUNDAMENTAL, MEDIO, SUPERIOR, POS_GRADUACAO, MESTRADO, DOUTORADO
+
+  // RH - Jornada e dados bancários
+  jornada            Int?       // Carga horária semanal total (horas)
+  banco              String?    // Nome do banco
+  agencia            String?    // Número da agência
+  conta              String?    // Número da conta
+  tipoConta          String?    // CORRENTE, POUPANCA
+  pix                String?    // Chave PIX
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -319,6 +327,8 @@ model ProfissionalEducacao {
   afastamentos   Afastamento[]
   horarios       GradeHoraria[]
   avaliacoes     Avaliacao[]
+  pontos         Ponto[]
+  licencas       Licenca[]
   user           User?
 
   @@map("profissionais_educacao")
@@ -421,6 +431,70 @@ model Afastamento {
   @@index([profissionalId])
   @@index([dataInicio, dataFim])
   @@map("afastamentos")
+}
+
+// Licenças (processo formal com aprovação)
+model Licenca {
+  id              String   @id @default(cuid())
+  profissionalId  String
+  tipo            String   // LICENCA_MEDICA, LICENCA_MATERNIDADE, LICENCA_PATERNIDADE, LICENCA_Premio, LICENCA_SEM_VENCIMENTO, FERIAS
+  dataInicio      DateTime
+  dataFim         DateTime
+  diasCorridos    Int      // Número de dias corridos
+  diasUteis       Int?     // Número de dias úteis (calculado)
+  motivo          String?
+  observacoes     String?
+  status          String   @default("PENDENTE") // PENDENTE, APROVADA, REJEITADA, CANCELADA
+  documentoPath   String?  // Path para o documento (atestado, requerimento)
+
+  // Aprovação
+  aprovadaPor     String?  // ID do usuário que aprovou
+  dataAprovacao   DateTime?
+  justificativaRejeicao String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@index([profissionalId])
+  @@index([status])
+  @@index([dataInicio, dataFim])
+  @@map("licencas")
+}
+
+// Folha de Ponto Digital (registro de entrada/saída)
+model Ponto {
+  id              String   @id @default(cuid())
+  profissionalId  String
+  escolaId        String?  // Escola onde registrou o ponto
+  data            DateTime // Data do registro (sem hora)
+  entrada         String?  // Horário de entrada (ex: "07:30")
+  saida           String?  // Horário de saída (ex: "12:00")
+  entrada2        String?  // Segunda entrada (turno vespertino)
+  saida2          String?  // Segunda saída
+
+  // Cálculo automático
+  horasTrabalhadas Float?  // Total de horas trabalhadas no dia
+
+  // Observações
+  tipoRegistro    String   @default("NORMAL") // NORMAL, ATESTADO, FALTA, FALTA_JUSTIFICADA, FERIAS, LICENCA
+  observacoes     String?
+  justificativa   String?  // Justificativa para atrasos/faltas
+
+  // Localização (opcional - para controle)
+  latitude        Float?
+  longitude       Float?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@index([profissionalId])
+  @@index([data])
+  @@index([escolaId])
+  @@map("pontos")
 }
 
 // Tabela de junção: Escola <-> ProfissionalEducacao (N:M)

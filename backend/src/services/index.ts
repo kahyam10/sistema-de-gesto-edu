@@ -12,3 +12,5 @@ export { disciplinaService } from "./disciplina.service.js";
 export { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
 export { avaliacaoService } from "./avaliacao.service.js";
 export { notaService } from "./nota.service.js";
+export { pontoService } from "./ponto.service.js";
+export { licencaService } from "./licenca.service.js";
