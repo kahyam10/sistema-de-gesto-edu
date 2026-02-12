@@ -2576,3 +2576,527 @@ export function useEstatisticasAcompanhamento(escolaId?: string) {
     queryFn: () => acompanhamentoApi.estatisticas(escolaId),
   });
 }
+
+// ==================== MÓDULO 9: COMUNICAÇÃO E EVENTOS ====================
+
+// Plantão Pedagógico
+export function usePlantoesPedagogicos(filters?: {
+  escolaId?: string;
+  turmaId?: string;
+  tipo?: string;
+  ativo?: boolean;
+}) {
+  return useQuery({
+    queryKey: ["plantoes-pedagogicos", filters],
+    queryFn: () => plantaoPedagogicoApi.list(filters),
+  });
+}
+
+export function usePlantaoPedagogico(id: string | undefined) {
+  return useQuery({
+    queryKey: ["plantao-pedagogico", id],
+    queryFn: () => plantaoPedagogicoApi.getById(id!),
+    enabled: !!id,
+  });
+}
+
+export function usePlantoesByEscolaEPeriodo(
+  escolaId: string | undefined,
+  dataInicio: string,
+  dataFim: string
+) {
+  return useQuery({
+    queryKey: ["plantoes-pedagogicos", "escola", escolaId, dataInicio, dataFim],
+    queryFn: () =>
+      plantaoPedagogicoApi.porEscolaEPeriodo(escolaId!, dataInicio, dataFim),
+    enabled: !!escolaId && !!dataInicio && !!dataFim,
+  });
+}
+
+export function useEstatisticasPlantaoPedagogico(escolaId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-plantao-pedagogico", escolaId],
+    queryFn: () => plantaoPedagogicoApi.estatisticas(escolaId),
+  });
+}
+
+export function useCreatePlantaoPedagogico() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof plantaoPedagogicoApi.create>[0]) =>
+      plantaoPedagogicoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plantoes-pedagogicos"] });
+      toast.success("Plantão Pedagógico criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar Plantão Pedagógico");
+    },
+  });
+}
+
+export function useUpdatePlantaoPedagogico() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof plantaoPedagogicoApi.update>[1];
+    }) => plantaoPedagogicoApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plantoes-pedagogicos"] });
+      queryClient.invalidateQueries({ queryKey: ["plantao-pedagogico"] });
+      toast.success("Plantão Pedagógico atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar Plantão Pedagógico");
+    },
+  });
+}
+
+export function useDeletePlantaoPedagogico() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => plantaoPedagogicoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plantoes-pedagogicos"] });
+      toast.success("Plantão Pedagógico removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover Plantão Pedagógico");
+    },
+  });
+}
+
+// Reunião de Pais
+export function useReunioesPais(filters?: {
+  escolaId?: string;
+  turmaId?: string;
+  status?: string;
+}) {
+  return useQuery({
+    queryKey: ["reunioes-pais", filters],
+    queryFn: () => reuniaoPaisApi.list(filters),
+  });
+}
+
+export function useReuniaoPais(id: string | undefined) {
+  return useQuery({
+    queryKey: ["reuniao-pais", id],
+    queryFn: () => reuniaoPaisApi.getById(id!),
+    enabled: !!id,
+  });
+}
+
+export function usePresencasReuniao(reuniaoId: string | undefined) {
+  return useQuery({
+    queryKey: ["presencas-reuniao", reuniaoId],
+    queryFn: () => reuniaoPaisApi.getPresencas(reuniaoId!),
+    enabled: !!reuniaoId,
+  });
+}
+
+export function useEstatisticasReuniaoPais(escolaId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-reuniao-pais", escolaId],
+    queryFn: () => reuniaoPaisApi.estatisticas(escolaId),
+  });
+}
+
+export function useCreateReuniaoPais() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof reuniaoPaisApi.create>[0]) =>
+      reuniaoPaisApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reunioes-pais"] });
+      toast.success("Reunião de Pais criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar Reunião de Pais");
+    },
+  });
+}
+
+export function useUpdateReuniaoPais() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof reuniaoPaisApi.update>[1];
+    }) => reuniaoPaisApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reunioes-pais"] });
+      queryClient.invalidateQueries({ queryKey: ["reuniao-pais"] });
+      toast.success("Reunião de Pais atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar Reunião de Pais");
+    },
+  });
+}
+
+export function useDeleteReuniaoPais() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => reuniaoPaisApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reunioes-pais"] });
+      toast.success("Reunião de Pais removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover Reunião de Pais");
+    },
+  });
+}
+
+export function useRegistrarPresencaReuniao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      reuniaoId: string;
+      matriculaId: string;
+      nomeResponsavel: string;
+      presente: boolean;
+      observacoes?: string;
+    }) => reuniaoPaisApi.registrarPresenca(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["presencas-reuniao", variables.reuniaoId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["reuniao-pais", variables.reuniaoId],
+      });
+      toast.success("Presença registrada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar presença");
+    },
+  });
+}
+
+export function useDeletePresencaReuniao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, reuniaoId }: { id: string; reuniaoId: string }) =>
+      reuniaoPaisApi.deletePresenca(id),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["presencas-reuniao", variables.reuniaoId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["reuniao-pais", variables.reuniaoId],
+      });
+      toast.success("Presença removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover presença");
+    },
+  });
+}
+
+// Comunicados
+export function useComunicados(filters?: {
+  escolaId?: string;
+  turmaId?: string;
+  tipo?: string;
+  categoria?: string;
+  ativo?: boolean;
+  destaque?: boolean;
+}) {
+  return useQuery({
+    queryKey: ["comunicados", filters],
+    queryFn: () => comunicadoApi.list(filters),
+  });
+}
+
+export function useComunicado(id: string | undefined) {
+  return useQuery({
+    queryKey: ["comunicado", id],
+    queryFn: () => comunicadoApi.getById(id!),
+    enabled: !!id,
+  });
+}
+
+export function useComunicadosPorUsuario(
+  userId: string | undefined,
+  filtro?: "NAO_LIDOS" | "LIDOS" | "TODOS"
+) {
+  return useQuery({
+    queryKey: ["comunicados", "usuario", userId, filtro],
+    queryFn: () => comunicadoApi.porUsuario(userId!, filtro || undefined),
+    enabled: !!userId,
+  });
+}
+
+export function useEstatisticasComunicado(escolaId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-comunicado", escolaId],
+    queryFn: () => comunicadoApi.estatisticas(escolaId),
+  });
+}
+
+export function useCreateComunicado() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof comunicadoApi.create>[0]) =>
+      comunicadoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comunicados"] });
+      toast.success("Comunicado criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar comunicado");
+    },
+  });
+}
+
+export function useUpdateComunicado() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof comunicadoApi.update>[1];
+    }) => comunicadoApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comunicados"] });
+      queryClient.invalidateQueries({ queryKey: ["comunicado"] });
+      toast.success("Comunicado atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar comunicado");
+    },
+  });
+}
+
+export function useDeleteComunicado() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => comunicadoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comunicados"] });
+      toast.success("Comunicado removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover comunicado");
+    },
+  });
+}
+
+export function useMarcarComunicadoLido() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      comunicadoApi.marcarLido(id, userId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["comunicado", variables.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["comunicados"] });
+      toast.success("Comunicado marcado como lido!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao marcar comunicado como lido");
+    },
+  });
+}
+
+export function useConfirmarComunicado() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      comunicadoApi.confirmar(id, userId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["comunicado", variables.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["comunicados"] });
+      toast.success("Comunicado confirmado!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao confirmar comunicado");
+    },
+  });
+}
+
+// Notificações
+export function useNotificacoes(filters?: {
+  userId?: string;
+  tipo?: string;
+  prioridade?: string;
+  lida?: boolean;
+}) {
+  return useQuery({
+    queryKey: ["notificacoes", filters],
+    queryFn: () => notificacaoApi.list(filters),
+  });
+}
+
+export function useNotificacoesPorUsuario(
+  userId: string | undefined,
+  filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS"
+) {
+  return useQuery({
+    queryKey: ["notificacoes", "usuario", userId, filtro],
+    queryFn: () => notificacaoApi.porUsuario(userId!, filtro),
+    enabled: !!userId,
+  });
+}
+
+export function useNotificacao(id: string | undefined) {
+  return useQuery({
+    queryKey: ["notificacao", id],
+    queryFn: () => notificacaoApi.getById(id!),
+    enabled: !!id,
+  });
+}
+
+export function useCountNotificacoesNaoLidas(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["notificacoes", "count-nao-lidas", userId],
+    queryFn: () => notificacaoApi.countNaoLidas(userId!),
+    enabled: !!userId,
+  });
+}
+
+export function useEstatisticasNotificacao(userId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-notificacao", userId],
+    queryFn: () => notificacaoApi.estatisticas(userId),
+  });
+}
+
+export function useCreateNotificacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof notificacaoApi.create>[0]) =>
+      notificacaoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      toast.success("Notificação criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar notificação");
+    },
+  });
+}
+
+export function useCreateNotificacoesBulk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof notificacaoApi.createBulk>[0]) =>
+      notificacaoApi.createBulk(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      toast.success("Notificações criadas com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar notificações");
+    },
+  });
+}
+
+export function useMarcarNotificacaoLida() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => notificacaoApi.marcarLida(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["notificacao"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao marcar notificação como lida");
+    },
+  });
+}
+
+export function useMarcarTodasNotificacoesLidas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => notificacaoApi.marcarTodasLidas(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      toast.success("Todas as notificações foram marcadas como lidas!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao marcar todas como lidas");
+    },
+  });
+}
+
+export function useDeleteNotificacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => notificacaoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      toast.success("Notificação removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover notificação");
+    },
+  });
+}
+
+export function useDeletarNotificacoesLidas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => notificacaoApi.deletarLidas(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
+      toast.success("Notificações lidas removidas com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover notificações lidas");
+    },
+  });
+}
+
+export function useAtualizarStatusEnvioNotificacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      canal,
+      enviado,
+    }: {
+      id: string;
+      canal: "EMAIL" | "SMS" | "PUSH";
+      enviado: boolean;
+    }) => notificacaoApi.atualizarStatusEnvio(id, canal, enviado),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificacao"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar status de envio");
+    },
+  });
+}

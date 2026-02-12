@@ -1,11 +1,30 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Megaphone, CalendarDots, Bell, Users } from "@phosphor-icons/react";
+import { PlantaoPedagogicoManager } from "./enrollment/PlantaoPedagogicoManager";
+import { ReuniaoPaisManager } from "./enrollment/ReuniaoPaisManager";
+import { ComunicadoManager } from "./enrollment/ComunicadoManager";
+import { NotificacaoManager } from "./enrollment/NotificacaoManager";
+import {
+  usePlantoesPedagogicos,
+  useReunioesPais,
+  useComunicados,
+  useCountNotificacoesNaoLidas,
+} from "@/hooks/useApi";
 
 export function ComunicacaoTab() {
+  const { data: plantoes = [] } = usePlantoesPedagogicos({ ativo: true });
+  const { data: reunioes = [] } = useReunioesPais({ status: "AGENDADA" });
+  const { data: comunicados = [] } = useComunicados({ ativo: true });
+  // TODO: Get actual userId from auth context
+  const userId = "user-id"; // Placeholder
+  const { data: countNaoLidas } = useCountNotificacoesNaoLidas(userId);
+
   return (
     <div className="space-y-6">
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
@@ -15,7 +34,7 @@ export function ComunicacaoTab() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">{comunicados.length}</p>
             <CardDescription>Comunicados ativos</CardDescription>
           </CardContent>
         </Card>
@@ -28,7 +47,7 @@ export function ComunicacaoTab() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">{reunioes.length}</p>
             <CardDescription>Reuniões agendadas</CardDescription>
           </CardContent>
         </Card>
@@ -41,7 +60,7 @@ export function ComunicacaoTab() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">{plantoes.length}</p>
             <CardDescription>Plantões pedagógicos</CardDescription>
           </CardContent>
         </Card>
@@ -54,43 +73,49 @@ export function ComunicacaoTab() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">{countNaoLidas?.count || 0}</p>
             <CardDescription>Não lidas</CardDescription>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Módulo 9: Comunicação e Eventos</CardTitle>
-          <CardDescription>
-            Sistema de comunicação e eventos - Em desenvolvimento
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2">✅ Backend Implementado</h3>
-              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                <li>Plantão Pedagógico - API completa</li>
-                <li>Reuniões de Pais - API completa com controle de presença</li>
-                <li>Comunicados Gerais - API completa com sistema de leitura</li>
-                <li>Notificações - API completa com múltiplos canais</li>
-              </ul>
-            </div>
+      {/* Manager Tabs */}
+      <Tabs defaultValue="plantoes" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="plantoes">
+            <Users className="h-4 w-4 mr-2" />
+            Plantões Pedagógicos
+          </TabsTrigger>
+          <TabsTrigger value="reunioes">
+            <CalendarDots className="h-4 w-4 mr-2" />
+            Reuniões de Pais
+          </TabsTrigger>
+          <TabsTrigger value="comunicados">
+            <Megaphone className="h-4 w-4 mr-2" />
+            Comunicados
+          </TabsTrigger>
+          <TabsTrigger value="notificacoes">
+            <Bell className="h-4 w-4 mr-2" />
+            Notificações
+          </TabsTrigger>
+        </TabsList>
 
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <h3 className="font-semibold mb-2">🚧 Frontend (Próximo passo)</h3>
-              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                <li>Gerenciador de Plantões Pedagógicos</li>
-                <li>Gerenciador de Reuniões de Pais</li>
-                <li>Gerenciador de Comunicados</li>
-                <li>Central de Notificações</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="plantoes">
+          <PlantaoPedagogicoManager />
+        </TabsContent>
+
+        <TabsContent value="reunioes">
+          <ReuniaoPaisManager />
+        </TabsContent>
+
+        <TabsContent value="comunicados">
+          <ComunicadoManager />
+        </TabsContent>
+
+        <TabsContent value="notificacoes">
+          <NotificacaoManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
