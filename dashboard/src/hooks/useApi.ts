@@ -21,6 +21,9 @@ import {
   notasApi,
   pontosApi,
   licencasApi,
+  buscaAtivaApi,
+  aeeApi,
+  acompanhamentoApi,
   EtapaEnsino,
   Serie,
   Escola,
@@ -42,6 +45,13 @@ import {
   RelatorioMensal,
   Licenca,
   RelatorioLicencas,
+  BuscaAtiva,
+  VisitaDomiciliar,
+  EncaminhamentoExterno,
+  PlanoEducacionalIndividualizado,
+  SalaRecursos,
+  AtendimentoAEE,
+  AcompanhamentoIndividualizado,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -2229,5 +2239,336 @@ export function useRelatorioLicencas(
     queryKey: ["relatorio-licencas", profissionalId, anoInicio, anoFim],
     queryFn: () => licencasApi.relatorio(profissionalId!, anoInicio, anoFim),
     enabled: !!profissionalId,
+  });
+}
+
+// ==================== MÓDULO 5: PROGRAMAS ESPECIAIS ====================
+
+// Busca Ativa
+export function useBuscasAtivas(filters?: {
+  escolaId?: string;
+  status?: string;
+  prioridade?: string;
+  motivo?: string;
+}) {
+  return useQuery({
+    queryKey: ["buscas-ativas", filters],
+    queryFn: () => buscaAtivaApi.list(filters),
+  });
+}
+
+export function useBuscaAtiva(id: string | undefined) {
+  return useQuery({
+    queryKey: ["busca-ativa", id],
+    queryFn: () => buscaAtivaApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useCreateBuscaAtiva() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<BuscaAtiva>) => buscaAtivaApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["buscas-ativas"] });
+      toast.success("Busca Ativa criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar Busca Ativa");
+    },
+  });
+}
+
+export function useUpdateBuscaAtiva() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<BuscaAtiva> }) =>
+      buscaAtivaApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["buscas-ativas"] });
+      queryClient.invalidateQueries({ queryKey: ["busca-ativa"] });
+      toast.success("Busca Ativa atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar Busca Ativa");
+    },
+  });
+}
+
+export function useDeleteBuscaAtiva() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => buscaAtivaApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["buscas-ativas"] });
+      toast.success("Busca Ativa removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover Busca Ativa");
+    },
+  });
+}
+
+export function useEstatisticasBuscaAtiva(escolaId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-busca-ativa", escolaId],
+    queryFn: () => buscaAtivaApi.estatisticas(escolaId),
+  });
+}
+
+export function useCreateVisita() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<VisitaDomiciliar>) =>
+      buscaAtivaApi.createVisita(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["busca-ativa"] });
+      toast.success("Visita registrada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar visita");
+    },
+  });
+}
+
+export function useCreateEncaminhamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<EncaminhamentoExterno>) =>
+      buscaAtivaApi.createEncaminhamento(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["busca-ativa"] });
+      toast.success("Encaminhamento criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar encaminhamento");
+    },
+  });
+}
+
+// AEE
+export function usePEIs(filters?: {
+  escolaId?: string;
+  anoLetivo?: number;
+  status?: string;
+}) {
+  return useQuery({
+    queryKey: ["peis", filters],
+    queryFn: () => aeeApi.listPEI(filters),
+  });
+}
+
+export function usePEI(id: string | undefined) {
+  return useQuery({
+    queryKey: ["pei", id],
+    queryFn: () => aeeApi.getPEI(id!),
+    enabled: !!id,
+  });
+}
+
+export function usePEIByMatricula(matriculaId: string | undefined) {
+  return useQuery({
+    queryKey: ["pei-matricula", matriculaId],
+    queryFn: () => aeeApi.getPEIByMatricula(matriculaId!),
+    enabled: !!matriculaId,
+  });
+}
+
+export function useCreatePEI() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<PlanoEducacionalIndividualizado>) =>
+      aeeApi.createPEI(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["peis"] });
+      toast.success("PEI criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar PEI");
+    },
+  });
+}
+
+export function useUpdatePEI() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<PlanoEducacionalIndividualizado>;
+    }) => aeeApi.updatePEI(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["peis"] });
+      queryClient.invalidateQueries({ queryKey: ["pei"] });
+      toast.success("PEI atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar PEI");
+    },
+  });
+}
+
+export function useSalasRecursos(filters?: { escolaId?: string; turno?: string }) {
+  return useQuery({
+    queryKey: ["salas-recursos", filters],
+    queryFn: () => aeeApi.listSalasRecursos(filters),
+  });
+}
+
+export function useCreateSalaRecursos() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<SalaRecursos>) => aeeApi.createSalaRecursos(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salas-recursos"] });
+      toast.success("Sala de Recursos criada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar Sala de Recursos");
+    },
+  });
+}
+
+export function useCreateAtendimentoAEE() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<AtendimentoAEE>) => aeeApi.createAtendimento(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pei"] });
+      toast.success("Atendimento registrado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar atendimento");
+    },
+  });
+}
+
+export function useEstatisticasAEE(escolaId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-aee", escolaId],
+    queryFn: () => aeeApi.estatisticasAEE(escolaId),
+  });
+}
+
+// Acompanhamento
+export function useAcompanhamentos(filters?: {
+  escolaId?: string;
+  tipo?: string;
+  status?: string;
+  profissionalId?: string;
+}) {
+  return useQuery({
+    queryKey: ["acompanhamentos", filters],
+    queryFn: () => acompanhamentoApi.list(filters),
+  });
+}
+
+export function useAcompanhamento(id: string | undefined) {
+  return useQuery({
+    queryKey: ["acompanhamento", id],
+    queryFn: () => acompanhamentoApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useAcompanhamentosByMatricula(matriculaId: string | undefined) {
+  return useQuery({
+    queryKey: ["acompanhamentos-matricula", matriculaId],
+    queryFn: () => acompanhamentoApi.getByMatricula(matriculaId!),
+    enabled: !!matriculaId,
+  });
+}
+
+export function useCreateAcompanhamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<AcompanhamentoIndividualizado>) =>
+      acompanhamentoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acompanhamentos"] });
+      toast.success("Acompanhamento criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar acompanhamento");
+    },
+  });
+}
+
+export function useUpdateAcompanhamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<AcompanhamentoIndividualizado>;
+    }) => acompanhamentoApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acompanhamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["acompanhamento"] });
+      toast.success("Acompanhamento atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar acompanhamento");
+    },
+  });
+}
+
+export function useRegistrarEvolucao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { data: string; observacao: string; profissionalId?: string };
+    }) => acompanhamentoApi.registrarEvolucao(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acompanhamento"] });
+      toast.success("Evolução registrada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar evolução");
+    },
+  });
+}
+
+export function useConcluirAcompanhamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, resultado }: { id: string; resultado: string }) =>
+      acompanhamentoApi.concluir(id, resultado),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acompanhamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["acompanhamento"] });
+      toast.success("Acompanhamento concluído com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao concluir acompanhamento");
+    },
+  });
+}
+
+export function useEstatisticasAcompanhamento(escolaId?: string) {
+  return useQuery({
+    queryKey: ["estatisticas-acompanhamento", escolaId],
+    queryFn: () => acompanhamentoApi.estatisticas(escolaId),
   });
 }

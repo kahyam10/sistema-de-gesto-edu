@@ -1979,4 +1979,469 @@ export const licencasApi = {
   },
 };
 
+// ==================== MÓDULO 5: PROGRAMAS ESPECIAIS ====================
+
+// Busca Ativa
+export interface BuscaAtiva {
+  id: string;
+  matriculaId: string;
+  motivo: string;
+  descricao?: string;
+  status: string;
+  prioridade: string;
+  responsavelId?: string;
+  escolaId?: string;
+  resultado?: string;
+  dataResolucao?: string;
+  createdAt: string;
+  updatedAt: string;
+  matricula?: {
+    nomeAluno: string;
+    numeroMatricula: string;
+    turma?: {
+      nome: string;
+      serie?: {
+        nome: string;
+      };
+    };
+  };
+  responsavel?: {
+    nome: string;
+  };
+  escola?: {
+    nome: string;
+  };
+  visitas?: VisitaDomiciliar[];
+  encaminhamentos?: EncaminhamentoExterno[];
+  _count?: {
+    visitas: number;
+    encaminhamentos: number;
+  };
+}
+
+export interface VisitaDomiciliar {
+  id: string;
+  buscaAtivaId: string;
+  data: string;
+  horario?: string;
+  responsavel: string;
+  situacao: string;
+  relato?: string;
+  observacoes?: string;
+  proximaVisita?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EncaminhamentoExterno {
+  id: string;
+  buscaAtivaId: string;
+  orgao: string;
+  motivo: string;
+  dataEnvio: string;
+  protocolo?: string;
+  status: string;
+  retorno?: string;
+  dataRetorno?: string;
+  observacoes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// AEE
+export interface PlanoEducacionalIndividualizado {
+  id: string;
+  matriculaId: string;
+  anoLetivo: number;
+  deficiencia: string;
+  cid?: string;
+  laudoMedico: boolean;
+  laudoPath?: string;
+  necessitaAEE: boolean;
+  frequenciaAEE?: string;
+  profissionalAEE?: string;
+  objetivosGerais?: string;
+  objetivosEspecificos?: string;
+  estrategias?: string;
+  recursos?: string;
+  avaliacaoDiagnostica?: string;
+  elaboradoPor?: string;
+  dataElaboracao: string;
+  dataRevisao?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  matricula?: any;
+  atendimentos?: AtendimentoAEE[];
+  _count?: {
+    atendimentos: number;
+  };
+}
+
+export interface SalaRecursos {
+  id: string;
+  escolaId: string;
+  nome: string;
+  tipo: string;
+  turno: string;
+  capacidade: number;
+  ativa: boolean;
+  recursos?: string;
+  profissionais?: string;
+  createdAt: string;
+  updatedAt: string;
+  escola?: {
+    nome: string;
+  };
+  atendimentos?: AtendimentoAEE[];
+  _count?: {
+    atendimentos: number;
+  };
+}
+
+export interface AtendimentoAEE {
+  id: string;
+  peiId: string;
+  salaRecursosId: string;
+  data: string;
+  horario?: string;
+  duracao?: number;
+  objetivo?: string;
+  atividades?: string;
+  recursos?: string;
+  observacoes?: string;
+  presenca: boolean;
+  justificativa?: string;
+  profissionalId?: string;
+  createdAt: string;
+  updatedAt: string;
+  pei?: any;
+  salaRecursos?: any;
+  profissional?: {
+    nome: string;
+  };
+}
+
+// Acompanhamento
+export interface AcompanhamentoIndividualizado {
+  id: string;
+  matriculaId: string;
+  tipo: string;
+  motivo: string;
+  objetivos?: string;
+  profissionalId?: string;
+  escolaId?: string;
+  acoes?: string;
+  estrategias?: string;
+  dataInicio: string;
+  dataFim?: string;
+  evolucoes?: string;
+  status: string;
+  resultado?: string;
+  createdAt: string;
+  updatedAt: string;
+  matricula?: any;
+  profissional?: {
+    nome: string;
+  };
+  escola?: {
+    nome: string;
+  };
+}
+
+// API - Busca Ativa
+export const buscaAtivaApi = {
+  list: (filters?: {
+    escolaId?: string;
+    status?: string;
+    prioridade?: string;
+    motivo?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.prioridade) params.append("prioridade", filters.prioridade);
+    if (filters?.motivo) params.append("motivo", filters.motivo);
+
+    const queryString = params.toString();
+    return request<BuscaAtiva[]>(
+      `/api/busca-ativa${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  get: (id: string) => request<BuscaAtiva>(`/api/busca-ativa/${id}`),
+
+  create: (data: Partial<BuscaAtiva>) =>
+    request<BuscaAtiva>("/api/busca-ativa", { method: "POST", body: data }),
+
+  update: (id: string, data: Partial<BuscaAtiva>) =>
+    request<BuscaAtiva>(`/api/busca-ativa/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/busca-ativa/${id}`, {
+      method: "DELETE",
+    }),
+
+  estatisticas: (escolaId?: string) => {
+    const params = new URLSearchParams();
+    if (escolaId) params.append("escolaId", escolaId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/busca-ativa/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  // Visitas
+  createVisita: (data: Partial<VisitaDomiciliar>) =>
+    request<VisitaDomiciliar>("/api/busca-ativa/visitas", {
+      method: "POST",
+      body: data,
+    }),
+
+  listVisitas: (buscaAtivaId: string) =>
+    request<VisitaDomiciliar[]>(`/api/busca-ativa/${buscaAtivaId}/visitas`),
+
+  updateVisita: (id: string, data: Partial<VisitaDomiciliar>) =>
+    request<VisitaDomiciliar>(`/api/busca-ativa/visitas/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deleteVisita: (id: string) =>
+    request<{ message: string }>(`/api/busca-ativa/visitas/${id}`, {
+      method: "DELETE",
+    }),
+
+  // Encaminhamentos
+  createEncaminhamento: (data: Partial<EncaminhamentoExterno>) =>
+    request<EncaminhamentoExterno>("/api/busca-ativa/encaminhamentos", {
+      method: "POST",
+      body: data,
+    }),
+
+  listEncaminhamentos: (buscaAtivaId: string) =>
+    request<EncaminhamentoExterno[]>(
+      `/api/busca-ativa/${buscaAtivaId}/encaminhamentos`
+    ),
+
+  updateEncaminhamento: (id: string, data: Partial<EncaminhamentoExterno>) =>
+    request<EncaminhamentoExterno>(`/api/busca-ativa/encaminhamentos/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deleteEncaminhamento: (id: string) =>
+    request<{ message: string }>(`/api/busca-ativa/encaminhamentos/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// API - AEE
+export const aeeApi = {
+  // PEI
+  listPEI: (filters?: { escolaId?: string; anoLetivo?: number; status?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.anoLetivo)
+      params.append("anoLetivo", filters.anoLetivo.toString());
+    if (filters?.status) params.append("status", filters.status);
+
+    const queryString = params.toString();
+    return request<PlanoEducacionalIndividualizado[]>(
+      `/api/aee/pei${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getPEI: (id: string) =>
+    request<PlanoEducacionalIndividualizado>(`/api/aee/pei/${id}`),
+
+  getPEIByMatricula: (matriculaId: string) =>
+    request<PlanoEducacionalIndividualizado>(
+      `/api/aee/pei/matricula/${matriculaId}`
+    ),
+
+  createPEI: (data: Partial<PlanoEducacionalIndividualizado>) =>
+    request<PlanoEducacionalIndividualizado>("/api/aee/pei", {
+      method: "POST",
+      body: data,
+    }),
+
+  updatePEI: (id: string, data: Partial<PlanoEducacionalIndividualizado>) =>
+    request<PlanoEducacionalIndividualizado>(`/api/aee/pei/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deletePEI: (id: string) =>
+    request<{ message: string }>(`/api/aee/pei/${id}`, { method: "DELETE" }),
+
+  // Salas de Recursos
+  listSalasRecursos: (filters?: { escolaId?: string; turno?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.turno) params.append("turno", filters.turno);
+
+    const queryString = params.toString();
+    return request<SalaRecursos[]>(
+      `/api/aee/salas-recursos${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  getSalaRecursos: (id: string) =>
+    request<SalaRecursos>(`/api/aee/salas-recursos/${id}`),
+
+  createSalaRecursos: (data: Partial<SalaRecursos>) =>
+    request<SalaRecursos>("/api/aee/salas-recursos", {
+      method: "POST",
+      body: data,
+    }),
+
+  updateSalaRecursos: (id: string, data: Partial<SalaRecursos>) =>
+    request<SalaRecursos>(`/api/aee/salas-recursos/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deleteSalaRecursos: (id: string) =>
+    request<{ message: string }>(`/api/aee/salas-recursos/${id}`, {
+      method: "DELETE",
+    }),
+
+  // Atendimentos
+  createAtendimento: (data: Partial<AtendimentoAEE>) =>
+    request<AtendimentoAEE>("/api/aee/atendimentos", {
+      method: "POST",
+      body: data,
+    }),
+
+  listAtendimentosByPEI: (peiId: string, mes?: number, ano?: number) => {
+    const params = new URLSearchParams();
+    if (mes) params.append("mes", mes.toString());
+    if (ano) params.append("ano", ano.toString());
+    const queryString = params.toString();
+    return request<AtendimentoAEE[]>(
+      `/api/aee/atendimentos/pei/${peiId}${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  listAtendimentosBySala: (
+    salaRecursosId: string,
+    mes?: number,
+    ano?: number
+  ) => {
+    const params = new URLSearchParams();
+    if (mes) params.append("mes", mes.toString());
+    if (ano) params.append("ano", ano.toString());
+    const queryString = params.toString();
+    return request<AtendimentoAEE[]>(
+      `/api/aee/atendimentos/sala/${salaRecursosId}${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  updateAtendimento: (id: string, data: Partial<AtendimentoAEE>) =>
+    request<AtendimentoAEE>(`/api/aee/atendimentos/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deleteAtendimento: (id: string) =>
+    request<{ message: string }>(`/api/aee/atendimentos/${id}`, {
+      method: "DELETE",
+    }),
+
+  estatisticasAEE: (escolaId?: string) => {
+    const params = new URLSearchParams();
+    if (escolaId) params.append("escolaId", escolaId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/aee/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+};
+
+// API - Acompanhamento
+export const acompanhamentoApi = {
+  list: (filters?: {
+    escolaId?: string;
+    tipo?: string;
+    status?: string;
+    profissionalId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.profissionalId)
+      params.append("profissionalId", filters.profissionalId);
+
+    const queryString = params.toString();
+    return request<AcompanhamentoIndividualizado[]>(
+      `/api/acompanhamento${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  get: (id: string) =>
+    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}`),
+
+  getByMatricula: (matriculaId: string) =>
+    request<AcompanhamentoIndividualizado[]>(
+      `/api/acompanhamento/matricula/${matriculaId}`
+    ),
+
+  create: (data: Partial<AcompanhamentoIndividualizado>) =>
+    request<AcompanhamentoIndividualizado>("/api/acompanhamento", {
+      method: "POST",
+      body: data,
+    }),
+
+  update: (id: string, data: Partial<AcompanhamentoIndividualizado>) =>
+    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/acompanhamento/${id}`, {
+      method: "DELETE",
+    }),
+
+  registrarEvolucao: (
+    id: string,
+    data: { data: string; observacao: string; profissionalId?: string }
+  ) =>
+    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/evolucao`, {
+      method: "POST",
+      body: data,
+    }),
+
+  concluir: (id: string, resultado: string) =>
+    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/concluir`, {
+      method: "POST",
+      body: { resultado },
+    }),
+
+  suspender: (id: string, motivo: string) =>
+    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/suspender`, {
+      method: "POST",
+      body: { motivo },
+    }),
+
+  reativar: (id: string) =>
+    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/reativar`, {
+      method: "POST",
+    }),
+
+  estatisticas: (escolaId?: string) => {
+    const params = new URLSearchParams();
+    if (escolaId) params.append("escolaId", escolaId);
+    const queryString = params.toString();
+    return request<any>(
+      `/api/acompanhamento/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+    );
+  },
+};
+
 export { ApiError };
