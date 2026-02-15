@@ -45,7 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useTurmas,
+  useTurmasPaginated,
   useEscolas,
   useEtapas,
   useSeries,
@@ -57,18 +57,27 @@ import {
   useRemoveAlunoFromTurma,
   useCargaHorariaPorTurma,
 } from "@/hooks/useApi";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 
 interface TurmasManagerProps {
   onViewDetails?: (turma: Turma) => void;
 }
 
 export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
-  const { data: turmas, isLoading: loadingTurmas } = useTurmas();
+  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+
+  const { data: turmasData, isLoading: loadingTurmas } = useTurmasPaginated({}, pagination);
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: series, isLoading: loadingSeries } = useSeries();
   const { data: matriculas } = useMatriculas();
   const { data: cargaPorTurma = [] } = useCargaHorariaPorTurma();
+
+  // Suporta tanto resposta paginada quanto array direto (backward compatibility)
+  const turmas = Array.isArray(turmasData) ? turmasData : turmasData?.data || [];
+  const paginationMeta = !Array.isArray(turmasData) && turmasData?.pagination ? turmasData.pagination : null;
 
   const createTurma = useCreateTurma();
   const updateTurma = useUpdateTurma();
@@ -868,6 +877,23 @@ export function TurmasManager({ onViewDetails }: TurmasManagerProps) {
           ))
         )}
       </div>
+
+      {/* Paginação */}
+      {paginationMeta && paginationMeta.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t">
+          <PageSizeSelector value={limit} onChange={handleLimitChange} />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Página {paginationMeta.page} de {paginationMeta.totalPages} ({paginationMeta.total} total)
+            </span>
+            <PaginationControls
+              currentPage={paginationMeta.page}
+              totalPages={paginationMeta.totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

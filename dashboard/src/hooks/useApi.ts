@@ -48,6 +48,7 @@ import {
   Ponto,
   RelatorioMensal,
   Licenca,
+  PaginatedResponse,
   RelatorioLicencas,
   BuscaAtiva,
   VisitaDomiciliar,
@@ -56,6 +57,8 @@ import {
   SalaRecursos,
   AtendimentoAEE,
   AcompanhamentoIndividualizado,
+  Comunicado,
+  Notificacao,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -295,6 +298,20 @@ export function useTurmas(filters?: {
   return useQuery({
     queryKey: ["turmas", filters],
     queryFn: () => turmasApi.list(filters),
+  });
+}
+
+export function useTurmasPaginated(
+  filters?: {
+    escolaId?: string;
+    anoLetivo?: number;
+    ativo?: boolean;
+  },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<Turma[] | { data: Turma[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["turmas", "paginated", filters, pagination],
+    queryFn: () => turmasApi.list(filters, pagination),
   });
 }
 
@@ -589,6 +606,22 @@ export function useMatriculas(filters?: {
   });
 }
 
+export function useMatriculasPaginated(
+  filters?: {
+    escolaId?: string;
+    etapaId?: string;
+    turmaId?: string;
+    anoLetivo?: number;
+    status?: string;
+  },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<Matricula[] | { data: Matricula[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["matriculas", "paginated", filters, pagination],
+    queryFn: () => matriculasApi.list(filters, pagination),
+  });
+}
+
 export function useMatricula(id: string) {
   return useQuery({
     queryKey: ["matriculas", id],
@@ -720,6 +753,16 @@ export function useProfissionais(filters?: { tipo?: string; ativo?: boolean }) {
   return useQuery({
     queryKey: ["profissionais", filters],
     queryFn: () => profissionaisApi.list(filters),
+  });
+}
+
+export function useProfissionaisPaginated(
+  filters?: { tipo?: string; ativo?: boolean },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<ProfissionalEducacao[] | { data: ProfissionalEducacao[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["profissionais", "paginated", filters, pagination],
+    queryFn: () => profissionaisApi.list(filters, pagination),
   });
 }
 
@@ -2030,6 +2073,22 @@ export function usePontos(filters?: {
   });
 }
 
+export function usePontosPaginated(
+  filters?: {
+    profissionalId?: string;
+    escolaId?: string;
+    dataInicio?: string;
+    dataFim?: string;
+    tipoRegistro?: string;
+  },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<Ponto[] | { data: Ponto[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["pontos", "paginated", filters, pagination],
+    queryFn: () => pontosApi.list(filters, pagination),
+  });
+}
+
 export function usePonto(id: string) {
   return useQuery({
     queryKey: ["pontos", id],
@@ -2130,6 +2189,22 @@ export function useLicencas(filters?: {
   return useQuery({
     queryKey: ["licencas", filters],
     queryFn: () => licencasApi.list(filters),
+  });
+}
+
+export function useLicencasPaginated(
+  filters?: {
+    profissionalId?: string;
+    status?: string;
+    tipo?: string;
+    dataInicio?: string;
+    dataFim?: string;
+  },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<Licenca[] | { data: Licenca[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["licencas", "paginated", filters, pagination],
+    queryFn: () => licencasApi.list(filters, pagination),
   });
 }
 
@@ -2823,6 +2898,23 @@ export function useComunicados(filters?: {
   });
 }
 
+export function useComunicadosPaginated(
+  filters?: {
+    escolaId?: string;
+    turmaId?: string;
+    tipo?: string;
+    categoria?: string;
+    ativo?: boolean;
+    destaque?: boolean;
+  },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<Comunicado[] | { data: Comunicado[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["comunicados", "paginated", filters, pagination],
+    queryFn: () => comunicadoApi.list(filters, pagination),
+  });
+}
+
 export function useComunicado(id: string | undefined) {
   return useQuery({
     queryKey: ["comunicado", id],
@@ -2950,6 +3042,21 @@ export function useNotificacoes(filters?: {
   return useQuery({
     queryKey: ["notificacoes", filters],
     queryFn: () => notificacaoApi.list(filters),
+  });
+}
+
+export function useNotificacoesPaginated(
+  filters?: {
+    userId?: string;
+    tipo?: string;
+    prioridade?: string;
+    lida?: boolean;
+  },
+  pagination?: { page?: number; limit?: number }
+) {
+  return useQuery<Notificacao[] | { data: Notificacao[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["notificacoes", "paginated", filters, pagination],
+    queryFn: () => notificacaoApi.list(filters, pagination),
   });
 }
 

@@ -214,11 +214,13 @@ export function FrequenciaManager() {
     total: frequencias.length,
   };
 
-  if (loadingTurmas) {
+  // Verifica todos os estados de loading
+  if (loadingTurmas || loadingFrequencias || loadingBaixaFreq || loadingResumo) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-48 w-full" />
       </div>
     );
   }

@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  useProfissionais,
+  useProfissionaisPaginated,
   useCreateProfissional,
   useUpdateProfissional,
   useDeleteProfissional,
@@ -62,6 +62,9 @@ import {
   useCargaHorariaResumo,
   useCargaHorariaPorEscola,
 } from "@/hooks/useApi";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import type { ProfissionalEducacao } from "@/lib/api";
 import { ProfissionalDetails } from "./ProfissionalDetails";
 
@@ -116,9 +119,19 @@ export function ProfissionaisManager() {
   const [viewingProfissionalId, setViewingProfissionalId] = useState<string | null>(null);
   const [buscaEscola, setBuscaEscola] = useState("");
 
+  // Pagination
+  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+
   // API Hooks
-  const { data: profissionais = [], isLoading } = useProfissionais();
+  const { data: profissionaisData, isLoading } = useProfissionaisPaginated(
+    filtroTipo !== "all" ? { tipo: filtroTipo as TipoProfissional } : {},
+    pagination
+  );
   const { data: escolas = [] } = useEscolas();
+
+  // Suporta tanto resposta paginada quanto array direto (backward compatibility)
+  const profissionais = Array.isArray(profissionaisData) ? profissionaisData : profissionaisData?.data || [];
+  const paginationMeta = !Array.isArray(profissionaisData) && profissionaisData?.pagination ? profissionaisData.pagination : null;
   const { data: lotacaoResumo = [] } = useLotacaoResumo();
   const { data: cargaResumo = [] } = useCargaHorariaResumo();
   const { data: cargaPorEscola = [] } = useCargaHorariaPorEscola();
@@ -803,6 +816,23 @@ export function ProfissionaisManager() {
               ))}
             </TableBody>
           </Table>
+        )}
+
+        {/* Paginação */}
+        {paginationMeta && paginationMeta.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <PageSizeSelector value={limit} onChange={handleLimitChange} />
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                Página {paginationMeta.page} de {paginationMeta.totalPages} ({paginationMeta.total} total)
+              </span>
+              <PaginationControls
+                currentPage={paginationMeta.page}
+                totalPages={paginationMeta.totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

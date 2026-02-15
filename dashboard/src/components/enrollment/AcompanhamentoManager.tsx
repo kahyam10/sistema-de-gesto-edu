@@ -111,8 +111,14 @@ export function AcompanhamentoManager() {
     );
   };
 
-  if (loadingEscolas) {
-    return <Skeleton className="h-64 w-full" />;
+  // Verifica todos os estados de loading
+  if (loadingEscolas || isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
   }
 
   return (

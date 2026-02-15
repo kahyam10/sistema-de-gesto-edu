@@ -47,7 +47,7 @@ import {
   useEscolas,
   useEtapas,
   useSeries,
-  useMatriculas,
+  useMatriculasPaginated,
   useMatriculasEstatisticas,
   useVagasResumo,
   useCreateMatricula,
@@ -55,8 +55,11 @@ import {
   useDeleteMatricula,
   useCancelarMatricula,
 } from "@/hooks/useApi";
+import { usePagination } from "@/hooks/usePagination";
 import { Matricula } from "@/lib/api";
 import { AlunoDetails } from "./AlunoDetails";
+import { PaginationControls } from "@/components/ui/pagination";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 
 const DOCUMENTOS_OPCOES = [
   "Certidão de nascimento",
@@ -83,13 +86,31 @@ export function MatriculasManager() {
   const [filtroStatus, setFiltroStatus] = useState("all");
   const [filtroEscola, setFiltroEscola] = useState("all");
   const [busca, setBusca] = useState("");
+
+  // Paginação
+  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({
+    initialLimit: 20
+  });
+
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: series, isLoading: loadingSeries } = useSeries();
-  const { data: matriculas, isLoading: loadingMatriculas } = useMatriculas({
-    status: filtroStatus === "all" ? undefined : filtroStatus,
-    escolaId: filtroEscola === "all" ? undefined : filtroEscola,
-  });
+  const { data: matriculasData, isLoading: loadingMatriculas } = useMatriculasPaginated(
+    {
+      status: filtroStatus === "all" ? undefined : filtroStatus,
+      escolaId: filtroEscola === "all" ? undefined : filtroEscola,
+    },
+    pagination
+  );
+
+  // Extrair dados paginados ou array simples
+  const matriculas = Array.isArray(matriculasData)
+    ? matriculasData
+    : matriculasData?.data || [];
+  const paginationMeta = !Array.isArray(matriculasData) && matriculasData?.pagination
+    ? matriculasData.pagination
+    : null;
+
   const anoAtual = new Date().getFullYear();
   const { data: estatisticas } = useMatriculasEstatisticas(anoAtual);
   const { data: vagasResumo = [] } = useVagasResumo(undefined, anoAtual);
@@ -984,6 +1005,26 @@ export function MatriculasManager() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Paginação */}
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <PageSizeSelector
+                value={limit}
+                onChange={handleLimitChange}
+              />
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  Página {paginationMeta.page} de {paginationMeta.totalPages} ({paginationMeta.total} total)
+                </span>
+                <PaginationControls
+                  currentPage={paginationMeta.page}
+                  totalPages={paginationMeta.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
             </div>
           )}
         </CardContent>

@@ -38,10 +38,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   useProfissionais,
-  useLicencas,
+  useLicencasPaginated,
   useAprovarLicenca,
   useCancelarLicenca,
 } from "@/hooks/useApi";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import {
   FileText,
   CheckCircle,
@@ -61,6 +64,9 @@ export function LicencasManager() {
   );
   const [justificativa, setJustificativa] = useState("");
 
+  // Pagination
+  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+
   const { data: profissionais = [], isLoading: loadingProfissionais } =
     useProfissionais();
 
@@ -68,8 +74,12 @@ export function LicencasManager() {
   if (selectedProfissional) filters.profissionalId = selectedProfissional;
   if (selectedStatus) filters.status = selectedStatus;
 
-  const { data: licencas = [], isLoading: loadingLicencas } =
-    useLicencas(filters);
+  const { data: licencasData, isLoading: loadingLicencas } =
+    useLicencasPaginated(filters, pagination);
+
+  // Suporta tanto resposta paginada quanto array direto (backward compatibility)
+  const licencas = Array.isArray(licencasData) ? licencasData : licencasData?.data || [];
+  const paginationMeta = !Array.isArray(licencasData) && licencasData?.pagination ? licencasData.pagination : null;
 
   const aprovarMutation = useAprovarLicenca();
   const cancelarMutation = useCancelarLicenca();
@@ -171,8 +181,14 @@ export function LicencasManager() {
     return tipos[tipo] || tipo;
   };
 
-  if (loadingProfissionais) {
-    return <Skeleton className="h-64 w-full" />;
+  // Verifica todos os estados de loading
+  if (loadingProfissionais || loadingLicencas) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
   }
 
   return (
@@ -386,6 +402,23 @@ export function LicencasManager() {
               <p className="text-sm text-muted-foreground mt-2">
                 Não há licenças registradas com os filtros selecionados
               </p>
+            </div>
+          )}
+
+          {/* Paginação */}
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <PageSizeSelector value={limit} onChange={handleLimitChange} />
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  Página {paginationMeta.page} de {paginationMeta.totalPages} ({paginationMeta.total} total)
+                </span>
+                <PaginationControls
+                  currentPage={paginationMeta.page}
+                  totalPages={paginationMeta.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
             </div>
           )}
         </CardContent>

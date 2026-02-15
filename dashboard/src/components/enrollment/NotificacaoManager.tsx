@@ -41,13 +41,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  useNotificacoes,
+  useNotificacoesPaginated,
   useCreateNotificacao,
   useDeleteNotificacao,
   useMarcarNotificacaoLida,
   useMarcarTodasNotificacoesLidas,
   useEstatisticasNotificacao,
 } from "@/hooks/useApi";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import { toast } from "sonner";
 
 interface Notificacao {
@@ -118,8 +121,15 @@ const tipoIcons = {
 };
 
 export function NotificacaoManager() {
-  const { data: notificacoes = [], isLoading } = useNotificacoes();
+  // Pagination
+  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+
+  const { data: notificacoesData, isLoading } = useNotificacoesPaginated({}, pagination);
   const { data: estatisticas } = useEstatisticasNotificacao();
+
+  // Suporta tanto resposta paginada quanto array direto (backward compatibility)
+  const notificacoes = Array.isArray(notificacoesData) ? notificacoesData : notificacoesData?.data || [];
+  const paginationMeta = !Array.isArray(notificacoesData) && notificacoesData?.pagination ? notificacoesData.pagination : null;
 
   const createNotificacao = useCreateNotificacao();
   const deleteNotificacao = useDeleteNotificacao();
@@ -409,6 +419,23 @@ export function NotificacaoManager() {
               })
             )}
           </div>
+
+          {/* Paginação */}
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <PageSizeSelector value={limit} onChange={handleLimitChange} />
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  Página {paginationMeta.page} de {paginationMeta.totalPages} ({paginationMeta.total} total)
+                </span>
+                <PaginationControls
+                  currentPage={paginationMeta.page}
+                  totalPages={paginationMeta.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
