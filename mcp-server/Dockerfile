@@ -6,11 +6,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Set NODE_ENV to development for build stage (install devDependencies)
+ENV NODE_ENV=development
+
 COPY package.json tsconfig.json ./
-RUN npm install
+RUN npm install --include=dev
 
 COPY src ./src/
-RUN npx tsc
+RUN ./node_modules/.bin/tsc
 
 # Production
 FROM node:20-alpine AS runner

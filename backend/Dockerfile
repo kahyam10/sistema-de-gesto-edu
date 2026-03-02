@@ -8,12 +8,15 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Set NODE_ENV to development for build stage (install devDependencies)
+ENV NODE_ENV=development
+
 # Copiar arquivos de dependências
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Instalar dependências
-RUN npm install
+# Instalar TODAS as dependências (incluindo devDependencies para tsc)
+RUN npm install --include=dev
 
 # Gerar Prisma Client
 RUN npx prisma generate
@@ -22,8 +25,8 @@ RUN npx prisma generate
 COPY tsconfig.json ./
 COPY src ./src/
 
-# Build TypeScript
-RUN npx tsc
+# Build TypeScript usando o tsc local
+RUN ./node_modules/.bin/tsc
 
 # Stage 2: Production
 FROM node:20-alpine AS runner
