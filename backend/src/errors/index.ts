@@ -13,4 +13,4 @@ export {
 } from "./AppError.js";
 
 // Exporta os códigos de erro para uso direto
-export { default as ErrorCodes } from "./error-codes.json" with { type: "json" };
+export { default as ErrorCodes } from "./error-codes.json";

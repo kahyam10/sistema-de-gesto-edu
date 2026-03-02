@@ -10,7 +10,7 @@ WORKDIR /app
 ENV NODE_ENV=development
 
 COPY package.json tsconfig.json ./
-RUN npm install --include=dev
+RUN npm install --include=dev --ignore-scripts
 
 COPY src ./src/
 RUN ./node_modules/.bin/tsc
@@ -23,7 +23,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --ignore-scripts
 
 COPY --from=builder /app/dist ./dist/
 

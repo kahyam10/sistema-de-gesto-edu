@@ -188,12 +188,10 @@ export class ProfissionalService {
   }
 
   async desvincularEscola(profissionalId: string, escolaId: string) {
-    return prisma.escolaProfissional.delete({
+    return prisma.escolaProfissional.deleteMany({
       where: {
-        escolaId_profissionalId: {
-          escolaId,
-          profissionalId,
-        },
+        escolaId,
+        profissionalId,
       },
     });
   }

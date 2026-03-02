@@ -197,7 +197,7 @@ export class PontoService {
       const pontoAtual = await prisma.ponto.findUnique({ where: { id } });
       if (pontoAtual) {
         const pontoAtualizado = { ...pontoAtual, ...data };
-        data.horasTrabalhadas = this.calcularHoras(pontoAtualizado);
+        (data as any).horasTrabalhadas = this.calcularHoras(pontoAtualizado);
       }
     }
 

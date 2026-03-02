@@ -1,4 +1,4 @@
-import errorCodes from "./error-codes.json" with { type: "json" };
+import errorCodes from "./error-codes.json";
 
 export interface ErrorDetail {
   code: string;

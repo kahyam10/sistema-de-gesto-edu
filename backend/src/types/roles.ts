@@ -73,5 +73,5 @@ export const ModulePermissions = {
 export type Permission = keyof typeof ModulePermissions;
 
 export function hasModulePermission(userRole: UserRole, permission: Permission): boolean {
-  return ModulePermissions[permission].includes(userRole);
+  return (ModulePermissions[permission] as readonly string[]).includes(userRole);
 }

@@ -37,7 +37,8 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copiar arquivos necessários do standalone build
-COPY --from=builder /app/public ./public
+# Criar public vazio caso não exista
+RUN mkdir -p /app/public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
