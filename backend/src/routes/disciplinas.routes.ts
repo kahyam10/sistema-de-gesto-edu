@@ -68,8 +68,13 @@ Para listar disciplinas disponíveis para uma etapa específica ou todas as disc
                 etapaId: { type: "string" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao listar disciplinas",
             type: "object",
@@ -143,9 +148,19 @@ Retorna os detalhes de uma disciplina específica.
               ordem: { type: "integer" },
               etapa: { type: "object" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao buscar disciplina",
             type: "object",
@@ -220,8 +235,13 @@ Para exibir as disciplinas disponíveis ao criar turmas ou lançar notas de uma 
                 ordem: { type: "integer" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao buscar disciplinas",
             type: "object",
@@ -337,9 +357,19 @@ Cria uma nova disciplina no sistema.
               etapaId: { type: "string" },
               ativo: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -411,10 +441,25 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
               codigo: { type: "string" },
               ativo: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -488,9 +533,19 @@ Considere desativar (\`ativo: false\`) em vez de deletar para manter histórico.
                 example: "Não é possível deletar disciplina com avaliações vinculadas",
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },

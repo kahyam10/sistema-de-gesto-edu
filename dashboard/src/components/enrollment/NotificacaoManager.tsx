@@ -376,13 +376,13 @@ export function NotificacaoManager() {
                               </span>
                               <div className="flex items-center gap-2">
                                 {notificacao.enviadaEmail && (
-                                  <Envelope className="h-4 w-4 text-green-600" title="Email enviado" />
+                                  <span title="Email enviado"><Envelope className="h-4 w-4 text-green-600" /></span>
                                 )}
                                 {notificacao.enviadaSMS && (
-                                  <DeviceMobile className="h-4 w-4 text-green-600" title="SMS enviado" />
+                                  <span title="SMS enviado"><DeviceMobile className="h-4 w-4 text-green-600" /></span>
                                 )}
                                 {notificacao.enviadaPush && (
-                                  <Bell className="h-4 w-4 text-green-600" title="Push enviado" />
+                                  <span title="Push enviado"><Bell className="h-4 w-4 text-green-600" /></span>
                                 )}
                               </div>
                               {notificacao.lida && notificacao.dataLeitura && (

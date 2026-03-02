@@ -105,8 +105,11 @@ Lista todas as configurações de avaliação do sistema com filtros opcionais.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
         },
       },
@@ -221,8 +224,11 @@ Retorna os detalhes completos de uma configuração de avaliação específica.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           404: {
             description: "Configuração não encontrada",
@@ -387,8 +393,11 @@ Cria uma nova configuração de avaliação para um ano letivo.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
         },
       },
@@ -518,8 +527,11 @@ Atualiza uma configuração de avaliação existente.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
         },
       },
@@ -603,8 +615,11 @@ Remove uma configuração de avaliação do sistema.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
         },
       },

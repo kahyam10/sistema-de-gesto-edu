@@ -103,7 +103,7 @@ export class FrequenciaService {
       dataInicio?: Date;
       dataFim?: Date;
     },
-    pagination: { page: number; limit: number }
+    pagination: { page: number; limit: number },
   ) {
     const where: any = {};
     if (params.turmaId) where.turmaId = params.turmaId;
@@ -204,7 +204,7 @@ export class FrequenciaService {
 
     if (existente) {
       throw new Error(
-        "Já existe um registro de frequência para este aluno nesta data"
+        "Já existe um registro de frequência para este aluno nesta data",
       );
     }
 
@@ -248,7 +248,7 @@ export class FrequenciaService {
     for (const presenca of data.presencas) {
       if (!matriculasIds.includes(presenca.matriculaId)) {
         throw new Error(
-          `Matrícula ${presenca.matriculaId} não pertence a esta turma`
+          `Matrícula ${presenca.matriculaId} não pertence a esta turma`,
         );
       }
     }
@@ -282,8 +282,8 @@ export class FrequenciaService {
               },
             },
           },
-        })
-      )
+        }),
+      ),
     );
 
     return {
@@ -350,7 +350,7 @@ export class FrequenciaService {
     matriculaId: string,
     turmaId: string,
     dataInicio?: Date,
-    dataFim?: Date
+    dataFim?: Date,
   ): Promise<EstatisticasFrequencia> {
     const where: any = {
       matriculaId,
@@ -363,15 +363,49 @@ export class FrequenciaService {
       if (dataFim) where.data.lte = dataFim;
     }
 
-    const registros = await prisma.frequencia.findMany({
+    // Usar groupBy ao invés de carregar todos os registros
+    const agrupado = await prisma.frequencia.groupBy({
+      by: ["status"],
       where,
+      _count: true,
     });
 
+    const totalAulas = agrupado.reduce((acc, g) => acc + g._count, 0);
+    const presencas =
+      agrupado.find((g) => g.status === "PRESENTE")?._count || 0;
+    const faltas = agrupado.find((g) => g.status === "FALTA")?._count || 0;
+    const faltasJustificadas =
+      agrupado.find((g) => g.status === "JUSTIFICADA")?._count || 0;
+
+    const percentualPresenca =
+      totalAulas > 0 ? Math.round((presencas / totalAulas) * 100) : 0;
+    const percentualFaltas =
+      totalAulas > 0
+        ? Math.round(((faltas + faltasJustificadas) / totalAulas) * 100)
+        : 0;
+
+    return {
+      totalAulas,
+      presencas,
+      faltas,
+      faltasJustificadas,
+      percentualPresenca,
+      percentualFaltas,
+      abaixoDoLimite: percentualPresenca < 75,
+    };
+  }
+
+  /**
+   * Calcula estatísticas a partir de registros já carregados (sem query extra)
+   */
+  private calcularEstatisticasFromRecords(
+    registros: Array<{ status: string }>,
+  ): EstatisticasFrequencia {
     const totalAulas = registros.length;
     const presencas = registros.filter((r) => r.status === "PRESENTE").length;
     const faltas = registros.filter((r) => r.status === "FALTA").length;
     const faltasJustificadas = registros.filter(
-      (r) => r.status === "JUSTIFICADA"
+      (r) => r.status === "JUSTIFICADA",
     ).length;
 
     const percentualPresenca =
@@ -394,11 +428,12 @@ export class FrequenciaService {
 
   /**
    * Lista alunos com frequência abaixo de 75%
+   * Otimizado: busca todas as frequências da turma em uma única query
    */
   async listarAlunosComBaixaFrequencia(
     turmaId: string,
     dataInicio?: Date,
-    dataFim?: Date
+    dataFim?: Date,
   ) {
     // Busca turma com matrículas
     const turma = await prisma.turma.findUnique({
@@ -419,16 +454,35 @@ export class FrequenciaService {
       throw new Error("Turma não encontrada");
     }
 
-    // Calcula estatísticas para cada aluno
+    // Buscar TODAS as frequências da turma em UMA query (elimina N+1)
+    const whereFreq: any = {
+      turmaId,
+      matriculaId: { in: turma.matriculas.map((m) => m.id) },
+    };
+    if (dataInicio || dataFim) {
+      whereFreq.data = {};
+      if (dataInicio) whereFreq.data.gte = dataInicio;
+      if (dataFim) whereFreq.data.lte = dataFim;
+    }
+
+    const todasFrequencias = await prisma.frequencia.findMany({
+      where: whereFreq,
+      select: { matriculaId: true, status: true },
+    });
+
+    // Agrupar por aluno em memória
+    const frequenciasPorAluno = new Map<string, Array<{ status: string }>>();
+    for (const freq of todasFrequencias) {
+      const list = frequenciasPorAluno.get(freq.matriculaId) || [];
+      list.push({ status: freq.status });
+      frequenciasPorAluno.set(freq.matriculaId, list);
+    }
+
     const alunosComBaixaFrequencia = [];
 
     for (const matricula of turma.matriculas) {
-      const stats = await this.calcularEstatisticas(
-        matricula.id,
-        turmaId,
-        dataInicio,
-        dataFim
-      );
+      const registros = frequenciasPorAluno.get(matricula.id) || [];
+      const stats = this.calcularEstatisticasFromRecords(registros);
 
       if (stats.abaixoDoLimite && stats.totalAulas > 0) {
         alunosComBaixaFrequencia.push({
@@ -443,12 +497,9 @@ export class FrequenciaService {
 
   /**
    * Retorna estatísticas de frequência para todos os alunos de uma turma.
+   * Otimizado: busca todas as frequências em uma única query
    */
-  async getResumoTurma(
-    turmaId: string,
-    dataInicio?: Date,
-    dataFim?: Date
-  ) {
+  async getResumoTurma(turmaId: string, dataInicio?: Date, dataFim?: Date) {
     const turma = await prisma.turma.findUnique({
       where: { id: turmaId },
       include: {
@@ -468,21 +519,35 @@ export class FrequenciaService {
       throw new Error("Turma não encontrada");
     }
 
-    const alunos = [];
-
-    for (const matricula of turma.matriculas) {
-      const stats = await this.calcularEstatisticas(
-        matricula.id,
-        turmaId,
-        dataInicio,
-        dataFim
-      );
-
-      alunos.push({
-        matricula,
-        estatisticas: stats,
-      });
+    // Buscar TODAS as frequências da turma em UMA query (elimina N+1)
+    const whereFreq: any = {
+      turmaId,
+      matriculaId: { in: turma.matriculas.map((m) => m.id) },
+    };
+    if (dataInicio || dataFim) {
+      whereFreq.data = {};
+      if (dataInicio) whereFreq.data.gte = dataInicio;
+      if (dataFim) whereFreq.data.lte = dataFim;
     }
+
+    const todasFrequencias = await prisma.frequencia.findMany({
+      where: whereFreq,
+      select: { matriculaId: true, status: true },
+    });
+
+    // Agrupar por aluno em memória
+    const frequenciasPorAluno = new Map<string, Array<{ status: string }>>();
+    for (const freq of todasFrequencias) {
+      const list = frequenciasPorAluno.get(freq.matriculaId) || [];
+      list.push({ status: freq.status });
+      frequenciasPorAluno.set(freq.matriculaId, list);
+    }
+
+    const alunos = turma.matriculas.map((matricula) => {
+      const registros = frequenciasPorAluno.get(matricula.id) || [];
+      const stats = this.calcularEstatisticasFromRecords(registros);
+      return { matricula, estatisticas: stats };
+    });
 
     return alunos;
   }

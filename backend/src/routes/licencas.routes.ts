@@ -108,10 +108,23 @@ Lista todas as licenças e afastamentos registrados no sistema.
                   },
                 },
               },
-              pagination: { $ref: "#/components/schemas/PaginationMeta" },
+              pagination: {
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
+                  },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -129,33 +142,29 @@ Lista todas as licenças e afastamentos registrados no sistema.
       }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { profissionalId, status, tipo, dataInicio, dataFim, page, limit } =
-          request.query;
 
-        const filters: any = {};
-        if (profissionalId) filters.profissionalId = profissionalId;
-        if (status) filters.status = status;
-        if (tipo) filters.tipo = tipo;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+      const { profissionalId, status, tipo, dataInicio, dataFim, page, limit } =
+        request.query;
 
-        // Suporte a paginação
-        if (page && limit) {
-          const result = await licencaService.findAllPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
-          });
-          return reply.send(result);
-        }
+      const filters: any = {};
+      if (profissionalId) filters.profissionalId = profissionalId;
+      if (status) filters.status = status;
+      if (tipo) filters.tipo = tipo;
+      if (dataInicio) filters.dataInicio = new Date(dataInicio);
+      if (dataFim) filters.dataFim = new Date(dataFim);
 
-        const licencas = await licencaService.findAll(filters);
-        return reply.send(licencas);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar licenças";
-        return reply.status(400).send({ error: message });
+      // Suporte a paginação
+      if (page && limit) {
+        const result = await licencaService.findAllPaginated(filters, {
+          page: parseInt(page),
+          limit: parseInt(limit),
+        });
+        return reply.send(result);
       }
+
+      const licencas = await licencaService.findAll(filters);
+      return reply.send(licencas);
+
     }
   );
 
@@ -189,7 +198,7 @@ Cria uma nova solicitação de licença ou afastamento.
         security: [{ bearerAuth: [] }],
         body: {
           type: "object",
-          required: ["profissionalId", "tipo", "dataInicio", "dataFim", "motivo"],
+          required: ["profissionalId", "tipo", "dataInicio", "dataFim"],
           properties: {
             profissionalId: {
               type: "string",
@@ -198,9 +207,9 @@ Cria uma nova solicitação de licença ou afastamento.
             },
             tipo: {
               type: "string",
-              enum: ["MEDICA", "MATERNIDADE", "PATERNIDADE", "CASAMENTO", "LUTO", "FERIAS", "OUTRAS"],
+              enum: ["LICENCA_MEDICA", "LICENCA_MATERNIDADE", "LICENCA_PATERNIDADE", "LICENCA_PREMIO", "LICENCA_SEM_VENCIMENTO", "FERIAS"],
               description: "Tipo de licença",
-              example: "MEDICA",
+              example: "LICENCA_MEDICA",
             },
             dataInicio: {
               type: "string",
@@ -218,15 +227,18 @@ Cria uma nova solicitação de licença ou afastamento.
               type: "string",
               description: "Motivo detalhado da licença",
               example: "Consulta médica especializada",
+              nullable: true,
             },
-            documentoUrl: {
+            documentoPath: {
               type: "string",
-              description: "URL do documento comprobatório (upload prévio)",
+              description: "Caminho do documento comprobatório",
               example: "/uploads/atestado-123.pdf",
+              nullable: true,
             },
             observacoes: {
               type: "string",
               description: "Observações adicionais",
+              nullable: true,
             },
           },
         },
@@ -259,21 +271,22 @@ Cria uma nova solicitação de licença ou afastamento.
                 example: "Já existe licença aprovada para este período",
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const body = createLicencaSchema.parse(request.body);
-        const licenca = await licencaService.create(body);
-        return reply.status(201).send(licenca);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar licença";
-        return reply.status(400).send({ error: message });
-      }
+
+      const body = createLicencaSchema.parse(request.body);
+      const licenca = await licencaService.create(body);
+      return reply.status(201).send(licenca);
+
     }
   );
 
@@ -332,9 +345,19 @@ Retorna os detalhes completos de uma licença específica.
               createdAt: { type: "string", format: "date-time" },
               updatedAt: { type: "string", format: "date-time" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -342,20 +365,16 @@ Retorna os detalhes completos de uma licença específica.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        const licenca = await licencaService.findById(id);
 
-        if (!licenca) {
-          return reply.status(404).send({ error: "Licença não encontrada" });
-        }
+      const { id } = request.params;
+      const licenca = await licencaService.findById(id);
 
-        return reply.send(licenca);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar licença";
-        return reply.status(400).send({ error: message });
+      if (!licenca) {
+        return reply.status(404).send({ error: "Licença não encontrada" });
       }
+
+      return reply.send(licenca);
+
     }
   );
 
@@ -418,9 +437,19 @@ Atualiza uma solicitação de licença.
                 example: "Apenas licenças pendentes podem ser editadas",
               },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -428,18 +457,12 @@ Atualiza uma solicitação de licença.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        const body = updateLicencaSchema.parse(request.body);
-        const licenca = await licencaService.update(id, body);
-        return reply.send(licenca);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar licença";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { id } = request.params;
+      const body = updateLicencaSchema.parse(request.body);
+      const licenca = await licencaService.update(id, body);
+      return reply.send(licenca);
+
     }
   );
 
@@ -513,30 +536,56 @@ Aprova ou rejeita uma solicitação de licença.
                 example: "Licença aprovada com sucesso",
               },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          403: {
+            description: "Acesso negado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Você não tem permissão para acessar este recurso" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          403: { $ref: "#/components/responses/Forbidden" },
         },
       },
     },
     async (
-      request: FastifyRequest<{ Params: { id: string } }>,
+      request: FastifyRequest<{ Params: { id: string }; Body: { aprovado: boolean; motivo?: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        const body = aprovarLicencaSchema.parse(request.body);
-        const licenca = await licencaService.aprovar(id, body);
-        return reply.send(licenca);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao processar licença";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { id } = request.params;
+      const { aprovado, motivo } = request.body as { aprovado: boolean; motivo?: string };
+
+      // Transformar o formato do Swagger para o formato do service
+      const userId = (request.user as any)?.id || "cmln23unb0000isumnxuf5c0z"; // fallback para admin
+      const data = {
+        aprovadaPor: userId,
+        status: aprovado ? "APROVADA" as const : "REJEITADA" as const,
+        justificativaRejeicao: !aprovado ? motivo : null,
+      };
+
+      const licenca = await licencaService.aprovar(id, data);
+      return reply.send({
+        ...licenca,
+        message: aprovado ? "Licença aprovada com sucesso" : "Licença rejeitada"
+      });
+
     }
   );
 
@@ -594,10 +643,25 @@ Cancela uma licença aprovada ou pendente.
                 example: "Licenças finalizadas não podem ser canceladas",
               },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          403: {
+            description: "Acesso negado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Você não tem permissão para acessar este recurso" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          403: { $ref: "#/components/responses/Forbidden" },
         },
       },
     },
@@ -605,17 +669,11 @@ Cancela uma licença aprovada ou pendente.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        const licenca = await licencaService.cancelar(id);
-        return reply.send(licenca);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao cancelar licença";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { id } = request.params;
+      const licenca = await licencaService.cancelar(id);
+      return reply.send(licenca);
+
     }
   );
 
@@ -668,10 +726,25 @@ Remove permanentemente uma licença do sistema.
                 example: "Licenças aprovadas não podem ser removidas",
               },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          403: {
+            description: "Acesso negado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Você não tem permissão para acessar este recurso" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          403: { $ref: "#/components/responses/Forbidden" },
         },
       },
     },
@@ -679,15 +752,11 @@ Remove permanentemente uma licença do sistema.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        await licencaService.delete(id);
-        return reply.send({ message: "Licença removida com sucesso" });
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover licença";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { id } = request.params;
+      await licencaService.delete(id);
+      return reply.send({ message: "Licença removida com sucesso" });
+
     }
   );
 
@@ -754,22 +823,21 @@ Retorna todas as licenças que estão ativas no momento atual.
                 motivo: { type: "string" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const licencas = await licencaService.findLicencasAtivas();
-        return reply.send(licencas);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar licenças ativas";
-        return reply.status(400).send({ error: message });
-      }
+
+      const licencas = await licencaService.findLicencasAtivas();
+      return reply.send(licencas);
+
     }
   );
 
@@ -907,8 +975,13 @@ Gera relatório completo de licenças de um profissional.
             description: "Profissional não encontrado",
             type: "object",
             properties: { error: { type: "string" } },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -919,23 +992,17 @@ Gera relatório completo de licenças de um profissional.
       }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { profissionalId } = request.params;
-        const { anoInicio, anoFim } = request.query;
 
-        const relatorio = await licencaService.relatorioPorProfissional(
-          profissionalId,
-          anoInicio ? parseInt(anoInicio) : undefined,
-          anoFim ? parseInt(anoFim) : undefined
-        );
-        return reply.send(relatorio);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar relatório";
-        return reply.status(400).send({ error: message });
-      }
+      const { profissionalId } = request.params;
+      const { anoInicio, anoFim } = request.query;
+
+      const relatorio = await licencaService.relatorioPorProfissional(
+        profissionalId,
+        anoInicio ? parseInt(anoInicio) : undefined,
+        anoFim ? parseInt(anoFim) : undefined
+      );
+      return reply.send(relatorio);
+
     }
   );
 }

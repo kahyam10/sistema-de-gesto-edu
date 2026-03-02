@@ -185,6 +185,7 @@ export function ReuniaoPaisManager() {
         turmaId: formData.turmaId || undefined,
         pauta: formData.pauta || undefined,
         ata: formData.ata || undefined,
+        status: "AGENDADA",
       };
 
       if (editingReuniao) {

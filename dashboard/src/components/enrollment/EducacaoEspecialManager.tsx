@@ -276,7 +276,7 @@ export function EducacaoEspecialManager() {
       </Card>
 
       {/* Dialog Criar */}
-      <Dialog open={dialogOpen} onValueChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Plano Educacional Individualizado</DialogTitle>

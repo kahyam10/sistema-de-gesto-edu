@@ -94,12 +94,25 @@ Lista avaliações com suporte a filtros e paginação.
                 type: "object",
                 properties: {
                   data: { type: "array" },
-                  pagination: { $ref: "#/components/schemas/PaginationMeta" },
+                  pagination: {
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
+                  },
                 },
               },
             ],
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao listar avaliações",
             type: "object",
@@ -197,9 +210,19 @@ Retorna os detalhes de uma avaliação específica.
               turma: { type: "object" },
               disciplina: { type: "object" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao buscar avaliação",
             type: "object",
@@ -336,9 +359,19 @@ Cadastre avaliações antes de lançar notas. A avaliação define como as notas
               data: { type: "string", format: "date-time" },
               bimestre: { type: "integer" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -418,10 +451,25 @@ Alterações no peso ou valor máximo afetam o cálculo das médias já lançada
               data: { type: "string", format: "date-time" },
               bimestre: { type: "integer" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -491,9 +539,19 @@ Certifique-se de que deseja realmente remover a avaliação e suas notas.
             description: "Erro ao remover avaliação",
             type: "object",
             properties: { error: { type: "string" } },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },

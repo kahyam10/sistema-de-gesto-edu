@@ -74,8 +74,11 @@ Gera um relatório consolidado da carga horária dos profissionais.
               },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           500: {
             description: "Erro ao gerar relatório",
@@ -141,8 +144,11 @@ Gera um relatório consolidado da carga horária organizado por escola.
               },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           500: {
             description: "Erro ao gerar relatório",
@@ -215,8 +221,11 @@ Gera um relatório consolidado da carga horária organizado por turma.
               },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           500: {
             description: "Erro ao gerar relatório",
@@ -305,8 +314,11 @@ Lista todos os horários da grade com filtros opcionais.
               },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           500: {
             description: "Erro ao listar grade",
@@ -394,8 +406,11 @@ Retorna os detalhes completos de um horário específico da grade.
               },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           404: {
             description: "Horário não encontrado",
@@ -467,7 +482,17 @@ Cria um novo horário na grade horária de uma turma.
         `,
         security: [{ bearerAuth: [] }],
         body: {
-          $ref: "#/components/schemas/CreateGradeHorario",
+          type: "object",
+          required: ["turmaId", "diaSemana", "horaInicio", "horaFim", "disciplina"],
+          properties: {
+            turmaId: { type: "string" },
+            diaSemana: { type: "string", enum: ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"] },
+            horaInicio: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            horaFim: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            disciplina: { type: "string" },
+            profissionalId: { type: "string" },
+            observacoes: { type: "string" },
+          },
         },
         response: {
           201: {
@@ -495,8 +520,11 @@ Cria um novo horário na grade horária de uma turma.
               },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           409: {
             description: "Conflito de horário",
@@ -598,7 +626,16 @@ Atualiza um horário existente na grade horária.
           },
         },
         body: {
-          $ref: "#/components/schemas/UpdateGradeHorario",
+          type: "object",
+          properties: {
+            turmaId: { type: "string" },
+            diaSemana: { type: "string", enum: ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"] },
+            horaInicio: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            horaFim: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            disciplina: { type: "string" },
+            profissionalId: { type: "string" },
+            observacoes: { type: "string" },
+          },
         },
         response: {
           200: {
@@ -623,8 +660,11 @@ Atualiza um horário existente na grade horária.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           409: {
             description: "Conflito de horário",
@@ -738,8 +778,11 @@ Remove um horário da grade horária.
               error: { type: "string" },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
         },
       },

@@ -16,7 +16,22 @@
       "Bash(git commit:*)",
       "Bash(npx tsc:*)",
       "Bash(git stash:*)",
-      "Bash(npx next build:*)"
+      "Bash(npx next build:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(ping:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(find:*)",
+      "Bash(npm run seed:*)",
+      "Bash(npx prisma db seed:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtbG4yM3VuYjAwMDBpc3Vtbnh1ZjVjMHoiLCJlbWFpbCI6ImFkbWluQGliaXJhcGl0YW5nYS5iYS5nb3YuYnIiLCJub21lIjoiQWRtaW5pc3RyYWRvciBTRU1FQyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3MTExOTQwMH0.2_uex186pKfc7c6HHt6xJSeMNcrqjsdcwXgzOr87LSc\")",
+      "Bash(sqlite3:*)",
+      "Bash(bash test-automation.sh)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtbG4yM3VuYjAwMDBpc3Vtbnh1ZjVjMHoiLCJlbWFpbCI6ImFkbWluQGliaXJhcGl0YW5nYS5iYS5nb3YuYnIiLCJub21lIjoiQWRtaW5pc3RyYWRvciBTRU1FQyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3MTE2MDU4NX0.4BZk7mjdaFkibxk6TriiSrLu48U7dsoy96CdZv77iUI\")",
+      "Bash(tee:*)",
+      "Bash(findstr:*)",
+      "Read(//d/PROJETOS/PMI/EDUCACAO/sistema-de-gesto-edu/**)",
+      "Bash(cmd //c \"taskkill //PID 142452 //F\")"
     ]
   }
 }

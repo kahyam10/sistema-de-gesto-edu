@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Button } from "./button";
 import type { PaginationMeta } from "@/lib/api";
 
@@ -89,7 +89,7 @@ export function DataPagination({
           disabled={currentPage === 1}
           className="gap-1"
         >
-          <ChevronLeft size={16} weight="bold" />
+          <CaretLeft size={16} weight="bold" />
           <span className="hidden sm:inline">Anterior</span>
         </Button>
 
@@ -133,7 +133,7 @@ export function DataPagination({
           className="gap-1"
         >
           <span className="hidden sm:inline">Próxima</span>
-          <ChevronRight size={16} weight="bold" />
+          <CaretRight size={16} weight="bold" />
         </Button>
       </div>
     </div>

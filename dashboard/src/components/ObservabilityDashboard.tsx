@@ -13,7 +13,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Activity,
+  Heartbeat,
   Database,
   Cpu,
   HardDrives,
@@ -106,7 +106,7 @@ export function ObservabilityDashboard() {
             <CardTitle className="text-sm font-medium">
               Requisições (24h)
             </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Heartbeat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

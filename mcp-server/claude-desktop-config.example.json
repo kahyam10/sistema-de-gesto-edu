@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "gestao-educacional": {
+      "command": "node",
+      "args": [
+        "CAMINHO_COMPLETO_AQUI/mcp-server/dist/index.js"
+      ],
+      "env": {
+        "API_URL": "http://localhost:3333",
+        "API_TOKEN": "SEU_TOKEN_JWT_AQUI"
+      }
+    }
+  }
+}

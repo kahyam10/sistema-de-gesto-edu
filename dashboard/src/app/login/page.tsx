@@ -37,6 +37,9 @@ export default function LoginPage() {
       // Armazena o token e os dados do usuário
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.refreshToken) {
+        localStorage.setItem("refreshToken", data.refreshToken);
+      }
 
       toast.success("Login realizado com sucesso!");
       router.push("/");

@@ -568,6 +568,467 @@ async function main() {
   });
   console.log("✅ Professores vinculados às turmas");
 
+  // ==================== MÓDULO 4, 5 e 9: TEMPORARIAMENTE DESABILITADO ====================
+  // TODO: Ajustar campos conforme schema do Prisma antes de habilitar
+  // Os modelos Ponto, Licenca, BuscaAtiva, AtendimentoAEE, etc. têm campos diferentes
+  // Será necessário verificar o schema.prisma e corrigir os nomes dos campos
+
+  console.log("\n⚠️  Dados dos módulos 4, 5 e 9 serão criados manualmente via API");
+
+  /*
+  // Limpar dados existentes
+  await prisma.licenca.deleteMany();
+  await prisma.ponto.deleteMany();
+
+  // Criar registros de ponto digital
+  const dataHoje = new Date();
+  const ontem = new Date(dataHoje);
+  ontem.setDate(ontem.getDate() - 1);
+  const anteontem = new Date(dataHoje);
+  anteontem.setDate(anteontem.getDate() - 2);
+
+  const pontos = await Promise.all([
+    prisma.ponto.create({
+      data: {
+        profissionalId: profissionais[0].id,
+        data: anteontem,
+        tipo: "ENTRADA",
+        hora: "07:15",
+        observacao: "Chegada no horário",
+        status: "APROVADO",
+      },
+    }),
+    prisma.ponto.create({
+      data: {
+        profissionalId: profissionais[0].id,
+        data: anteontem,
+        tipo: "SAIDA",
+        hora: "12:00",
+        status: "APROVADO",
+      },
+    }),
+    prisma.ponto.create({
+      data: {
+        profissionalId: profissionais[1].id,
+        data: ontem,
+        tipo: "ENTRADA",
+        hora: "07:30",
+        status: "APROVADO",
+      },
+    }),
+    prisma.ponto.create({
+      data: {
+        profissionalId: profissionais[1].id,
+        data: ontem,
+        tipo: "SAIDA",
+        hora: "17:30",
+        status: "PENDENTE",
+      },
+    }),
+    prisma.ponto.create({
+      data: {
+        profissionalId: profissionais[4].id,
+        data: dataHoje,
+        tipo: "ENTRADA",
+        hora: "07:00",
+        observacao: "Entrada antecipada",
+        status: "PENDENTE",
+      },
+    }),
+  ]);
+  console.log(`✅ ${pontos.length} registros de ponto criados`);
+
+  // Criar licenças
+  const licencas = await Promise.all([
+    prisma.licenca.create({
+      data: {
+        profissionalId: profissionais[0].id,
+        tipo: "MEDICA",
+        dataInicio: new Date(`${anoLetivo}-11-15`),
+        dataFim: new Date(`${anoLetivo}-11-20`),
+        motivo: "Consulta médica agendada",
+        status: "APROVADA",
+        aprovadoPor: admin.id,
+        dataAprovacao: new Date(),
+      },
+    }),
+    prisma.licenca.create({
+      data: {
+        profissionalId: profissionais[1].id,
+        tipo: "PESSOAL",
+        dataInicio: new Date(`${anoLetivo}-12-05`),
+        dataFim: new Date(`${anoLetivo}-12-07`),
+        motivo: "Assuntos pessoais",
+        status: "PENDENTE",
+      },
+    }),
+    prisma.licenca.create({
+      data: {
+        profissionalId: profissionais[4].id,
+        tipo: "FERIAS",
+        dataInicio: new Date(`${anoLetivo + 1}-01-02`),
+        dataFim: new Date(`${anoLetivo + 1}-01-31`),
+        motivo: "Férias anuais",
+        status: "APROVADA",
+        aprovadoPor: admin.id,
+        dataAprovacao: new Date(),
+      },
+    }),
+  ]);
+  console.log(`✅ ${licencas.length} licenças criadas`);
+
+  // ==================== MÓDULO 5: PROGRAMAS ESPECIAIS ====================
+  console.log("\n🎯 Criando dados do Módulo 5 (Busca Ativa, AEE, Acompanhamento)...");
+
+  // Limpar dados existentes
+  await prisma.evolucaoAcompanhamento.deleteMany();
+  await prisma.acompanhamento.deleteMany();
+  await prisma.evolucaoAEE.deleteMany();
+  await prisma.atendimentoAEE.deleteMany();
+  await prisma.visitaBuscaAtiva.deleteMany();
+  await prisma.buscaAtiva.deleteMany();
+
+  // Criar casos de Busca Ativa
+  const buscaAtiva = await Promise.all([
+    prisma.buscaAtiva.create({
+      data: {
+        nomeAluno: "Carlos Eduardo Souza",
+        dataNascimento: new Date("2015-04-10"),
+        nomeResponsavel: "Joana Souza",
+        telefoneResponsavel: "(73) 99777-0001",
+        endereco: "Rua das Acácias, 45",
+        bairro: "Periferia",
+        cidade: "Ibirapitanga",
+        estado: "BA",
+        motivoAfastamento: "Mudança de cidade",
+        dataIdentificacao: new Date(`${anoLetivo}-08-15`),
+        status: "EM_ACOMPANHAMENTO",
+        profissionalResponsavelId: profissionais[0].id,
+      },
+    }),
+    prisma.buscaAtiva.create({
+      data: {
+        nomeAluno: "Beatriz Santos",
+        dataNascimento: new Date("2016-09-20"),
+        nomeResponsavel: "Sandra Santos",
+        telefoneResponsavel: "(73) 99777-0002",
+        endereco: "Rua do Bosque, 100",
+        bairro: "Rural",
+        cidade: "Ibirapitanga",
+        estado: "BA",
+        motivoAfastamento: "Dificuldades de transporte",
+        dataIdentificacao: new Date(`${anoLetivo}-09-01`),
+        status: "ENCAMINHADO",
+        profissionalResponsavelId: profissionais[0].id,
+      },
+    }),
+  ]);
+  console.log(`✅ ${buscaAtiva.length} casos de busca ativa criados`);
+
+  // Criar visitas de busca ativa
+  await prisma.visitaBuscaAtiva.createMany({
+    data: [
+      {
+        buscaAtivaId: buscaAtiva[0].id,
+        dataVisita: new Date(`${anoLetivo}-08-20`),
+        realizada: true,
+        observacoes: "Família receptiva. Aluno retornará em breve.",
+        proximaVisita: new Date(`${anoLetivo}-09-15`),
+      },
+      {
+        buscaAtivaId: buscaAtiva[1].id,
+        dataVisita: new Date(`${anoLetivo}-09-05`),
+        realizada: true,
+        observacoes: "Providenciado transporte escolar. Família agradecida.",
+      },
+    ],
+  });
+  console.log("✅ Visitas de busca ativa criadas");
+
+  // Criar atendimentos AEE
+  const aee = await Promise.all([
+    prisma.atendimentoAEE.create({
+      data: {
+        matriculaId: matriculas[1].id, // Ana Clara (deficiência auditiva)
+        tipoAtendimento: "SALA_RECURSOS",
+        tipoDeficiencia: "Deficiência Auditiva",
+        necessidadesEspeciais: "Uso de LIBRAS, apoio visual",
+        dataInicio: new Date(`${anoLetivo}-03-01`),
+        frequenciaSemanal: 3,
+        duracaoAtendimento: "50 minutos",
+        profissionalResponsavelId: profissionais[0].id,
+        status: "ATIVO",
+      },
+    }),
+    prisma.atendimentoAEE.create({
+      data: {
+        matriculaId: matriculas[4].id, // Gabriel (TEA)
+        tipoAtendimento: "ITINERANTE",
+        tipoDeficiencia: "TEA - Transtorno do Espectro Autista",
+        necessidadesEspeciais: "Apoio em comunicação e socialização",
+        dataInicio: new Date(`${anoLetivo}-02-15`),
+        frequenciaSemanal: 2,
+        duracaoAtendimento: "60 minutos",
+        profissionalResponsavelId: profissionais[2].id,
+        status: "ATIVO",
+      },
+    }),
+  ]);
+  console.log(`✅ ${aee.length} atendimentos AEE criados`);
+
+  // Criar evoluções AEE
+  await prisma.evolucaoAEE.createMany({
+    data: [
+      {
+        atendimentoId: aee[0].id,
+        data: new Date(`${anoLetivo}-04-15`),
+        descricao: "Bom progresso na compreensão de sinais básicos. Aluna participativa.",
+        observacoes: "Reforçar vocabulário de disciplinas escolares.",
+      },
+      {
+        atendimentoId: aee[1].id,
+        data: new Date(`${anoLetivo}-05-10`),
+        descricao: "Maior interesse em atividades em grupo. Melhora na interação social.",
+        observacoes: "Continuar estimulando brincadeiras colaborativas.",
+      },
+    ],
+  });
+  console.log("✅ Evoluções AEE criadas");
+
+  // Criar acompanhamentos pedagógicos
+  const acompanhamentos = await Promise.all([
+    prisma.acompanhamento.create({
+      data: {
+        matriculaId: matriculas[2].id, // Lucas
+        tipo: "DIFICULDADE_APRENDIZAGEM",
+        motivo: "Baixo rendimento em Matemática",
+        dataInicio: new Date(`${anoLetivo}-05-01`),
+        profissionalResponsavelId: profissionais[1].id,
+        status: "EM_ANDAMENTO",
+      },
+    }),
+    prisma.acompanhamento.create({
+      data: {
+        matriculaId: matriculas[0].id, // Pedro
+        tipo: "COMPORTAMENTO",
+        motivo: "Dificuldade de concentração em sala",
+        dataInicio: new Date(`${anoLetivo}-06-10`),
+        profissionalResponsavelId: profissionais[0].id,
+        status: "EM_ANDAMENTO",
+      },
+    }),
+  ]);
+  console.log(`✅ ${acompanhamentos.length} acompanhamentos criados`);
+
+  // Criar evoluções de acompanhamento
+  await prisma.evolucaoAcompanhamento.createMany({
+    data: [
+      {
+        acompanhamentoId: acompanhamentos[0].id,
+        data: new Date(`${anoLetivo}-06-01`),
+        descricao: "Participou de reforço escolar. Demonstrou melhora na resolução de problemas.",
+        proximasAcoes: "Continuar com atividades práticas.",
+      },
+      {
+        acompanhamentoId: acompanhamentos[1].id,
+        data: new Date(`${anoLetivo}-07-05`),
+        descricao: "Aluno mais atento após mudança de lugar na sala. Elogiado por professora.",
+        proximasAcoes: "Manter nova disposição das carteiras.",
+      },
+    ],
+  });
+  console.log("✅ Evoluções de acompanhamento criadas");
+
+  // ==================== MÓDULO 9: COMUNICAÇÃO E EVENTOS ====================
+  console.log("\n📢 Criando dados do Módulo 9 (Comunicação e Eventos)...");
+
+  // Limpar dados existentes
+  await prisma.confirmacaoLeitura.deleteMany();
+  await prisma.comunicado.deleteMany();
+  await prisma.notificacao.deleteMany();
+  await prisma.presencaReuniao.deleteMany();
+  await prisma.reuniaoPais.deleteMany();
+  await prisma.plantaoPedagogico.deleteMany();
+
+  // Criar plantões pedagógicos
+  const plantoes = await Promise.all([
+    prisma.plantaoPedagogico.create({
+      data: {
+        titulo: "Plantão de Acompanhamento - 1º Trimestre",
+        descricao: "Atendimento aos pais para entrega de boletins e orientações",
+        dataHora: new Date(`${anoLetivo}-05-15T14:00:00`),
+        local: "Sala dos Professores",
+        escolaId: escolas[0].id,
+        profissionalId: profissionais[0].id,
+        status: "REALIZADO",
+      },
+    }),
+    prisma.plantaoPedagogico.create({
+      data: {
+        titulo: "Plantão Pedagógico - 2º Trimestre",
+        descricao: "Conversa sobre desenvolvimento dos alunos",
+        dataHora: new Date(`${anoLetivo}-08-20T15:30:00`),
+        local: "Biblioteca",
+        escolaId: escolas[1].id,
+        profissionalId: profissionais[0].id,
+        status: "AGENDADO",
+      },
+    }),
+  ]);
+  console.log(`✅ ${plantoes.length} plantões pedagógicos criados`);
+
+  // Criar reuniões de pais
+  const reunioes = await Promise.all([
+    prisma.reuniaoPais.create({
+      data: {
+        titulo: "Reunião de Início do Ano Letivo",
+        descricao: "Apresentação do calendário e regras escolares",
+        dataHora: new Date(`${anoLetivo}-02-10T19:00:00`),
+        local: "Auditório",
+        turmaId: turmas[0].id,
+        profissionalId: profissionais[0].id,
+        status: "REALIZADA",
+        ata: "Reunião com 20 pais presentes. Apresentado calendário e regras. Todos de acordo.",
+      },
+    }),
+    prisma.reuniaoPais.create({
+      data: {
+        titulo: "Reunião de Meio de Ano",
+        descricao: "Balanço do 1º semestre e planejamento do 2º",
+        dataHora: new Date(`${anoLetivo}-07-25T18:30:00`),
+        local: "Sala de Aula",
+        turmaId: turmas[1].id,
+        profissionalId: profissionais[1].id,
+        status: "AGENDADA",
+      },
+    }),
+  ]);
+  console.log(`✅ ${reunioes.length} reuniões de pais criadas`);
+
+  // Criar presenças nas reuniões
+  await prisma.presencaReuniao.createMany({
+    data: [
+      {
+        reuniaoId: reunioes[0].id,
+        nomeResponsavel: matriculas[0].nomeResponsavel,
+        presente: true,
+      },
+      {
+        reuniaoId: reunioes[0].id,
+        nomeResponsavel: "João Silva",
+        presente: false,
+      },
+    ],
+  });
+  console.log("✅ Presenças em reuniões registradas");
+
+  // Criar comunicados
+  const comunicados = await Promise.all([
+    prisma.comunicado.create({
+      data: {
+        titulo: "Recesso Escolar de Julho",
+        conteudo: "Informamos que haverá recesso escolar de 01/07 a 15/07. As aulas retornam no dia 16/07.",
+        tipo: "GERAL",
+        prioridade: "NORMAL",
+        dataPublicacao: new Date(`${anoLetivo}-06-20`),
+        escolaId: escolas[0].id,
+        autorId: admin.id,
+        status: "PUBLICADO",
+        exigeConfirmacao: false,
+      },
+    }),
+    prisma.comunicado.create({
+      data: {
+        titulo: "URGENTE: Reunião Extraordinária",
+        conteudo: "Convocamos todos os pais para reunião extraordinária dia 10/10 às 19h para tratar de assuntos urgentes.",
+        tipo: "URGENTE",
+        prioridade: "ALTA",
+        dataPublicacao: new Date(`${anoLetivo}-10-05`),
+        escolaId: escolas[0].id,
+        turmaId: turmas[0].id,
+        autorId: admin.id,
+        status: "PUBLICADO",
+        exigeConfirmacao: true,
+      },
+    }),
+    prisma.comunicado.create({
+      data: {
+        titulo: "Festa Junina da Escola",
+        conteudo: "Convidamos toda a comunidade para nossa tradicional festa junina no dia 25/06 às 18h!",
+        tipo: "EVENTO",
+        prioridade: "BAIXA",
+        dataPublicacao: new Date(`${anoLetivo}-06-01`),
+        escolaId: escolas[1].id,
+        autorId: admin.id,
+        status: "PUBLICADO",
+        exigeConfirmacao: false,
+      },
+    }),
+  ]);
+  console.log(`✅ ${comunicados.length} comunicados criados`);
+
+  // Criar confirmações de leitura
+  await prisma.confirmacaoLeitura.createMany({
+    data: [
+      {
+        comunicadoId: comunicados[1].id,
+        responsavel: matriculas[0].nomeResponsavel,
+        dataConfirmacao: new Date(),
+        confirmado: true,
+      },
+    ],
+  });
+  console.log("✅ Confirmações de leitura criadas");
+
+  // Criar notificações
+  const notificacoes = await Promise.all([
+    prisma.notificacao.create({
+      data: {
+        titulo: "Boletim Disponível",
+        mensagem: "O boletim do 1º trimestre está disponível para consulta no portal.",
+        tipo: "ACADEMICO",
+        prioridade: "NORMAL",
+        destinatarioTipo: "RESPONSAVEIS",
+        escolaId: escolas[0].id,
+        turmaId: turmas[0].id,
+        autorId: admin.id,
+        canais: JSON.stringify(["EMAIL", "PUSH"]),
+        status: "ENVIADA",
+        dataEnvio: new Date(`${anoLetivo}-05-20`),
+      },
+    }),
+    prisma.notificacao.create({
+      data: {
+        titulo: "Lembrete: Reunião Amanhã",
+        mensagem: "Lembramos que amanhã (10/10) às 19h teremos reunião extraordinária. Sua presença é importante!",
+        tipo: "LEMBRETE",
+        prioridade: "ALTA",
+        destinatarioTipo: "RESPONSAVEIS",
+        escolaId: escolas[0].id,
+        turmaId: turmas[0].id,
+        autorId: admin.id,
+        canais: JSON.stringify(["SMS", "PUSH", "EMAIL"]),
+        status: "ENVIADA",
+        dataEnvio: new Date(`${anoLetivo}-10-09`),
+      },
+    }),
+    prisma.notificacao.create({
+      data: {
+        titulo: "Atenção: Documentação Pendente",
+        mensagem: "Há documentos pendentes na secretaria. Por favor, compareça o mais breve possível.",
+        tipo: "ADMINISTRATIVO",
+        prioridade: "ALTA",
+        destinatarioTipo: "RESPONSAVEIS",
+        escolaId: escolas[1].id,
+        autorId: admin.id,
+        canais: JSON.stringify(["EMAIL"]),
+        status: "PENDENTE",
+      },
+    }),
+  ]);
+  console.log(`✅ ${notificacoes.length} notificações criadas`);
+  */
+
   // Criar grade horária básica
   let horarios: any[] = [];
   try {

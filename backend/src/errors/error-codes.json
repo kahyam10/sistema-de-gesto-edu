@@ -380,14 +380,14 @@
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
     },
-    "BIZ_013": {
-      "code": "BIZ_013",
+    "BIZ_019": {
+      "code": "BIZ_019",
       "message": "Não é possível excluir licença aprovada",
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
     },
-    "BIZ_014": {
-      "code": "BIZ_014",
+    "BIZ_020": {
+      "code": "BIZ_020",
       "message": "Data de início deve ser anterior à data de fim",
       "statusCode": 400,
       "category": "REGRA_NEGOCIO"

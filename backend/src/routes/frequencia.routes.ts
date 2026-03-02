@@ -102,13 +102,24 @@ Lista registros de frequência com suporte a filtros e paginação.
                     items: { type: "object" },
                   },
                   pagination: {
-                    $ref: "#/components/schemas/PaginationMeta",
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
                   },
                 },
               },
             ],
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao listar frequências",
             type: "object",
@@ -202,9 +213,19 @@ Retorna os detalhes de um registro de frequência específico.
               justificativa: { type: "string" },
               observacao: { type: "string" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao buscar frequência",
             type: "object",
@@ -312,9 +333,19 @@ Cria um novo registro de frequência para um aluno.
               data: { type: "string", format: "date-time" },
               status: { type: "string" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -422,9 +453,19 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
               faltas: { type: "integer", example: 1 },
               justificadas: { type: "integer", example: 1 },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -523,10 +564,25 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
               justificativa: { type: "string" },
               observacao: { type: "string" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -603,9 +659,19 @@ Considere atualizar o status em vez de deletar para manter histórico.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -706,8 +772,13 @@ Sem filtros de data, considera todo o ano letivo.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -820,8 +891,13 @@ Alunos ordenados por percentual de frequência (menor primeiro).
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -937,8 +1013,13 @@ Ideal para relatórios gerenciais e acompanhamento da turma como um todo.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -1033,8 +1114,13 @@ Permite verificar se a frequência já foi registrada para aquela data.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },

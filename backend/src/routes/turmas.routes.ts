@@ -92,7 +92,13 @@ Gera um relatório completo de vagas disponíveis por escola.
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao gerar relatório",
             type: "object",
@@ -232,13 +238,25 @@ Lista todas as turmas do sistema com suporte a filtros e paginação.
                     items: { type: "object" },
                   },
                   pagination: {
-                    $ref: "#/components/schemas/PaginationMeta",
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
                   },
                 },
               },
             ],
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao listar turmas",
             type: "object",
@@ -334,9 +352,20 @@ Use este endpoint para exibir detalhes completos de uma turma, incluindo alunos 
               matriculas: { type: "array" },
               professores: { type: "array" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao buscar turma",
             type: "object",
@@ -423,9 +452,20 @@ Ideal para dashboards e relatórios gerenciais.
               idadeMedia: { type: "number" },
               frequenciaMedia: { type: "number" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao buscar estatísticas",
             type: "object",
@@ -521,7 +561,13 @@ Turmas são ordenadas por série e nome automaticamente.
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao buscar turmas",
             type: "object",
@@ -651,9 +697,19 @@ Cria uma nova turma no sistema.
             escolaId: { type: "string" },
             serieId: { type: "string" },
           },
-        },
-        400: { $ref: "#/components/responses/BadRequest" },
-        401: { $ref: "#/components/responses/Unauthorized" },
+        },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
       },
     },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
@@ -730,10 +786,26 @@ Para adicionar/remover alunos ou professores, use os endpoints específicos.
               limitePCD: { type: "integer" },
               ativo: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },
         },
       },
     },
@@ -791,6 +863,7 @@ Em vez de deletar, considere desativar a turma (campo \`ativo: false\`).
         response: {
           204: {
             description: "Turma deletada com sucesso",
+            type: "null",
           },
           400: {
             description: "Não é possível deletar (possui dependências)",
@@ -802,8 +875,19 @@ Em vez de deletar, considere desativar a turma (campo \`ativo: false\`).
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },
         },
       },
     },
@@ -893,8 +977,19 @@ Vincula um aluno (matrícula) a uma turma.
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },
         },
       },
     },
@@ -958,6 +1053,7 @@ O aluno não é excluído do sistema, apenas desvinculado da turma.
         response: {
           204: {
             description: "Aluno removido da turma com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao remover aluno",
@@ -966,8 +1062,19 @@ O aluno não é excluído do sistema, apenas desvinculado da turma.
               error: { type: "string" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },
         },
       },
     },
@@ -1066,10 +1173,26 @@ Vincula um professor ou auxiliar a uma turma.
                 },
               },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },
         },
       },
     },
@@ -1140,6 +1263,7 @@ O professor não é excluído do sistema, apenas desvinculado da turma específi
         response: {
           204: {
             description: "Professor removido da turma com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao remover professor",
@@ -1148,8 +1272,19 @@ O professor não é excluído do sistema, apenas desvinculado da turma específi
               error: { type: "string" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },
         },
       },
     },

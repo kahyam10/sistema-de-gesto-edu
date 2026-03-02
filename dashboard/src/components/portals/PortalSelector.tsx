@@ -9,7 +9,7 @@ import { PortalSEMEC } from "./PortalSEMEC";
 import { PortalAdmin } from "./PortalAdmin";
 
 export function PortalSelector() {
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuth();
 
   if (isLoading) {
     return (

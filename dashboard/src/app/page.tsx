@@ -1,22 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { GraduationCap, ListChecks, Calendar, ChartBar, Code, Rocket, Wrench, Notebook, MagnifyingGlass, Bell, GearSix, UserCircle, BookOpenText, Clock, Student, Megaphone } from '@phosphor-icons/react'
 import { kpis, techStack } from '@/lib/data'
-import { OverviewTab } from '@/components/OverviewTab'
-import { ModulesTab } from '@/components/ModulesTab'
-import { TimelineTab } from '@/components/TimelineTab'
-import { KPITab } from '@/components/KPITab'
-import { TechStackTab } from '@/components/TechStackTab'
-import { DevelopmentTab } from '@/components/DevelopmentTab'
-import { CadastrosTab } from '@/components/CadastrosTab'
-import { PedagogicoTab } from '@/components/PedagogicoTab'
-import { RHTab } from '@/components/RHTab'
-import { ProgramasEspeciaisTab } from '@/components/ProgramasEspeciaisTab'
-import { ComunicacaoTab } from '@/components/ComunicacaoTab'
+import { TabSkeleton } from '@/components/ui/tab-skeleton'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+
+// Code Splitting - Lazy load das tabs (carregam sob demanda)
+const OverviewTab = lazy(() => import('@/components/OverviewTab').then(m => ({ default: m.OverviewTab })))
+const ModulesTab = lazy(() => import('@/components/ModulesTab').then(m => ({ default: m.ModulesTab })))
+const TimelineTab = lazy(() => import('@/components/TimelineTab').then(m => ({ default: m.TimelineTab })))
+const KPITab = lazy(() => import('@/components/KPITab').then(m => ({ default: m.KPITab })))
+const TechStackTab = lazy(() => import('@/components/TechStackTab').then(m => ({ default: m.TechStackTab })))
+const DevelopmentTab = lazy(() => import('@/components/DevelopmentTab').then(m => ({ default: m.DevelopmentTab })))
+const CadastrosTab = lazy(() => import('@/components/CadastrosTab').then(m => ({ default: m.CadastrosTab })))
+const PedagogicoTab = lazy(() => import('@/components/PedagogicoTab').then(m => ({ default: m.PedagogicoTab })))
+const RHTab = lazy(() => import('@/components/RHTab').then(m => ({ default: m.RHTab })))
+const ProgramasEspeciaisTab = lazy(() => import('@/components/ProgramasEspeciaisTab').then(m => ({ default: m.ProgramasEspeciaisTab })))
+const ComunicacaoTab = lazy(() => import('@/components/ComunicacaoTab').then(m => ({ default: m.ComunicacaoTab })))
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -173,47 +176,69 @@ export default function HomePage() {
 
           <main className="flex-1 px-6 py-6 lg:px-10">
             <TabsContent value="overview">
-              <OverviewTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <OverviewTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="modules">
-              <ModulesTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <ModulesTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="timeline">
-              <TimelineTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <TimelineTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="cadastros">
-              <CadastrosTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <CadastrosTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="pedagogico">
-              <PedagogicoTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <PedagogicoTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="rh">
-              <RHTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <RHTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="programas">
-              <ProgramasEspeciaisTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <ProgramasEspeciaisTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="comunicacao">
-              <ComunicacaoTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <ComunicacaoTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="development">
-              <DevelopmentTab />
+              <Suspense fallback={<TabSkeleton />}>
+                <DevelopmentTab />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="kpis">
-              <KPITab kpis={kpis} />
+              <Suspense fallback={<TabSkeleton />}>
+                <KPITab kpis={kpis} />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="tech">
-              <TechStackTab techStack={techStack} />
+              <Suspense fallback={<TabSkeleton />}>
+                <TechStackTab techStack={techStack} />
+              </Suspense>
             </TabsContent>
           </main>
 

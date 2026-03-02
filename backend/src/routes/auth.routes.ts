@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { authService } from "../services/index.js";
+import { authService, refreshTokenService } from "../services/index.js";
 import { registerSchema, loginSchema } from "../schemas/index.js";
 
 export async function authRoutes(app: FastifyInstance) {
@@ -124,7 +124,7 @@ export async function authRoutes(app: FastifyInstance) {
           error instanceof Error ? error.message : "Erro ao registrar usuário";
         return reply.status(400).send({ error: message });
       }
-    }
+    },
   );
 
   // Login
@@ -197,9 +197,15 @@ export async function authRoutes(app: FastifyInstance) {
               },
               token: {
                 type: "string",
-                description: "Token JWT (válido por tempo configurado)",
+                description: "Access Token JWT (válido por 15 minutos)",
                 example:
                   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNseDEyMzQ1Njc4OTAiLCJlbWFpbCI6ImRpcmV0b3JAZXN...",
+              },
+              refreshToken: {
+                type: "string",
+                description:
+                  "Refresh Token (válido por 30 dias, usar em POST /refresh)",
+                example: "a1b2c3d4e5f6...",
               },
             },
           },
@@ -228,13 +234,189 @@ export async function authRoutes(app: FastifyInstance) {
           role: user.role,
         });
 
-        return reply.send({ user, token });
+        // Gerar refresh token
+        const refreshToken = await refreshTokenService.generateRefreshToken(
+          user.id,
+        );
+
+        return reply.send({ user, token, refreshToken });
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : "Erro ao fazer login";
         return reply.status(401).send({ error: message });
       }
-    }
+    },
+  );
+
+  // Refresh Token - Gera novo access token
+  app.post(
+    "/refresh",
+    {
+      schema: {
+        tags: ["Autenticação"],
+        summary: "Renovar access token usando refresh token",
+        description: `Gera um novo access token e um novo refresh token (rotation).
+
+**Token Rotation:**
+- O refresh token antigo é revogado ao usar este endpoint
+- Um novo refresh token é retornado junto com o novo access token
+- Se um refresh token revogado for reutilizado, TODOS os tokens do usuário são revogados (proteção contra roubo)
+
+**Uso típico:**
+1. Access token expira (erro 401)
+2. Frontend chama POST /refresh com o refresh token salvo
+3. Recebe novo access token + novo refresh token
+4. Atualiza os tokens armazenados
+        `,
+        body: {
+          type: "object",
+          required: ["refreshToken"],
+          properties: {
+            refreshToken: {
+              type: "string",
+              description: "Refresh token obtido no login",
+            },
+          },
+        },
+        response: {
+          200: {
+            description: "Tokens renovados com sucesso",
+            type: "object",
+            properties: {
+              user: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  email: { type: "string" },
+                  nome: { type: "string" },
+                  role: { type: "string" },
+                },
+              },
+              token: {
+                type: "string",
+                description: "Novo access token JWT (15 min)",
+              },
+              refreshToken: {
+                type: "string",
+                description: "Novo refresh token (30 dias)",
+              },
+            },
+          },
+          401: {
+            description: "Refresh token inválido ou expirado",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { refreshToken } = request.body as { refreshToken: string };
+
+        if (!refreshToken) {
+          return reply
+            .status(401)
+            .send({ error: "Refresh token não fornecido" });
+        }
+
+        const result =
+          await refreshTokenService.rotateRefreshToken(refreshToken);
+
+        if (!result) {
+          return reply
+            .status(401)
+            .send({ error: "Refresh token inválido ou expirado" });
+        }
+
+        const token = app.jwt.sign({
+          id: result.user.id,
+          email: result.user.email,
+          nome: result.user.nome,
+          role: result.user.role,
+        });
+
+        return reply.send({
+          user: result.user,
+          token,
+          refreshToken: result.refreshToken,
+        });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao renovar token";
+        return reply.status(401).send({ error: message });
+      }
+    },
+  );
+
+  // Logout - Revogar refresh token
+  app.post(
+    "/logout",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        tags: ["Autenticação"],
+        summary: "Fazer logout (revogar refresh token)",
+        description: `Revoga o refresh token do usuário.
+
+**Opções:**
+- Enviar \`refreshToken\` no body: revoga apenas aquele token (logout deste dispositivo)
+- Enviar \`allDevices: true\`: revoga TODOS os refresh tokens do usuário (logout de todos os dispositivos)
+        `,
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: "object",
+          properties: {
+            refreshToken: {
+              type: "string",
+              description: "Refresh token a ser revogado",
+            },
+            allDevices: {
+              type: "boolean",
+              description: "Se true, revoga tokens de todos os dispositivos",
+              default: false,
+            },
+          },
+        },
+        response: {
+          200: {
+            description: "Logout realizado com sucesso",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { refreshToken, allDevices } = request.body as {
+          refreshToken?: string;
+          allDevices?: boolean;
+        };
+        const userPayload = request.user as { id: string };
+
+        if (allDevices) {
+          await refreshTokenService.revokeAllUserTokens(userPayload.id);
+          return reply.send({
+            message: "Logout realizado em todos os dispositivos",
+          });
+        }
+
+        if (refreshToken) {
+          await refreshTokenService.revokeToken(refreshToken);
+        }
+
+        return reply.send({ message: "Logout realizado com sucesso" });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao fazer logout";
+        return reply.status(500).send({ error: message });
+      }
+    },
   );
 
   // Obter usuário logado
@@ -280,7 +462,13 @@ export async function authRoutes(app: FastifyInstance) {
               updatedAt: { type: "string", format: "date-time" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           404: {
             description: "Usuário não encontrado",
             type: "object",
@@ -304,6 +492,6 @@ export async function authRoutes(app: FastifyInstance) {
           error instanceof Error ? error.message : "Erro ao buscar usuário";
         return reply.status(500).send({ error: message });
       }
-    }
+    },
   );
 }

@@ -89,8 +89,12 @@ export class EscolaService {
       where: { id },
       include: {
         turmas: {
-          include: {
-            matriculas: true,
+          select: {
+            id: true,
+            capacidadeMaxima: true,
+            _count: {
+              select: { matriculas: true },
+            },
           },
         },
       },
@@ -100,12 +104,12 @@ export class EscolaService {
 
     const totalTurmas = escola.turmas.length;
     const totalAlunos = escola.turmas.reduce(
-      (acc, turma) => acc + turma.matriculas.length,
-      0
+      (acc, turma) => acc + turma._count.matriculas,
+      0,
     );
     const capacidadeTotal = escola.turmas.reduce(
       (acc, turma) => acc + turma.capacidadeMaxima,
-      0
+      0,
     );
     const ocupacao =
       capacidadeTotal > 0

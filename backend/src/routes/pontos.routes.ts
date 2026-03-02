@@ -99,10 +99,23 @@ Lista todos os registros de ponto eletrônico do sistema.
                   },
                 },
               },
-              pagination: { $ref: "#/components/schemas/PaginationMeta" },
+              pagination: {
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
+                  },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -120,33 +133,29 @@ Lista todos os registros de ponto eletrônico do sistema.
       }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { profissionalId, escolaId, dataInicio, dataFim, tipoRegistro, page, limit } =
-          request.query;
 
-        const filters: any = {};
-        if (profissionalId) filters.profissionalId = profissionalId;
-        if (escolaId) filters.escolaId = escolaId;
-        if (tipoRegistro) filters.tipoRegistro = tipoRegistro;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+      const { profissionalId, escolaId, dataInicio, dataFim, tipoRegistro, page, limit } =
+        request.query;
 
-        // Suporte a paginação
-        if (page && limit) {
-          const result = await pontoService.findAllPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
-          });
-          return reply.send(result);
-        }
+      const filters: any = {};
+      if (profissionalId) filters.profissionalId = profissionalId;
+      if (escolaId) filters.escolaId = escolaId;
+      if (tipoRegistro) filters.tipoRegistro = tipoRegistro;
+      if (dataInicio) filters.dataInicio = new Date(dataInicio);
+      if (dataFim) filters.dataFim = new Date(dataFim);
 
-        const pontos = await pontoService.findAll(filters);
-        return reply.send(pontos);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar pontos";
-        return reply.status(400).send({ error: message });
+      // Suporte a paginação
+      if (page && limit) {
+        const result = await pontoService.findAllPaginated(filters, {
+          page: parseInt(page),
+          limit: parseInt(limit),
+        });
+        return reply.send(result);
       }
+
+      const pontos = await pontoService.findAll(filters);
+      return reply.send(pontos);
+
     }
   );
 
@@ -176,10 +185,10 @@ Cria um registro de ponto manual (uso administrativo).
         security: [{ bearerAuth: [] }],
         body: {
           type: "object",
-          required: ["profissionalId", "escolaId", "data", "tipoRegistro", "horario"],
+          required: ["profissionalId", "data", "tipoRegistro"],
           properties: {
             profissionalId: { type: "string", example: "clx1234567890" },
-            escolaId: { type: "string", example: "clx0987654321" },
+            escolaId: { type: "string", example: "clx0987654321", nullable: true },
             data: {
               type: "string",
               format: "date",
@@ -187,12 +196,17 @@ Cria um registro de ponto manual (uso administrativo).
             },
             tipoRegistro: {
               type: "string",
-              enum: ["ENTRADA", "SAIDA", "FALTA", "ATESTADO"],
-              example: "ENTRADA",
+              enum: ["NORMAL", "ATESTADO", "FALTA", "FALTA_JUSTIFICADA", "FERIAS", "LICENCA"],
+              example: "NORMAL",
             },
-            horario: { type: "string", example: "08:00" },
-            localizacao: { type: "string", nullable: true },
+            entrada: { type: "string", example: "08:00", nullable: true },
+            saida: { type: "string", example: "17:00", nullable: true },
+            entrada2: { type: "string", example: "14:00", nullable: true },
+            saida2: { type: "string", example: "18:00", nullable: true },
             observacoes: { type: "string", nullable: true },
+            justificativa: { type: "string", nullable: true },
+            latitude: { type: "number", nullable: true },
+            longitude: { type: "number", nullable: true },
           },
         },
         response: {
@@ -208,23 +222,34 @@ Cria um registro de ponto manual (uso administrativo).
               horario: { type: "string" },
               createdAt: { type: "string", format: "date-time" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          403: {
+            description: "Acesso negado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Você não tem permissão para acessar este recurso" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          403: { $ref: "#/components/responses/Forbidden" },
         },
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const body = createPontoSchema.parse(request.body);
-        const ponto = await pontoService.create(body);
-        return reply.status(201).send(ponto);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar ponto";
-        return reply.status(400).send({ error: message });
-      }
+
+      const body = createPontoSchema.parse(request.body);
+      const ponto = await pontoService.create(body);
+      return reply.status(201).send(ponto);
+
     }
   );
 
@@ -308,21 +333,22 @@ Registra entrada ou saída do profissional em tempo real.
                 example: "Já existe entrada registrada hoje",
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const body = registrarPontoSchema.parse(request.body);
-        const ponto = await pontoService.registrarPonto(body);
-        return reply.status(201).send(ponto);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao registrar ponto";
-        return reply.status(400).send({ error: message });
-      }
+
+      const body = registrarPontoSchema.parse(request.body);
+      const ponto = await pontoService.registrarPonto(body);
+      return reply.status(201).send(ponto);
+
     }
   );
 
@@ -386,9 +412,19 @@ Retorna os detalhes completos de um registro de ponto específico.
               observacoes: { type: "string", nullable: true },
               createdAt: { type: "string", format: "date-time" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -396,20 +432,16 @@ Retorna os detalhes completos de um registro de ponto específico.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        const ponto = await pontoService.findById(id);
 
-        if (!ponto) {
-          return reply.status(404).send({ error: "Ponto não encontrado" });
-        }
+      const { id } = request.params;
+      const ponto = await pontoService.findById(id);
 
-        return reply.send(ponto);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar ponto";
-        return reply.status(400).send({ error: message });
+      if (!ponto) {
+        return reply.status(404).send({ error: "Ponto não encontrado" });
       }
+
+      return reply.send(ponto);
+
     }
   );
 
@@ -467,11 +499,31 @@ Atualiza um registro de ponto existente.
               observacoes: { type: "string" },
               updatedAt: { type: "string", format: "date-time" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          403: {
+            description: "Acesso negado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Você não tem permissão para acessar este recurso" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          403: { $ref: "#/components/responses/Forbidden" },
         },
       },
     },
@@ -479,16 +531,12 @@ Atualiza um registro de ponto existente.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        const body = updatePontoSchema.parse(request.body);
-        const ponto = await pontoService.update(id, body);
-        return reply.send(ponto);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar ponto";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { id } = request.params;
+      const body = updatePontoSchema.parse(request.body);
+      const ponto = await pontoService.update(id, body);
+      return reply.send(ponto);
+
     }
   );
 
@@ -526,10 +574,25 @@ Remove um registro de ponto do sistema.
             properties: {
               message: { type: "string", example: "Ponto removido com sucesso" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          403: {
+            description: "Acesso negado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Você não tem permissão para acessar este recurso" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          403: { $ref: "#/components/responses/Forbidden" },
         },
       },
     },
@@ -537,15 +600,11 @@ Remove um registro de ponto do sistema.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { id } = request.params;
-        await pontoService.delete(id);
-        return reply.send({ message: "Ponto removido com sucesso" });
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover ponto";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { id } = request.params;
+      await pontoService.delete(id);
+      return reply.send({ message: "Ponto removido com sucesso" });
+
     }
   );
 
@@ -656,10 +715,25 @@ Gera relatório completo de ponto de um profissional em um mês específico.
                 },
               },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          400: { $ref: "#/components/responses/BadRequest" },
         },
       },
     },
@@ -669,21 +743,15 @@ Gera relatório completo de ponto de um profissional em um mês específico.
       }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { profissionalId, mes, ano } = request.params;
-        const relatorio = await pontoService.relatorioMensal(
-          profissionalId,
-          parseInt(mes),
-          parseInt(ano)
-        );
-        return reply.send(relatorio);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar relatório";
-        return reply.status(400).send({ error: message });
-      }
+
+      const { profissionalId, mes, ano } = request.params;
+      const relatorio = await pontoService.relatorioMensal(
+        profissionalId,
+        parseInt(mes),
+        parseInt(ano)
+      );
+      return reply.send(relatorio);
+
     }
   );
 }

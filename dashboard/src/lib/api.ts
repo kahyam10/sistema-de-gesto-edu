@@ -1,5 +1,6 @@
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -26,13 +27,19 @@ export interface PaginatedResponse<T> {
 }
 
 // Helper to add pagination params to URLSearchParams
-function addPaginationParams(params: URLSearchParams, pagination?: PaginationParams): void {
+function addPaginationParams(
+  params: URLSearchParams,
+  pagination?: PaginationParams,
+): void {
   if (pagination?.page) params.append("page", pagination.page.toString());
   if (pagination?.limit) params.append("limit", pagination.limit.toString());
 }
 
 class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -40,11 +47,12 @@ class ApiError extends Error {
 
 async function request<T>(
   endpoint: string,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const config: RequestInit = {
     method,
@@ -59,7 +67,52 @@ async function request<T>(
     config.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+  // Auto-refresh: se receber 401 e temos refresh token, tenta renovar
+  if (response.status === 401 && typeof window !== "undefined") {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      try {
+        const refreshResponse = await fetch(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+          },
+        );
+
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          localStorage.setItem("token", refreshData.token);
+          localStorage.setItem("refreshToken", refreshData.refreshToken);
+          localStorage.setItem("user", JSON.stringify(refreshData.user));
+
+          // Retry a requisição original com o novo token
+          const retryConfig: RequestInit = {
+            ...config,
+            headers: {
+              ...(body !== undefined && { "Content-Type": "application/json" }),
+              Authorization: `Bearer ${refreshData.token}`,
+              ...headers,
+            },
+          };
+          response = await fetch(`${API_BASE_URL}${endpoint}`, retryConfig);
+        } else {
+          // Refresh falhou - limpar dados e redirecionar
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+        }
+      } catch {
+        // Erro no refresh - manter o 401 original
+      }
+    }
+  }
 
   if (!response.ok) {
     const error = await response
@@ -84,6 +137,9 @@ export interface User {
   nome: string;
   role: string;
   escola?: Escola;
+  escolaId?: string;
+  matriculaId?: string;
+  profissionalId?: string;
   ativo: boolean;
   createdAt: string;
 }
@@ -144,7 +200,7 @@ export const etapasApi = {
     request<EtapaEnsino>("/api/etapas", { method: "POST", body: data }),
   update: (
     id: string,
-    data: Partial<{ nome: string; descricao?: string; ordem: number }>
+    data: Partial<{ nome: string; descricao?: string; ordem: number }>,
   ) => request<EtapaEnsino>(`/api/etapas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/etapas/${id}`, { method: "DELETE" }),
@@ -161,7 +217,7 @@ export const seriesApi = {
     request<Serie>("/api/series", { method: "POST", body: data }),
   update: (
     id: string,
-    data: Partial<{ nome: string; ordem: number; etapaId: string }>
+    data: Partial<{ nome: string; ordem: number; etapaId: string }>,
   ) => request<Serie>(`/api/series/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/series/${id}`, { method: "DELETE" }),
@@ -289,7 +345,7 @@ export const salasApi = {
       acessivel?: boolean;
       observacoes?: string | null;
       ativo?: boolean;
-    }
+    },
   ) =>
     request<Sala>(`/api/escolas/${escolaId}/salas`, {
       method: "POST",
@@ -311,7 +367,7 @@ export const salasApi = {
       acessivel: boolean;
       observacoes: string | null;
       ativo: boolean;
-    }>
+    }>,
   ) =>
     request<Sala>(`/api/salas/${id}`, {
       method: "PUT",
@@ -373,7 +429,7 @@ export const escolasApi = {
       quantidadeSalas?: number;
       ativo?: boolean;
       etapasIds?: string[];
-    } & EscolaInfraestruturaUpdate
+    } & EscolaInfraestruturaUpdate,
   ) => request<Escola>("/api/escolas", { method: "POST", body: data }),
   update: (
     id: string,
@@ -387,7 +443,7 @@ export const escolasApi = {
       ativo?: boolean;
       etapasIds?: string[];
     }> &
-      EscolaInfraestruturaUpdate
+      EscolaInfraestruturaUpdate,
   ) => request<Escola>(`/api/escolas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/escolas/${id}`, { method: "DELETE" }),
@@ -483,7 +539,7 @@ export const turmasApi = {
       anoLetivo?: number;
       ativo?: boolean;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
@@ -494,7 +550,9 @@ export const turmasApi = {
     addPaginationParams(params, pagination);
     const query = params.toString();
     return pagination
-      ? request<PaginatedResponse<Turma>>(`/api/turmas${query ? `?${query}` : ""}`)
+      ? request<PaginatedResponse<Turma>>(
+          `/api/turmas${query ? `?${query}` : ""}`,
+        )
       : request<Turma[]>(`/api/turmas${query ? `?${query}` : ""}`);
   },
   get: (id: string) => request<Turma>(`/api/turmas/${id}`),
@@ -525,7 +583,7 @@ export const turmasApi = {
       escolaId: string;
       serieId: string;
       ativo?: boolean;
-    }>
+    }>,
   ) => request<Turma>(`/api/turmas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/turmas/${id}`, { method: "DELETE" }),
@@ -540,7 +598,7 @@ export const turmasApi = {
     }),
   addProfessor: (
     turmaId: string,
-    data: { profissionalId: string; tipo: string; disciplina?: string }
+    data: { profissionalId: string; tipo: string; disciplina?: string },
   ) =>
     request<unknown>(`/api/turmas/${turmaId}/professores`, {
       method: "POST",
@@ -556,7 +614,7 @@ export const turmasApi = {
     if (anoLetivo) params.append("anoLetivo", anoLetivo.toString());
     const query = params.toString();
     return request<VagasResumoEscola[]>(
-      `/api/turmas/relatorios/vagas${query ? `?${query}` : ""}`
+      `/api/turmas/relatorios/vagas${query ? `?${query}` : ""}`,
     );
   },
 };
@@ -571,7 +629,7 @@ export const gradeHorariaApi = {
       params.append("profissionalId", filters.profissionalId);
     const query = params.toString();
     return request<GradeHorario[]>(
-      `/api/grade-horaria${query ? `?${query}` : ""}`
+      `/api/grade-horaria${query ? `?${query}` : ""}`,
     );
   },
   get: (id: string) => request<GradeHorario>(`/api/grade-horaria/${id}`),
@@ -583,7 +641,8 @@ export const gradeHorariaApi = {
     disciplina: string;
     profissionalId?: string;
     observacoes?: string;
-  }) => request<GradeHorario>("/api/grade-horaria", { method: "POST", body: data }),
+  }) =>
+    request<GradeHorario>("/api/grade-horaria", { method: "POST", body: data }),
   update: (
     id: string,
     data: Partial<{
@@ -594,8 +653,12 @@ export const gradeHorariaApi = {
       disciplina: string;
       profissionalId?: string;
       observacoes?: string;
-    }>
-  ) => request<GradeHorario>(`/api/grade-horaria/${id}`, { method: "PUT", body: data }),
+    }>,
+  ) =>
+    request<GradeHorario>(`/api/grade-horaria/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
   delete: (id: string) =>
     request<void>(`/api/grade-horaria/${id}`, { method: "DELETE" }),
   getCargaResumo: (profissionalId?: string) => {
@@ -603,17 +666,13 @@ export const gradeHorariaApi = {
     if (profissionalId) params.append("profissionalId", profissionalId);
     const query = params.toString();
     return request<CargaHorariaResumo[]>(
-      `/api/grade-horaria/relatorios/carga${query ? `?${query}` : ""}`
+      `/api/grade-horaria/relatorios/carga${query ? `?${query}` : ""}`,
     );
   },
   getCargaResumoPorEscola: () =>
-    request<CargaHorariaEscolaResumo[]>(
-      "/api/grade-horaria/relatorios/escola"
-    ),
+    request<CargaHorariaEscolaResumo[]>("/api/grade-horaria/relatorios/escola"),
   getCargaResumoPorTurma: () =>
-    request<CargaHorariaTurmaResumo[]>(
-      "/api/grade-horaria/relatorios/turma"
-    ),
+    request<CargaHorariaTurmaResumo[]>("/api/grade-horaria/relatorios/turma"),
 };
 
 // ==================== MATRÍCULAS ====================
@@ -687,7 +746,12 @@ export interface MatriculaEstatisticas {
 
 export interface CreateMatriculaData {
   anoLetivo: number;
-  status?: "ATIVA" | "TRANSFERIDA" | "CANCELADA" | "CONCLUIDA" | "AGUARDANDO_VAGA";
+  status?:
+    | "ATIVA"
+    | "TRANSFERIDA"
+    | "CANCELADA"
+    | "CONCLUIDA"
+    | "AGUARDANDO_VAGA";
   nomeAluno: string;
   dataNascimento: string;
   cpfAluno?: string;
@@ -740,7 +804,7 @@ export const matriculasApi = {
       anoLetivo?: number;
       status?: string;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
@@ -752,7 +816,9 @@ export const matriculasApi = {
     addPaginationParams(params, pagination);
     const query = params.toString();
     return pagination
-      ? request<PaginatedResponse<Matricula>>(`/api/matriculas${query ? `?${query}` : ""}`)
+      ? request<PaginatedResponse<Matricula>>(
+          `/api/matriculas${query ? `?${query}` : ""}`,
+        )
       : request<Matricula[]>(`/api/matriculas${query ? `?${query}` : ""}`);
   },
   get: (id: string) => request<Matricula>(`/api/matriculas/${id}`),
@@ -764,14 +830,14 @@ export const matriculasApi = {
     if (anoLetivo) params.append("anoLetivo", anoLetivo.toString());
     const query = params.toString();
     return request<Matricula[]>(
-      `/api/matriculas/sem-turma${query ? `?${query}` : ""}`
+      `/api/matriculas/sem-turma${query ? `?${query}` : ""}`,
     );
   },
   getEstatisticas: (anoLetivo: number, escolaId?: string) => {
     const params = new URLSearchParams({ anoLetivo: anoLetivo.toString() });
     if (escolaId) params.append("escolaId", escolaId);
     return request<MatriculaEstatisticas>(
-      `/api/matriculas/estatisticas?${params}`
+      `/api/matriculas/estatisticas?${params}`,
     );
   },
   create: (data: CreateMatriculaData) =>
@@ -842,7 +908,7 @@ export interface LotacaoResumo {
 export const profissionaisApi = {
   list: (
     filters?: { tipo?: string; ativo?: boolean },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.tipo) params.append("tipo", filters.tipo);
@@ -852,10 +918,10 @@ export const profissionaisApi = {
     const query = params.toString();
     return pagination
       ? request<PaginatedResponse<ProfissionalEducacao>>(
-          `/api/profissionais${query ? `?${query}` : ""}`
+          `/api/profissionais${query ? `?${query}` : ""}`,
         )
       : request<ProfissionalEducacao[]>(
-          `/api/profissionais${query ? `?${query}` : ""}`
+          `/api/profissionais${query ? `?${query}` : ""}`,
         );
   },
   get: (id: string) =>
@@ -891,7 +957,7 @@ export const profissionaisApi = {
       matricula?: string;
       ativo?: boolean;
       escolasIds?: string[];
-    }>
+    }>,
   ) =>
     request<ProfissionalEducacao>(`/api/profissionais/${id}`, {
       method: "PUT",
@@ -903,7 +969,7 @@ export const profissionaisApi = {
     profissionalId: string,
     escolaId: string,
     funcao?: string,
-    cargaHoraria?: number
+    cargaHoraria?: number,
   ) =>
     request<unknown>(`/api/profissionais/${profissionalId}/escolas`, {
       method: "POST",
@@ -918,13 +984,13 @@ export const profissionaisApi = {
     if (escolaId) params.append("escolaId", escolaId);
     const query = params.toString();
     return request<LotacaoResumo[]>(
-      `/api/profissionais/relatorios/lotacao${query ? `?${query}` : ""}`
+      `/api/profissionais/relatorios/lotacao${query ? `?${query}` : ""}`,
     );
   },
   // Formações
   getFormacoes: (profissionalId: string) =>
     request<FormacaoProfissional[]>(
-      `/api/profissionais/${profissionalId}/formacoes`
+      `/api/profissionais/${profissionalId}/formacoes`,
     ),
   addFormacao: (
     profissionalId: string,
@@ -935,14 +1001,14 @@ export const profissionaisApi = {
       anoConclusao?: number;
       cargaHoraria?: number;
       emAndamento?: boolean;
-    }
+    },
   ) =>
     request<FormacaoProfissional>(
       `/api/profissionais/${profissionalId}/formacoes`,
       {
         method: "POST",
         body: data,
-      }
+      },
     ),
   updateFormacao: (
     profissionalId: string,
@@ -954,21 +1020,21 @@ export const profissionaisApi = {
       anoConclusao?: number;
       cargaHoraria?: number;
       emAndamento?: boolean;
-    }>
+    }>,
   ) =>
     request<FormacaoProfissional>(
       `/api/profissionais/${profissionalId}/formacoes/${formacaoId}`,
       {
         method: "PUT",
         body: data,
-      }
+      },
     ),
   deleteFormacao: (profissionalId: string, formacaoId: string) =>
     request<void>(
       `/api/profissionais/${profissionalId}/formacoes/${formacaoId}`,
       {
         method: "DELETE",
-      }
+      },
     ),
 };
 
@@ -1042,7 +1108,7 @@ export const modulesApi = {
       status: string;
       progress: number;
       ordem: number;
-    }>
+    }>,
   ) => request<Module>(`/api/modules/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/modules/${id}`, { method: "DELETE" }),
@@ -1055,7 +1121,7 @@ export const modulesApi = {
       status?: string;
       ordem?: number;
       observacao?: string;
-    }
+    },
   ) =>
     request<SubModule>(`/api/modules/${moduleId}/submodules`, {
       method: "POST",
@@ -1069,7 +1135,7 @@ export const modulesApi = {
       status: string;
       ordem: number;
       observacao: string;
-    }>
+    }>,
   ) =>
     request<SubModule>(`/api/modules/submodules/${id}`, {
       method: "PUT",
@@ -1120,7 +1186,7 @@ export const phasesApi = {
       ordem: number;
       status: string;
       moduleIds: string[];
-    }>
+    }>,
   ) => request<Phase>(`/api/phases/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/phases/${id}`, { method: "DELETE" }),
@@ -1234,7 +1300,7 @@ export const calendarioApi = {
     data: Partial<{
       ano: number;
       ativo: boolean;
-    }>
+    }>,
   ) =>
     request<AnoLetivo>(`/api/calendario/anos-letivos/${id}`, {
       method: "PUT",
@@ -1247,24 +1313,24 @@ export const calendarioApi = {
   getEventos: (anoLetivoId: string, escolaId?: string) => {
     const params = escolaId ? `?escolaId=${escolaId}` : "";
     return request<EventoCalendario[]>(
-      `/api/calendario/anos-letivos/${anoLetivoId}/eventos${params}`
+      `/api/calendario/anos-letivos/${anoLetivoId}/eventos${params}`,
     );
   },
   getEventosByData: (anoLetivoId: string, data: string, escolaId?: string) => {
     const params = escolaId ? `?escolaId=${escolaId}` : "";
     return request<EventoCalendario[]>(
-      `/api/calendario/anos-letivos/${anoLetivoId}/eventos/data/${data}${params}`
+      `/api/calendario/anos-letivos/${anoLetivoId}/eventos/data/${data}${params}`,
     );
   },
   getEventosByMes: (
     anoLetivoId: string,
     ano: number,
     mes: number,
-    escolaId?: string
+    escolaId?: string,
   ) => {
     const params = escolaId ? `?escolaId=${escolaId}` : "";
     return request<EventoCalendario[]>(
-      `/api/calendario/anos-letivos/${anoLetivoId}/eventos/mes/${ano}/${mes}${params}`
+      `/api/calendario/anos-letivos/${anoLetivoId}/eventos/mes/${ano}/${mes}${params}`,
     );
   },
   getEvento: (id: string) =>
@@ -1307,7 +1373,7 @@ export const calendarioApi = {
       cor?: string;
       reduzDiaLetivo?: boolean;
       escolaId?: string;
-    }>
+    }>,
   ) =>
     request<EventoCalendario>(`/api/calendario/eventos/${id}`, {
       method: "PUT",
@@ -1320,7 +1386,7 @@ export const calendarioApi = {
   getEstatisticas: (anoLetivoId: string, escolaId?: string) => {
     const params = escolaId ? `?escolaId=${escolaId}` : "";
     return request<EstatisticasCalendario>(
-      `/api/calendario/anos-letivos/${anoLetivoId}/estatisticas${params}`
+      `/api/calendario/anos-letivos/${anoLetivoId}/estatisticas${params}`,
     );
   },
 };
@@ -1383,7 +1449,7 @@ export const frequenciaApi = {
     if (params?.dataFim) query.append("dataFim", params.dataFim);
     const queryString = query.toString();
     return request<Frequencia[]>(
-      `/api/frequencia${queryString ? `?${queryString}` : ""}`
+      `/api/frequencia${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -1430,7 +1496,7 @@ export const frequenciaApi = {
       status?: "PRESENTE" | "FALTA" | "JUSTIFICADA";
       justificativa?: string;
       observacao?: string;
-    }
+    },
   ) =>
     request<Frequencia>(`/api/frequencia/${id}`, {
       method: "PATCH",
@@ -1448,14 +1514,14 @@ export const frequenciaApi = {
     matriculaId: string,
     turmaId: string,
     dataInicio?: string,
-    dataFim?: string
+    dataFim?: string,
   ) => {
     const query = new URLSearchParams();
     if (dataInicio) query.append("dataInicio", dataInicio);
     if (dataFim) query.append("dataFim", dataFim);
     const queryString = query.toString();
     return request<EstatisticasFrequencia>(
-      `/api/frequencia/estatisticas/${matriculaId}/${turmaId}${queryString ? `?${queryString}` : ""}`
+      `/api/frequencia/estatisticas/${matriculaId}/${turmaId}${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -1463,29 +1529,25 @@ export const frequenciaApi = {
   listarBaixaFrequencia: (
     turmaId: string,
     dataInicio?: string,
-    dataFim?: string
+    dataFim?: string,
   ) => {
     const query = new URLSearchParams();
     if (dataInicio) query.append("dataInicio", dataInicio);
     if (dataFim) query.append("dataFim", dataFim);
     const queryString = query.toString();
     return request<AlunoComBaixaFrequencia[]>(
-      `/api/frequencia/turma/${turmaId}/baixa-frequencia${queryString ? `?${queryString}` : ""}`
+      `/api/frequencia/turma/${turmaId}/baixa-frequencia${queryString ? `?${queryString}` : ""}`,
     );
   },
 
   // Resumo de frequência da turma (todos os alunos)
-  getResumoTurma: (
-    turmaId: string,
-    dataInicio?: string,
-    dataFim?: string
-  ) => {
+  getResumoTurma: (turmaId: string, dataInicio?: string, dataFim?: string) => {
     const query = new URLSearchParams();
     if (dataInicio) query.append("dataInicio", dataInicio);
     if (dataFim) query.append("dataFim", dataFim);
     const queryString = query.toString();
     return request<AlunoComBaixaFrequencia[]>(
-      `/api/frequencia/turma/${turmaId}/resumo${queryString ? `?${queryString}` : ""}`
+      `/api/frequencia/turma/${turmaId}/resumo${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -1515,7 +1577,8 @@ export const disciplinasApi = {
   list: (filters?: { etapaId?: string; ativo?: boolean }) => {
     const params = new URLSearchParams();
     if (filters?.etapaId) params.append("etapaId", filters.etapaId);
-    if (filters?.ativo !== undefined) params.append("ativo", filters.ativo.toString());
+    if (filters?.ativo !== undefined)
+      params.append("ativo", filters.ativo.toString());
     const query = params.toString();
     return request<Disciplina[]>(`/api/disciplinas${query ? `?${query}` : ""}`);
   },
@@ -1543,8 +1606,12 @@ export const disciplinasApi = {
       ativo?: boolean;
       ordem?: number;
       etapaId: string;
-    }>
-  ) => request<Disciplina>(`/api/disciplinas/${id}`, { method: "PUT", body: data }),
+    }>,
+  ) =>
+    request<Disciplina>(`/api/disciplinas/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
   delete: (id: string) =>
     request<void>(`/api/disciplinas/${id}`, { method: "DELETE" }),
 };
@@ -1569,14 +1636,19 @@ export interface ConfiguracaoAvaliacao {
 }
 
 export const configuracaoAvaliacaoApi = {
-  list: (filters?: { anoLetivo?: number; escolaId?: string; etapaId?: string }) => {
+  list: (filters?: {
+    anoLetivo?: number;
+    escolaId?: string;
+    etapaId?: string;
+  }) => {
     const params = new URLSearchParams();
-    if (filters?.anoLetivo) params.append("anoLetivo", filters.anoLetivo.toString());
+    if (filters?.anoLetivo)
+      params.append("anoLetivo", filters.anoLetivo.toString());
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.etapaId) params.append("etapaId", filters.etapaId);
     const query = params.toString();
     return request<ConfiguracaoAvaliacao[]>(
-      `/api/configuracao-avaliacao${query ? `?${query}` : ""}`
+      `/api/configuracao-avaliacao${query ? `?${query}` : ""}`,
     );
   },
   get: (id: string) =>
@@ -1608,7 +1680,7 @@ export const configuracaoAvaliacaoApi = {
       recuperacaoFinal: boolean;
       escolaId?: string;
       etapaId?: string;
-    }>
+    }>,
   ) =>
     request<ConfiguracaoAvaliacao>(`/api/configuracao-avaliacao/${id}`, {
       method: "PUT",
@@ -1641,11 +1713,17 @@ export interface Avaliacao {
 }
 
 export const avaliacoesApi = {
-  list: (filters?: { turmaId?: string; disciplinaId?: string; bimestre?: number }) => {
+  list: (filters?: {
+    turmaId?: string;
+    disciplinaId?: string;
+    bimestre?: number;
+  }) => {
     const params = new URLSearchParams();
     if (filters?.turmaId) params.append("turmaId", filters.turmaId);
-    if (filters?.disciplinaId) params.append("disciplinaId", filters.disciplinaId);
-    if (filters?.bimestre) params.append("bimestre", filters.bimestre.toString());
+    if (filters?.disciplinaId)
+      params.append("disciplinaId", filters.disciplinaId);
+    if (filters?.bimestre)
+      params.append("bimestre", filters.bimestre.toString());
     const query = params.toString();
     return request<Avaliacao[]>(`/api/avaliacoes${query ? `?${query}` : ""}`);
   },
@@ -1672,8 +1750,9 @@ export const avaliacoesApi = {
       data: string;
       bimestre: number;
       observacao?: string;
-    }>
-  ) => request<Avaliacao>(`/api/avaliacoes/${id}`, { method: "PUT", body: data }),
+    }>,
+  ) =>
+    request<Avaliacao>(`/api/avaliacoes/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/avaliacoes/${id}`, { method: "DELETE" }),
 };
@@ -1749,7 +1828,8 @@ export const notasApi = {
     if (filters?.turmaId) params.append("turmaId", filters.turmaId);
     if (filters?.disciplina) params.append("disciplina", filters.disciplina);
     if (filters?.matriculaId) params.append("matriculaId", filters.matriculaId);
-    if (filters?.bimestre) params.append("bimestre", filters.bimestre.toString());
+    if (filters?.bimestre)
+      params.append("bimestre", filters.bimestre.toString());
     const queryString = params.toString();
     return request<Nota[]>(`/api/notas${queryString ? `?${queryString}` : ""}`);
   },
@@ -1766,12 +1846,9 @@ export const notasApi = {
   lancarTurma: (data: {
     avaliacaoId: string;
     notas: Array<{ matriculaId: string; valor: number; observacao?: string }>;
-  }) =>
-    request<Nota[]>("/api/notas/turma", { method: "POST", body: data }),
-  update: (
-    id: string,
-    data: { valor?: number; observacao?: string }
-  ) => request<Nota>(`/api/notas/${id}`, { method: "PUT", body: data }),
+  }) => request<Nota[]>("/api/notas/turma", { method: "POST", body: data }),
+  update: (id: string, data: { valor?: number; observacao?: string }) =>
+    request<Nota>(`/api/notas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/notas/${id}`, { method: "DELETE" }),
   getBoletim: (matriculaId: string, turmaId?: string) => {
@@ -1779,20 +1856,25 @@ export const notasApi = {
     return request<Boletim>(`/api/notas/boletim/${matriculaId}${params}`);
   },
   getMediaFinal: (matriculaId: string, turmaId: string, disciplinaId: string) =>
-    request<{ media: number }>(`/api/notas/media/${matriculaId}/${turmaId}/${disciplinaId}`),
-  getSituacao: (matriculaId: string, turmaId: string, disciplinaId: string) =>
-    request<{ situacao: string; mediaFinal: number; frequenciaPercentual: number }>(
-      `/api/notas/situacao/${matriculaId}/${turmaId}/${disciplinaId}`
+    request<{ media: number }>(
+      `/api/notas/media/${matriculaId}/${turmaId}/${disciplinaId}`,
     ),
+  getSituacao: (matriculaId: string, turmaId: string, disciplinaId: string) =>
+    request<{
+      situacao: string;
+      mediaFinal: number;
+      frequenciaPercentual: number;
+    }>(`/api/notas/situacao/${matriculaId}/${turmaId}/${disciplinaId}`),
 };
 
 // ==================== UPLOAD DE DOCUMENTOS ====================
 
 async function requestFormData<T>(
   endpoint: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const config: RequestInit = {
     method: "POST",
@@ -1829,15 +1911,16 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("tipo", tipo);
-    return requestFormData<{ message: string; path: string; matricula: Matricula }>(
-      `/api/upload/matricula/${matriculaId}/documento`,
-      formData
-    );
+    return requestFormData<{
+      message: string;
+      path: string;
+      matricula: Matricula;
+    }>(`/api/upload/matricula/${matriculaId}/documento`, formData);
   },
 
   getDocumentos: (matriculaId: string) =>
     request<DocumentoMatricula>(
-      `/api/upload/matricula/${matriculaId}/documentos`
+      `/api/upload/matricula/${matriculaId}/documentos`,
     ),
 };
 
@@ -1886,24 +1969,24 @@ export const pontosApi = {
       dataFim?: string;
       tipoRegistro?: string;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
-    if (filters?.profissionalId) params.append("profissionalId", filters.profissionalId);
+    if (filters?.profissionalId)
+      params.append("profissionalId", filters.profissionalId);
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
     if (filters?.dataFim) params.append("dataFim", filters.dataFim);
-    if (filters?.tipoRegistro) params.append("tipoRegistro", filters.tipoRegistro);
+    if (filters?.tipoRegistro)
+      params.append("tipoRegistro", filters.tipoRegistro);
     addPaginationParams(params, pagination);
 
     const queryString = params.toString();
     return pagination
       ? request<PaginatedResponse<Ponto>>(
-          `/api/pontos${queryString ? `?${queryString}` : ""}`
+          `/api/pontos${queryString ? `?${queryString}` : ""}`,
         )
-      : request<Ponto[]>(
-          `/api/pontos${queryString ? `?${queryString}` : ""}`
-        );
+      : request<Ponto[]>(`/api/pontos${queryString ? `?${queryString}` : ""}`);
   },
 
   create: (data: Partial<Ponto>) =>
@@ -1916,8 +1999,7 @@ export const pontosApi = {
     horario: string;
     latitude?: number;
     longitude?: number;
-  }) =>
-    request<Ponto>("/api/pontos/registrar", { method: "POST", body: data }),
+  }) => request<Ponto>("/api/pontos/registrar", { method: "POST", body: data }),
 
   getById: (id: string) => request<Ponto>(`/api/pontos/${id}`),
 
@@ -1929,7 +2011,7 @@ export const pontosApi = {
 
   relatorioMensal: (profissionalId: string, mes: number, ano: number) =>
     request<RelatorioMensal>(
-      `/api/pontos/relatorio/${profissionalId}/${mes}/${ano}`
+      `/api/pontos/relatorio/${profissionalId}/${mes}/${ano}`,
     ),
 };
 
@@ -1978,10 +2060,11 @@ export const licencasApi = {
       dataInicio?: string;
       dataFim?: string;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
-    if (filters?.profissionalId) params.append("profissionalId", filters.profissionalId);
+    if (filters?.profissionalId)
+      params.append("profissionalId", filters.profissionalId);
     if (filters?.status) params.append("status", filters.status);
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
@@ -1991,10 +2074,10 @@ export const licencasApi = {
     const queryString = params.toString();
     return pagination
       ? request<PaginatedResponse<Licenca>>(
-          `/api/licencas${queryString ? `?${queryString}` : ""}`
+          `/api/licencas${queryString ? `?${queryString}` : ""}`,
         )
       : request<Licenca[]>(
-          `/api/licencas${queryString ? `?${queryString}` : ""}`
+          `/api/licencas${queryString ? `?${queryString}` : ""}`,
         );
   },
 
@@ -2012,7 +2095,7 @@ export const licencasApi = {
       aprovadaPor: string;
       status: "APROVADA" | "REJEITADA";
       justificativaRejeicao?: string;
-    }
+    },
   ) =>
     request<Licenca>(`/api/licencas/${id}/aprovar`, {
       method: "POST",
@@ -2034,7 +2117,7 @@ export const licencasApi = {
 
     const queryString = params.toString();
     return request<RelatorioLicencas>(
-      `/api/licencas/relatorio/${profissionalId}${queryString ? `?${queryString}` : ""}`
+      `/api/licencas/relatorio/${profissionalId}${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
@@ -2225,7 +2308,7 @@ export const buscaAtivaApi = {
 
     const queryString = params.toString();
     return request<BuscaAtiva[]>(
-      `/api/busca-ativa${queryString ? `?${queryString}` : ""}`
+      `/api/busca-ativa${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2250,7 +2333,7 @@ export const buscaAtivaApi = {
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
     return request<any>(
-      `/api/busca-ativa/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/busca-ativa/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2284,7 +2367,7 @@ export const buscaAtivaApi = {
 
   listEncaminhamentos: (buscaAtivaId: string) =>
     request<EncaminhamentoExterno[]>(
-      `/api/busca-ativa/${buscaAtivaId}/encaminhamentos`
+      `/api/busca-ativa/${buscaAtivaId}/encaminhamentos`,
     ),
 
   updateEncaminhamento: (id: string, data: Partial<EncaminhamentoExterno>) =>
@@ -2302,7 +2385,11 @@ export const buscaAtivaApi = {
 // API - AEE
 export const aeeApi = {
   // PEI
-  listPEI: (filters?: { escolaId?: string; anoLetivo?: number; status?: string }) => {
+  listPEI: (filters?: {
+    escolaId?: string;
+    anoLetivo?: number;
+    status?: string;
+  }) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
     if (filters?.anoLetivo)
@@ -2311,7 +2398,7 @@ export const aeeApi = {
 
     const queryString = params.toString();
     return request<PlanoEducacionalIndividualizado[]>(
-      `/api/aee/pei${queryString ? `?${queryString}` : ""}`
+      `/api/aee/pei${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2320,7 +2407,7 @@ export const aeeApi = {
 
   getPEIByMatricula: (matriculaId: string) =>
     request<PlanoEducacionalIndividualizado>(
-      `/api/aee/pei/matricula/${matriculaId}`
+      `/api/aee/pei/matricula/${matriculaId}`,
     ),
 
   createPEI: (data: Partial<PlanoEducacionalIndividualizado>) =>
@@ -2346,7 +2433,7 @@ export const aeeApi = {
 
     const queryString = params.toString();
     return request<SalaRecursos[]>(
-      `/api/aee/salas-recursos${queryString ? `?${queryString}` : ""}`
+      `/api/aee/salas-recursos${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2383,21 +2470,21 @@ export const aeeApi = {
     if (ano) params.append("ano", ano.toString());
     const queryString = params.toString();
     return request<AtendimentoAEE[]>(
-      `/api/aee/atendimentos/pei/${peiId}${queryString ? `?${queryString}` : ""}`
+      `/api/aee/atendimentos/pei/${peiId}${queryString ? `?${queryString}` : ""}`,
     );
   },
 
   listAtendimentosBySala: (
     salaRecursosId: string,
     mes?: number,
-    ano?: number
+    ano?: number,
   ) => {
     const params = new URLSearchParams();
     if (mes) params.append("mes", mes.toString());
     if (ano) params.append("ano", ano.toString());
     const queryString = params.toString();
     return request<AtendimentoAEE[]>(
-      `/api/aee/atendimentos/sala/${salaRecursosId}${queryString ? `?${queryString}` : ""}`
+      `/api/aee/atendimentos/sala/${salaRecursosId}${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2417,7 +2504,7 @@ export const aeeApi = {
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
     return request<any>(
-      `/api/aee/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/aee/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
@@ -2439,7 +2526,7 @@ export const acompanhamentoApi = {
 
     const queryString = params.toString();
     return request<AcompanhamentoIndividualizado[]>(
-      `/api/acompanhamento${queryString ? `?${queryString}` : ""}`
+      `/api/acompanhamento${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2448,7 +2535,7 @@ export const acompanhamentoApi = {
 
   getByMatricula: (matriculaId: string) =>
     request<AcompanhamentoIndividualizado[]>(
-      `/api/acompanhamento/matricula/${matriculaId}`
+      `/api/acompanhamento/matricula/${matriculaId}`,
     ),
 
   create: (data: Partial<AcompanhamentoIndividualizado>) =>
@@ -2470,36 +2557,48 @@ export const acompanhamentoApi = {
 
   registrarEvolucao: (
     id: string,
-    data: { data: string; observacao: string; profissionalId?: string }
+    data: { data: string; observacao: string; profissionalId?: string },
   ) =>
-    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/evolucao`, {
-      method: "POST",
-      body: data,
-    }),
+    request<AcompanhamentoIndividualizado>(
+      `/api/acompanhamento/${id}/evolucao`,
+      {
+        method: "POST",
+        body: data,
+      },
+    ),
 
   concluir: (id: string, resultado: string) =>
-    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/concluir`, {
-      method: "POST",
-      body: { resultado },
-    }),
+    request<AcompanhamentoIndividualizado>(
+      `/api/acompanhamento/${id}/concluir`,
+      {
+        method: "POST",
+        body: { resultado },
+      },
+    ),
 
   suspender: (id: string, motivo: string) =>
-    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/suspender`, {
-      method: "POST",
-      body: { motivo },
-    }),
+    request<AcompanhamentoIndividualizado>(
+      `/api/acompanhamento/${id}/suspender`,
+      {
+        method: "POST",
+        body: { motivo },
+      },
+    ),
 
   reativar: (id: string) =>
-    request<AcompanhamentoIndividualizado>(`/api/acompanhamento/${id}/reativar`, {
-      method: "POST",
-    }),
+    request<AcompanhamentoIndividualizado>(
+      `/api/acompanhamento/${id}/reativar`,
+      {
+        method: "POST",
+      },
+    ),
 
   estatisticas: (escolaId?: string) => {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
     return request<any>(
-      `/api/acompanhamento/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/acompanhamento/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
@@ -2646,10 +2745,11 @@ export const plantaoPedagogicoApi = {
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
     if (filters?.dataFim) params.append("dataFim", filters.dataFim);
-    if (filters?.ativo !== undefined) params.append("ativo", String(filters.ativo));
+    if (filters?.ativo !== undefined)
+      params.append("ativo", String(filters.ativo));
     const queryString = params.toString();
     return request<PlantaoPedagogico[]>(
-      `/api/plantoes-pedagogicos${queryString ? `?${queryString}` : ""}`
+      `/api/plantoes-pedagogicos${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2673,12 +2773,16 @@ export const plantaoPedagogicoApi = {
       method: "DELETE",
     }),
 
-  porEscolaEPeriodo: (escolaId: string, dataInicio: string, dataFim: string) => {
+  porEscolaEPeriodo: (
+    escolaId: string,
+    dataInicio: string,
+    dataFim: string,
+  ) => {
     const params = new URLSearchParams();
     params.append("dataInicio", dataInicio);
     params.append("dataFim", dataFim);
     return request<PlantaoPedagogico[]>(
-      `/api/plantoes-pedagogicos/escola/${escolaId}/periodo?${params.toString()}`
+      `/api/plantoes-pedagogicos/escola/${escolaId}/periodo?${params.toString()}`,
     );
   },
 
@@ -2687,7 +2791,7 @@ export const plantaoPedagogicoApi = {
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
     return request<any>(
-      `/api/plantoes-pedagogicos/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/plantoes-pedagogicos/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
@@ -2704,7 +2808,7 @@ export const reuniaoPaisApi = {
       dataInicio?: string;
       dataFim?: string;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
@@ -2717,17 +2821,21 @@ export const reuniaoPaisApi = {
     const queryString = params.toString();
     return pagination
       ? request<PaginatedResponse<ReuniaoPais>>(
-          `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`
+          `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`,
         )
       : request<ReuniaoPais[]>(
-          `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`
+          `/api/reunioes-pais${queryString ? `?${queryString}` : ""}`,
         );
   },
 
-  getById: (id: string) =>
-    request<ReuniaoPais>(`/api/reunioes-pais/${id}`),
+  getById: (id: string) => request<ReuniaoPais>(`/api/reunioes-pais/${id}`),
 
-  create: (data: Omit<ReuniaoPais, "id" | "createdAt" | "updatedAt" | "presencas" | "_count">) =>
+  create: (
+    data: Omit<
+      ReuniaoPais,
+      "id" | "createdAt" | "updatedAt" | "presencas" | "_count"
+    >,
+  ) =>
     request<ReuniaoPais>("/api/reunioes-pais", {
       method: "POST",
       body: data,
@@ -2744,7 +2852,9 @@ export const reuniaoPaisApi = {
       method: "DELETE",
     }),
 
-  registrarPresenca: (data: Omit<PresencaReuniao, "id" | "createdAt" | "updatedAt">) =>
+  registrarPresenca: (
+    data: Omit<PresencaReuniao, "id" | "createdAt" | "updatedAt">,
+  ) =>
     request<PresencaReuniao>("/api/reunioes-pais/presencas", {
       method: "POST",
       body: data,
@@ -2763,7 +2873,7 @@ export const reuniaoPaisApi = {
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
     return request<any>(
-      `/api/reunioes-pais/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/reunioes-pais/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
@@ -2782,7 +2892,7 @@ export const comunicadoApi = {
       ativo?: boolean;
       destaque?: boolean;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.escolaId) params.append("escolaId", filters.escolaId);
@@ -2790,24 +2900,31 @@ export const comunicadoApi = {
     if (filters?.etapaId) params.append("etapaId", filters.etapaId);
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.categoria) params.append("categoria", filters.categoria);
-    if (filters?.destinatarios) params.append("destinatarios", filters.destinatarios);
-    if (filters?.ativo !== undefined) params.append("ativo", String(filters.ativo));
-    if (filters?.destaque !== undefined) params.append("destaque", String(filters.destaque));
+    if (filters?.destinatarios)
+      params.append("destinatarios", filters.destinatarios);
+    if (filters?.ativo !== undefined)
+      params.append("ativo", String(filters.ativo));
+    if (filters?.destaque !== undefined)
+      params.append("destaque", String(filters.destaque));
     addPaginationParams(params, pagination);
     const queryString = params.toString();
     return pagination
       ? request<PaginatedResponse<Comunicado>>(
-          `/api/comunicados${queryString ? `?${queryString}` : ""}`
+          `/api/comunicados${queryString ? `?${queryString}` : ""}`,
         )
       : request<Comunicado[]>(
-          `/api/comunicados${queryString ? `?${queryString}` : ""}`
+          `/api/comunicados${queryString ? `?${queryString}` : ""}`,
         );
   },
 
-  getById: (id: string) =>
-    request<Comunicado>(`/api/comunicados/${id}`),
+  getById: (id: string) => request<Comunicado>(`/api/comunicados/${id}`),
 
-  create: (data: Omit<Comunicado, "id" | "createdAt" | "updatedAt" | "destinatariosLeitura" | "_count">) =>
+  create: (
+    data: Omit<
+      Comunicado,
+      "id" | "createdAt" | "updatedAt" | "destinatariosLeitura" | "_count"
+    >,
+  ) =>
     request<Comunicado>("/api/comunicados", {
       method: "POST",
       body: data,
@@ -2841,7 +2958,7 @@ export const comunicadoApi = {
     if (filtro) params.append("filtro", filtro);
     const queryString = params.toString();
     return request<Comunicado[]>(
-      `/api/comunicados/usuario/${userId}${queryString ? `?${queryString}` : ""}`
+      `/api/comunicados/usuario/${userId}${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -2850,7 +2967,7 @@ export const comunicadoApi = {
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
     return request<any>(
-      `/api/comunicados/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/comunicados/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
@@ -2865,21 +2982,22 @@ export const notificacaoApi = {
       prioridade?: string;
       lida?: boolean;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.userId) params.append("userId", filters.userId);
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.prioridade) params.append("prioridade", filters.prioridade);
-    if (filters?.lida !== undefined) params.append("lida", String(filters.lida));
+    if (filters?.lida !== undefined)
+      params.append("lida", String(filters.lida));
     addPaginationParams(params, pagination);
     const queryString = params.toString();
     return pagination
       ? request<PaginatedResponse<Notificacao>>(
-          `/api/notificacoes${queryString ? `?${queryString}` : ""}`
+          `/api/notificacoes${queryString ? `?${queryString}` : ""}`,
         )
       : request<Notificacao[]>(
-          `/api/notificacoes${queryString ? `?${queryString}` : ""}`
+          `/api/notificacoes${queryString ? `?${queryString}` : ""}`,
         );
   },
 
@@ -2888,14 +3006,25 @@ export const notificacaoApi = {
     if (filtro) params.append("filtro", filtro);
     const queryString = params.toString();
     return request<Notificacao[]>(
-      `/api/notificacoes/usuario/${userId}${queryString ? `?${queryString}` : ""}`
+      `/api/notificacoes/usuario/${userId}${queryString ? `?${queryString}` : ""}`,
     );
   },
 
-  getById: (id: string) =>
-    request<Notificacao>(`/api/notificacoes/${id}`),
+  getById: (id: string) => request<Notificacao>(`/api/notificacoes/${id}`),
 
-  create: (data: Omit<Notificacao, "id" | "createdAt" | "updatedAt" | "lida" | "dataLeitura" | "enviadaEmail" | "enviadaSMS" | "enviadaPush">) =>
+  create: (
+    data: Omit<
+      Notificacao,
+      | "id"
+      | "createdAt"
+      | "updatedAt"
+      | "lida"
+      | "dataLeitura"
+      | "enviadaEmail"
+      | "enviadaSMS"
+      | "enviadaPush"
+    >,
+  ) =>
     request<Notificacao>("/api/notificacoes", {
       method: "POST",
       body: data,
@@ -2923,9 +3052,12 @@ export const notificacaoApi = {
     }),
 
   marcarTodasLidas: (userId: string) =>
-    request<{ message: string; count: number }>(`/api/notificacoes/usuario/${userId}/marcar-todas-lidas`, {
-      method: "POST",
-    }),
+    request<{ message: string; count: number }>(
+      `/api/notificacoes/usuario/${userId}/marcar-todas-lidas`,
+      {
+        method: "POST",
+      },
+    ),
 
   delete: (id: string) =>
     request<{ message: string }>(`/api/notificacoes/${id}`, {
@@ -2933,23 +3065,32 @@ export const notificacaoApi = {
     }),
 
   deletarLidas: (userId: string) =>
-    request<{ message: string; count: number }>(`/api/notificacoes/usuario/${userId}/lidas`, {
-      method: "DELETE",
-    }),
+    request<{ message: string; count: number }>(
+      `/api/notificacoes/usuario/${userId}/lidas`,
+      {
+        method: "DELETE",
+      },
+    ),
 
   countNaoLidas: (userId: string) =>
-    request<{ count: number }>(`/api/notificacoes/usuario/${userId}/count-nao-lidas`),
+    request<{ count: number }>(
+      `/api/notificacoes/usuario/${userId}/count-nao-lidas`,
+    ),
 
   estatisticas: (userId?: string) => {
     const params = new URLSearchParams();
     if (userId) params.append("userId", userId);
     const queryString = params.toString();
     return request<any>(
-      `/api/notificacoes/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`
+      `/api/notificacoes/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 
-  atualizarStatusEnvio: (id: string, canal: "EMAIL" | "SMS" | "PUSH", enviado: boolean) =>
+  atualizarStatusEnvio: (
+    id: string,
+    canal: "EMAIL" | "SMS" | "PUSH",
+    enviado: boolean,
+  ) =>
     request<Notificacao>(`/api/notificacoes/${id}/status-envio`, {
       method: "PUT",
       body: { canal, enviado },
@@ -3047,8 +3188,7 @@ export interface ModuleStats {
 }
 
 export const observabilityApi = {
-  getOverview: () =>
-    request<SystemOverview>("/api/observability/overview"),
+  getOverview: () => request<SystemOverview>("/api/observability/overview"),
 
   getRoutes: (filters?: {
     module?: string;
@@ -3067,7 +3207,7 @@ export const observabilityApi = {
     if (filters?.order) params.append("order", filters.order);
     const queryString = params.toString();
     return request<RouteMetric[]>(
-      `/api/observability/routes${queryString ? `?${queryString}` : ""}`
+      `/api/observability/routes${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -3087,7 +3227,7 @@ export const observabilityApi = {
     if (filters?.order) params.append("order", filters.order);
     const queryString = params.toString();
     return request<ErrorLog[]>(
-      `/api/observability/errors${queryString ? `?${queryString}` : ""}`
+      `/api/observability/errors${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -3106,7 +3246,7 @@ export const observabilityApi = {
       startDate?: string;
       endDate?: string;
     },
-    pagination?: PaginationParams
+    pagination?: PaginationParams,
   ) => {
     const params = new URLSearchParams();
     if (filters?.method) params.append("method", filters.method);
@@ -3120,10 +3260,10 @@ export const observabilityApi = {
     const queryString = params.toString();
     return pagination
       ? request<PaginatedResponse<RequestLog>>(
-          `/api/observability/logs${queryString ? `?${queryString}` : ""}`
+          `/api/observability/logs${queryString ? `?${queryString}` : ""}`,
         )
       : request<RequestLog[]>(
-          `/api/observability/logs${queryString ? `?${queryString}` : ""}`
+          `/api/observability/logs${queryString ? `?${queryString}` : ""}`,
         );
   },
 
@@ -3138,7 +3278,7 @@ export const observabilityApi = {
     if (filters?.granularity) params.append("granularity", filters.granularity);
     const queryString = params.toString();
     return request<TimelineData[]>(
-      `/api/observability/timeline${queryString ? `?${queryString}` : ""}`
+      `/api/observability/timeline${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -3148,7 +3288,7 @@ export const observabilityApi = {
     if (filters?.endDate) params.append("endDate", filters.endDate);
     const queryString = params.toString();
     return request<ModuleStats[]>(
-      `/api/observability/modules${queryString ? `?${queryString}` : ""}`
+      `/api/observability/modules${queryString ? `?${queryString}` : ""}`,
     );
   },
 

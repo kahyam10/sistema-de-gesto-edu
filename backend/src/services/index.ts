@@ -1,4 +1,5 @@
 export { authService } from "./auth.service.js";
+export { refreshTokenService } from "./refresh-token.service.js";
 export { serieService } from "./serie.service.js";
 export { etapaService } from "./etapa.service.js";
 export { escolaService } from "./escola.service.js";

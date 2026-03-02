@@ -81,8 +81,13 @@ Ideal para planejamento de recursos humanos e análise de distribuição de prof
                 },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao gerar relatório",
             type: "object",
@@ -172,18 +177,7 @@ Lista todos os profissionais do sistema com suporte a filtros e paginação.
                 type: "array",
                 items: {
                   type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    nome: { type: "string" },
-                    cpf: { type: "string" },
-                    email: { type: "string" },
-                    telefone: { type: "string" },
-                    tipo: { type: "string" },
-                    formacao: { type: "string" },
-                    especialidade: { type: "string" },
-                    ativo: { type: "boolean" },
-                    escolas: { type: "array" },
-                  },
+                  additionalProperties: true,
                 },
               },
               {
@@ -191,16 +185,26 @@ Lista todos os profissionais do sistema com suporte a filtros e paginação.
                 properties: {
                   data: {
                     type: "array",
-                    items: { type: "object" },
+                    items: {
+                      type: "object",
+                      additionalProperties: true,
+                    },
                   },
                   pagination: {
-                    $ref: "#/components/schemas/PaginationMeta",
+                    type: "object",
+                    additionalProperties: true,
                   },
                 },
+                additionalProperties: true,
               },
             ],
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao listar profissionais",
             type: "object",
@@ -215,30 +219,22 @@ Lista todos os profissionais do sistema com suporte a filtros e paginação.
       request: FastifyRequest<{ Querystring: ProfissionalFilters }>,
       reply: FastifyReply
     ) => {
-      try {
-        const { tipo, ativo, page, limit } = request.query;
-        const filters: { tipo?: string; ativo?: boolean } = {};
+      const { tipo, ativo, page, limit } = request.query;
+      const filters: { tipo?: string; ativo?: boolean } = {};
 
-        if (tipo) filters.tipo = tipo;
-        if (ativo !== undefined) filters.ativo = ativo === "true";
+      if (tipo) filters.tipo = tipo;
+      if (ativo !== undefined) filters.ativo = ativo === "true";
 
-        if (page && limit) {
-          const result = await profissionalService.findAllPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
-          });
-          return reply.send(result);
-        }
-
-        const profissionais = await profissionalService.findAll(filters);
-        return reply.send(profissionais);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao listar profissionais";
-        return reply.status(500).send({ error: message });
+      if (page && limit) {
+        const result = await profissionalService.findAllPaginated(filters, {
+          page: parseInt(page),
+          limit: parseInt(limit),
+        });
+        return reply.send(result);
       }
+
+      const profissionais = await profissionalService.findAll(filters);
+      return reply.send(profissionais);
     }
   );
 
@@ -294,9 +290,19 @@ Retorna os detalhes completos de um profissional específico.
               historicoContratacoes: { type: "array" },
               afastamentos: { type: "array" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao buscar profissional",
             type: "object",
@@ -379,8 +385,13 @@ Ideal para visualizar o quadro de funcionários de uma escola.
                 cargaHoraria: { type: "number" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao buscar profissionais",
             type: "object",
@@ -513,9 +524,19 @@ Cria um novo profissional no sistema.
               ativo: { type: "boolean" },
               createdAt: { type: "string", format: "date-time" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -595,10 +616,25 @@ Para gerenciar formações, certificações ou histórico, use os endpoints espe
               ativo: { type: "boolean" },
               updatedAt: { type: "string", format: "date-time" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -658,6 +694,7 @@ Em vez de deletar, considere desativar o profissional (\`ativo: false\`).
         response: {
           204: {
             description: "Profissional deletado com sucesso",
+            type: "null",
           },
           400: {
             description: "Não é possível deletar (possui dependências)",
@@ -668,9 +705,19 @@ Em vez de deletar, considere desativar o profissional (\`ativo: false\`).
                 example: "Não é possível deletar profissional com turmas atribuídas",
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -765,9 +812,19 @@ Use este endpoint para alocar profissionais em escolas.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -840,6 +897,7 @@ Use para transferências ou término de lotação.
         response: {
           204: {
             description: "Vínculo removido com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao desvincular",
@@ -847,9 +905,19 @@ Use para transferências ou término de lotação.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -922,9 +990,19 @@ Formações são ordenadas por ano de conclusão (mais recente primeiro).
                 emAndamento: { type: "boolean", example: false },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
           500: {
             description: "Erro ao listar formações",
             type: "object",
@@ -1037,10 +1115,25 @@ ENSINO_MEDIO, TECNICO, GRADUACAO, POS_GRADUACAO, ESPECIALIZACAO, MESTRADO, DOUTO
               cargaHoraria: { type: "integer" },
               emAndamento: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1136,10 +1229,25 @@ Todos os campos são opcionais. Envie apenas os campos que deseja atualizar.
               anoConclusao: { type: "integer" },
               emAndamento: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1216,6 +1324,7 @@ Para correção de dados duplicados ou cadastros incorretos.
         response: {
           204: {
             description: "Formação removida com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao remover formação",
@@ -1223,9 +1332,19 @@ Para correção de dados duplicados ou cadastros incorretos.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1297,9 +1416,19 @@ Para verificar cursos de capacitação, certificações profissionais e formaç�
                 observacoes: { type: "string" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
           500: {
             description: "Erro ao buscar certificações",
             type: "object",
@@ -1421,10 +1550,25 @@ Adiciona uma nova certificação ou curso ao currículo do profissional.
               dataValidade: { type: "string", format: "date-time" },
               cargaHoraria: { type: "integer" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1518,10 +1662,25 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
               dataEmissao: { type: "string", format: "date-time" },
               dataValidade: { type: "string", format: "date-time" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1593,6 +1752,7 @@ Para correção de dados duplicados ou cadastros incorretos.
         response: {
           204: {
             description: "Certificação removida com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao remover certificação",
@@ -1600,9 +1760,19 @@ Para correção de dados duplicados ou cadastros incorretos.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1674,9 +1844,19 @@ Para consultar trajetória profissional e mudanças de cargo/lotação.
                 observacoes: { type: "string" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
           500: {
             description: "Erro ao buscar histórico",
             type: "object",
@@ -1779,10 +1959,25 @@ ADMISSAO, PROMOCAO, TRANSFERENCIA, DESLIGAMENTO, READMISSAO, MUDANCA_CARGO, APOS
               dataEvento: { type: "string", format: "date-time" },
               cargo: { type: "string" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1871,10 +2066,25 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
               dataEvento: { type: "string", format: "date-time" },
               cargo: { type: "string" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -1943,6 +2153,7 @@ Para correção de dados duplicados ou registros incorretos.
         response: {
           204: {
             description: "Evento removido com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao remover evento",
@@ -1950,9 +2161,19 @@ Para correção de dados duplicados ou registros incorretos.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -2037,9 +2258,19 @@ LICENCA_MEDICA, LICENCA_MATERNIDADE, LICENCA_PATERNIDADE, FERIAS, ATESTADO, FALT
                 ativo: { type: "boolean" },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
           500: {
             description: "Erro ao buscar afastamentos",
             type: "object",
@@ -2164,10 +2395,25 @@ Registra um novo afastamento do profissional.
               dataFim: { type: "string", format: "date-time" },
               ativo: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -2262,10 +2508,25 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
               dataFim: { type: "string", format: "date-time" },
               ativo: { type: "boolean" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -2337,6 +2598,7 @@ Considere desativar (\`ativo: false\`) em vez de deletar para manter histórico.
         response: {
           204: {
             description: "Afastamento removido com sucesso",
+            type: "null",
           },
           400: {
             description: "Erro ao remover afastamento",
@@ -2344,9 +2606,19 @@ Considere desativar (\`ativo: false\`) em vez de deletar para manter histórico.
             properties: {
               error: { type: "string" },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -2412,8 +2684,13 @@ Afastamentos ordenados por data de início (mais recentes primeiro).
                 },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao buscar afastamentos",
             type: "object",
@@ -2509,8 +2786,13 @@ Para planejamento de recursos humanos e verificação de cumprimento de carga ho
                 },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao gerar relatório",
             type: "object",
@@ -2629,8 +2911,13 @@ Dashboard executivo para gestão de recursos humanos e tomada de decisões estra
                 },
               },
             },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           500: {
             description: "Erro ao gerar dashboard",
             type: "object",

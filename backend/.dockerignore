@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.env.local
+*.md
+.git
+.gitignore
+uploads/*
+!uploads/.gitkeep
+prisma/migrations
+test-*.js
+fix-*.mjs
+get-ids.mjs

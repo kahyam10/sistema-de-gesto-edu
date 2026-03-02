@@ -96,12 +96,25 @@ Lista notas com suporte a filtros e paginação.
                 type: "object",
                 properties: {
                   data: { type: "array" },
-                  pagination: { $ref: "#/components/schemas/PaginationMeta" },
+                  pagination: {
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
+                  },
                 },
               },
             ],
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao buscar notas",
             type: "object",
@@ -212,9 +225,19 @@ Ideal para lançar notas de recuperação ou notas avulsas não vinculadas a uma
               disciplina: { type: "string" },
               bimestre: { type: "integer" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -269,9 +292,19 @@ Retorna os detalhes de uma nota específica.
               bimestre: { type: "integer" },
               observacao: { type: "string" },
             },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          404: { $ref: "#/components/responses/NotFound" },
-          401: { $ref: "#/components/responses/Unauthorized" },
           400: {
             description: "Erro ao buscar nota",
             type: "object",
@@ -367,9 +400,19 @@ Ideal para lançar notas após correção de provas/trabalhos. Permite registrar
               sucesso: { type: "integer", example: 25 },
               erros: { type: "integer", example: 0 },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -436,10 +479,25 @@ Atualiza uma nota existente.
               valor: { type: "number" },
               observacao: { type: "string" },
             },
+          },          400: {
+            description: "Requisição inválida",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Dados de requisição inválidos" },
+            },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          400: { $ref: "#/components/responses/BadRequest" },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -499,9 +557,19 @@ Remove permanentemente a nota. Esta ação não pode ser desfeita.
             description: "Erro ao remover nota",
             type: "object",
             properties: { error: { type: "string" } },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },          404: {
+            description: "Não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Recurso não encontrado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
-          404: { $ref: "#/components/responses/NotFound" },
         },
       },
     },
@@ -601,8 +669,13 @@ Ideal para gerar boletim escolar digital do aluno.
             description: "Erro ao gerar boletim",
             type: "object",
             properties: { error: { type: "string" } },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -667,8 +740,13 @@ Para verificar situação do aluno em disciplina específica.
             description: "Erro ao calcular média",
             type: "object",
             properties: { error: { type: "string" } },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },
@@ -748,8 +826,13 @@ Para verificar se aluno foi aprovado, está em recuperação ou foi reprovado.
             description: "Erro ao buscar situação",
             type: "object",
             properties: { error: { type: "string" } },
+          },          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
     },

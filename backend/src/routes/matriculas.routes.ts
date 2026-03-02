@@ -104,12 +104,21 @@ Lista todas as matrículas do sistema com filtros opcionais.
                 },
               },
               pagination: {
-                $ref: "#/components/schemas/PaginationMeta",
-              },
+                    type: "object",
+                    properties: {
+                      page: { type: "integer" },
+                      limit: { type: "integer" },
+                      total: { type: "integer" },
+                      totalPages: { type: "integer" },
+                    },
+                  },
             },
           },
-          401: {
-            $ref: "#/components/responses/Unauthorized",
+          401: {description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
           },
           500: {
             description: "Erro interno do servidor",

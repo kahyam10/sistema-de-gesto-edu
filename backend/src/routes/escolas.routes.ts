@@ -57,7 +57,13 @@ Escolas são ordenadas alfabeticamente por nome.
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao listar escolas",
             type: "object",
@@ -141,7 +147,13 @@ Use este endpoint para exibir todos os detalhes de uma escola, incluindo sua cap
               error: { type: "string", example: "Escola não encontrada" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao buscar escola",
             type: "object",
@@ -254,7 +266,13 @@ Ideal para dashboards e relatórios gerenciais da escola. Fornece visão geral d
               error: { type: "string", example: "Escola não encontrada" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           500: {
             description: "Erro ao buscar estatísticas",
             type: "object",
@@ -474,7 +492,13 @@ Cria uma nova escola no sistema.
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
         },
       },
     },
@@ -619,7 +643,13 @@ Todos os campos são opcionais. Envie apenas os campos que deseja atualizar.
               error: { type: "string" },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           404: {
             description: "Escola não encontrada",
             type: "object",
@@ -698,6 +728,7 @@ O sistema verifica automaticamente se existem turmas ativas antes de permitir a 
         response: {
           204: {
             description: "Escola deletada com sucesso",
+            type: "null",
           },
           400: {
             description: "Não é possível deletar (possui dependências)",
@@ -709,7 +740,13 @@ O sistema verifica automaticamente se existem turmas ativas antes de permitir a 
               },
             },
           },
-          401: { $ref: "#/components/responses/Unauthorized" },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
           404: {
             description: "Escola não encontrada",
             type: "object",

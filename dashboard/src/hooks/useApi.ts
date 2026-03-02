@@ -57,6 +57,8 @@ import {
   SalaRecursos,
   AtendimentoAEE,
   AcompanhamentoIndividualizado,
+  PlantaoPedagogico,
+  ReuniaoPais,
   Comunicado,
   Notificacao,
 } from "@/lib/api";
@@ -295,9 +297,9 @@ export function useTurmas(filters?: {
   anoLetivo?: number;
   ativo?: boolean;
 }) {
-  return useQuery({
+  return useQuery<Turma[]>({
     queryKey: ["turmas", filters],
-    queryFn: () => turmasApi.list(filters),
+    queryFn: () => turmasApi.list(filters) as Promise<Turma[]>,
   });
 }
 
@@ -307,9 +309,20 @@ export function useTurmasPaginated(
     anoLetivo?: number;
     ativo?: boolean;
   },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<Turma[] | { data: Turma[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | Turma[]
+    | {
+        data: Turma[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["turmas", "paginated", filters, pagination],
     queryFn: () => turmasApi.list(filters, pagination),
   });
@@ -600,9 +613,9 @@ export function useMatriculas(filters?: {
   anoLetivo?: number;
   status?: string;
 }) {
-  return useQuery({
+  return useQuery<Matricula[]>({
     queryKey: ["matriculas", filters],
-    queryFn: () => matriculasApi.list(filters),
+    queryFn: () => matriculasApi.list(filters) as Promise<Matricula[]>,
   });
 }
 
@@ -614,9 +627,20 @@ export function useMatriculasPaginated(
     anoLetivo?: number;
     status?: string;
   },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<Matricula[] | { data: Matricula[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | Matricula[]
+    | {
+        data: Matricula[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["matriculas", "paginated", filters, pagination],
     queryFn: () => matriculasApi.list(filters, pagination),
   });
@@ -630,7 +654,10 @@ export function useMatricula(id: string) {
   });
 }
 
-export function useMatriculasEstatisticas(anoLetivo: number, escolaId?: string) {
+export function useMatriculasEstatisticas(
+  anoLetivo: number,
+  escolaId?: string,
+) {
   return useQuery({
     queryKey: ["matriculas", "estatisticas", anoLetivo, escolaId],
     queryFn: () => matriculasApi.getEstatisticas(anoLetivo, escolaId),
@@ -750,17 +777,29 @@ export function useTransferirMatricula() {
 // ==================== PROFISSIONAIS ====================
 
 export function useProfissionais(filters?: { tipo?: string; ativo?: boolean }) {
-  return useQuery({
+  return useQuery<ProfissionalEducacao[]>({
     queryKey: ["profissionais", filters],
-    queryFn: () => profissionaisApi.list(filters),
+    queryFn: () =>
+      profissionaisApi.list(filters) as Promise<ProfissionalEducacao[]>,
   });
 }
 
 export function useProfissionaisPaginated(
   filters?: { tipo?: string; ativo?: boolean },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<ProfissionalEducacao[] | { data: ProfissionalEducacao[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | ProfissionalEducacao[]
+    | {
+        data: ProfissionalEducacao[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["profissionais", "paginated", filters, pagination],
     queryFn: () => profissionaisApi.list(filters, pagination),
   });
@@ -1100,7 +1139,9 @@ export function useToggleSubModuleStatus() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["modules"] });
       toast.success(
-        data.status === "completed" ? "Recurso concluído!" : "Recurso reaberto!"
+        data.status === "completed"
+          ? "Recurso concluído!"
+          : "Recurso reaberto!",
       );
     },
     onError: (error: Error) => {
@@ -1451,7 +1492,7 @@ export function useEventosByMes(
   anoLetivoId: string,
   ano: number,
   mes: number,
-  escolaId?: string
+  escolaId?: string,
 ) {
   return useQuery({
     queryKey: ["eventos", "mes", anoLetivoId, ano, mes, escolaId],
@@ -1466,7 +1507,7 @@ export function useEventosByMes(
 export function useEventosByData(
   anoLetivoId: string,
   data: string,
-  escolaId?: string
+  escolaId?: string,
 ) {
   return useQuery({
     queryKey: ["eventos", "data", anoLetivoId, data, escolaId],
@@ -1549,7 +1590,7 @@ export function useDeleteEvento() {
 
 export function useEstatisticasCalendario(
   anoLetivoId: string,
-  escolaId?: string
+  escolaId?: string,
 ) {
   return useQuery({
     queryKey: ["estatisticas-calendario", anoLetivoId, escolaId],
@@ -1595,11 +1636,24 @@ export function useEstatisticasFrequencia(
   matriculaId: string | undefined,
   turmaId: string | undefined,
   dataInicio?: string,
-  dataFim?: string
+  dataFim?: string,
 ) {
   return useQuery({
-    queryKey: ["frequencias", "estatisticas", matriculaId, turmaId, dataInicio, dataFim],
-    queryFn: () => frequenciaApi.getEstatisticas(matriculaId!, turmaId!, dataInicio, dataFim),
+    queryKey: [
+      "frequencias",
+      "estatisticas",
+      matriculaId,
+      turmaId,
+      dataInicio,
+      dataFim,
+    ],
+    queryFn: () =>
+      frequenciaApi.getEstatisticas(
+        matriculaId!,
+        turmaId!,
+        dataInicio,
+        dataFim,
+      ),
     enabled: !!matriculaId && !!turmaId,
   });
 }
@@ -1607,11 +1661,12 @@ export function useEstatisticasFrequencia(
 export function useAlunosBaixaFrequencia(
   turmaId: string | undefined,
   dataInicio?: string,
-  dataFim?: string
+  dataFim?: string,
 ) {
   return useQuery({
     queryKey: ["frequencias", "baixa-frequencia", turmaId, dataInicio, dataFim],
-    queryFn: () => frequenciaApi.listarBaixaFrequencia(turmaId!, dataInicio, dataFim),
+    queryFn: () =>
+      frequenciaApi.listarBaixaFrequencia(turmaId!, dataInicio, dataFim),
     enabled: !!turmaId,
   });
 }
@@ -1619,7 +1674,7 @@ export function useAlunosBaixaFrequencia(
 export function useResumoFrequenciaTurma(
   turmaId: string | undefined,
   dataInicio?: string,
-  dataFim?: string
+  dataFim?: string,
 ) {
   return useQuery({
     queryKey: ["frequencias", "resumo-turma", turmaId, dataInicio, dataFim],
@@ -1752,7 +1807,10 @@ export function useUploadDocumento() {
 
 // ==================== DISCIPLINAS ====================
 
-export function useDisciplinas(filters?: { etapaId?: string; ativo?: boolean }) {
+export function useDisciplinas(filters?: {
+  etapaId?: string;
+  ativo?: boolean;
+}) {
   return useQuery({
     queryKey: ["disciplinas", filters],
     queryFn: () => disciplinasApi.list(filters),
@@ -1894,7 +1952,7 @@ export function useAvaliacoes(filters?: {
   return useQuery({
     queryKey: ["avaliacoes", filters],
     queryFn: () => avaliacoesApi.list(filters),
-    enabled: !!(filters?.turmaId),
+    enabled: !!filters?.turmaId,
   });
 }
 
@@ -2067,9 +2125,9 @@ export function usePontos(filters?: {
   dataFim?: string;
   tipoRegistro?: string;
 }) {
-  return useQuery({
+  return useQuery<Ponto[]>({
     queryKey: ["pontos", filters],
-    queryFn: () => pontosApi.list(filters),
+    queryFn: () => pontosApi.list(filters) as Promise<Ponto[]>,
   });
 }
 
@@ -2081,9 +2139,20 @@ export function usePontosPaginated(
     dataFim?: string;
     tipoRegistro?: string;
   },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<Ponto[] | { data: Ponto[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | Ponto[]
+    | {
+        data: Ponto[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["pontos", "paginated", filters, pagination],
     queryFn: () => pontosApi.list(filters, pagination),
   });
@@ -2168,7 +2237,7 @@ export function useDeletePonto() {
 export function useRelatorioMensal(
   profissionalId: string | undefined,
   mes: number,
-  ano: number
+  ano: number,
 ) {
   return useQuery({
     queryKey: ["relatorio-mensal", profissionalId, mes, ano],
@@ -2186,9 +2255,9 @@ export function useLicencas(filters?: {
   dataInicio?: string;
   dataFim?: string;
 }) {
-  return useQuery({
+  return useQuery<Licenca[]>({
     queryKey: ["licencas", filters],
-    queryFn: () => licencasApi.list(filters),
+    queryFn: () => licencasApi.list(filters) as Promise<Licenca[]>,
   });
 }
 
@@ -2200,9 +2269,20 @@ export function useLicencasPaginated(
     dataInicio?: string;
     dataFim?: string;
   },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<Licenca[] | { data: Licenca[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | Licenca[]
+    | {
+        data: Licenca[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["licencas", "paginated", filters, pagination],
     queryFn: () => licencasApi.list(filters, pagination),
   });
@@ -2312,7 +2392,7 @@ export function useLicencasAtivas() {
 export function useRelatorioLicencas(
   profissionalId: string | undefined,
   anoInicio?: number,
-  anoFim?: number
+  anoFim?: number,
 ) {
   return useQuery({
     queryKey: ["relatorio-licencas", profissionalId, anoInicio, anoFim],
@@ -2496,7 +2576,10 @@ export function useUpdatePEI() {
   });
 }
 
-export function useSalasRecursos(filters?: { escolaId?: string; turno?: string }) {
+export function useSalasRecursos(filters?: {
+  escolaId?: string;
+  turno?: string;
+}) {
   return useQuery({
     queryKey: ["salas-recursos", filters],
     queryFn: () => aeeApi.listSalasRecursos(filters),
@@ -2507,7 +2590,8 @@ export function useCreateSalaRecursos() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<SalaRecursos>) => aeeApi.createSalaRecursos(data),
+    mutationFn: (data: Partial<SalaRecursos>) =>
+      aeeApi.createSalaRecursos(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["salas-recursos"] });
       toast.success("Sala de Recursos criada com sucesso!");
@@ -2522,7 +2606,8 @@ export function useCreateAtendimentoAEE() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<AtendimentoAEE>) => aeeApi.createAtendimento(data),
+    mutationFn: (data: Partial<AtendimentoAEE>) =>
+      aeeApi.createAtendimento(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pei"] });
       toast.success("Atendimento registrado com sucesso!");
@@ -2661,9 +2746,10 @@ export function usePlantoesPedagogicos(filters?: {
   tipo?: string;
   ativo?: boolean;
 }) {
-  return useQuery({
+  return useQuery<PlantaoPedagogico[]>({
     queryKey: ["plantoes-pedagogicos", filters],
-    queryFn: () => plantaoPedagogicoApi.list(filters),
+    queryFn: () =>
+      plantaoPedagogicoApi.list(filters) as Promise<PlantaoPedagogico[]>,
   });
 }
 
@@ -2678,7 +2764,7 @@ export function usePlantaoPedagogico(id: string | undefined) {
 export function usePlantoesByEscolaEPeriodo(
   escolaId: string | undefined,
   dataInicio: string,
-  dataFim: string
+  dataFim: string,
 ) {
   return useQuery({
     queryKey: ["plantoes-pedagogicos", "escola", escolaId, dataInicio, dataFim],
@@ -2754,9 +2840,9 @@ export function useReunioesPais(filters?: {
   turmaId?: string;
   status?: string;
 }) {
-  return useQuery({
+  return useQuery<ReuniaoPais[]>({
     queryKey: ["reunioes-pais", filters],
-    queryFn: () => reuniaoPaisApi.list(filters),
+    queryFn: () => reuniaoPaisApi.list(filters) as Promise<ReuniaoPais[]>,
   });
 }
 
@@ -2892,9 +2978,9 @@ export function useComunicados(filters?: {
   ativo?: boolean;
   destaque?: boolean;
 }) {
-  return useQuery({
+  return useQuery<Comunicado[]>({
     queryKey: ["comunicados", filters],
-    queryFn: () => comunicadoApi.list(filters),
+    queryFn: () => comunicadoApi.list(filters) as Promise<Comunicado[]>,
   });
 }
 
@@ -2907,9 +2993,20 @@ export function useComunicadosPaginated(
     ativo?: boolean;
     destaque?: boolean;
   },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<Comunicado[] | { data: Comunicado[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | Comunicado[]
+    | {
+        data: Comunicado[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["comunicados", "paginated", filters, pagination],
     queryFn: () => comunicadoApi.list(filters, pagination),
   });
@@ -2925,7 +3022,7 @@ export function useComunicado(id: string | undefined) {
 
 export function useComunicadosPorUsuario(
   userId: string | undefined,
-  filtro?: "NAO_LIDOS" | "LIDOS" | "TODOS"
+  filtro?: "NAO_LIDOS" | "LIDOS" | "TODOS",
 ) {
   return useQuery({
     queryKey: ["comunicados", "usuario", userId, filtro],
@@ -3039,9 +3136,9 @@ export function useNotificacoes(filters?: {
   prioridade?: string;
   lida?: boolean;
 }) {
-  return useQuery({
+  return useQuery<Notificacao[]>({
     queryKey: ["notificacoes", filters],
-    queryFn: () => notificacaoApi.list(filters),
+    queryFn: () => notificacaoApi.list(filters) as Promise<Notificacao[]>,
   });
 }
 
@@ -3052,9 +3149,20 @@ export function useNotificacoesPaginated(
     prioridade?: string;
     lida?: boolean;
   },
-  pagination?: { page?: number; limit?: number }
+  pagination?: { page?: number; limit?: number },
 ) {
-  return useQuery<Notificacao[] | { data: Notificacao[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+  return useQuery<
+    | Notificacao[]
+    | {
+        data: Notificacao[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
     queryKey: ["notificacoes", "paginated", filters, pagination],
     queryFn: () => notificacaoApi.list(filters, pagination),
   });
@@ -3062,7 +3170,7 @@ export function useNotificacoesPaginated(
 
 export function useNotificacoesPorUsuario(
   userId: string | undefined,
-  filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS"
+  filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS",
 ) {
   return useQuery({
     queryKey: ["notificacoes", "usuario", userId, filtro],

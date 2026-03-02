@@ -209,6 +209,8 @@ export function ComunicadoManager() {
         categoria: formData.categoria || undefined,
         anexoUrl: formData.anexoUrl || undefined,
         dataExpiracao: formData.dataExpiracao || undefined,
+        dataPublicacao: new Date().toISOString(),
+        autorNome: "Administrador",
       };
 
       if (editingComunicado) {

@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
+import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import multipart from "@fastify/multipart";
@@ -39,24 +40,55 @@ import {
 import { calendarioRoutes } from "./routes/calendario.routes.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { logger } from "./utils/logger.js";
-import { observabilityPlugin, collectSystemMetrics } from "./middleware/observability.js";
+import {
+  observabilityPlugin,
+  collectSystemMetrics,
+} from "./middleware/observability.js";
+import { prisma } from "./lib/prisma.js";
+import { refreshTokenService } from "./services/refresh-token.service.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
 
 async function buildApp() {
   const app = Fastify({
-    logger: process.env.NODE_ENV === "development",
+    logger: logger.pino,
+    ajv: {
+      customOptions: {
+        strict: false, // Permite keywords como 'example'
+      },
+    },
   });
 
   // Plugins
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
+    : ["http://localhost:3000", "http://localhost:3001"];
+
   await app.register(cors, {
-    origin: true, // Em produção, especificar domínios permitidos
+    origin: process.env.NODE_ENV === "production" ? allowedOrigins : true,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  });
+
+  // Rate limiting global
+  await app.register(rateLimit, {
+    max: 100, // máximo de requisições
+    timeWindow: "1 minute",
+    errorResponseBuilder: () => ({
+      statusCode: 429,
+      error: "Too Many Requests",
+      message:
+        "Limite de requisições excedido. Tente novamente em alguns instantes.",
+    }),
   });
 
   await app.register(jwt, {
     secret: process.env.JWT_SECRET || "super-secret-key-change-in-production",
+    sign: {
+      expiresIn: "15m", // Access token expira em 15 minutos
+    },
   });
 
   // Multipart para upload de arquivos
@@ -201,14 +233,23 @@ Resposta paginada:
         { name: "Matrículas", description: "Cadastro de alunos" },
         { name: "Profissionais", description: "Gestão de funcionários" },
         { name: "Grade Horária", description: "Planejamento de aulas" },
-        { name: "Disciplinas", description: "Matérias e componentes curriculares" },
+        {
+          name: "Disciplinas",
+          description: "Matérias e componentes curriculares",
+        },
         { name: "Frequência", description: "Controle de presença" },
         { name: "Avaliações", description: "Sistema de notas" },
         { name: "Calendário", description: "Eventos e períodos letivos" },
         { name: "Salas", description: "Infraestrutura escolar" },
         { name: "Recursos Humanos", description: "Ponto, licenças e plantões" },
-        { name: "Programas Especiais", description: "Busca Ativa, AEE e Acompanhamento" },
-        { name: "Comunicação", description: "Comunicados, notificações e reuniões" },
+        {
+          name: "Programas Especiais",
+          description: "Busca Ativa, AEE e Acompanhamento",
+        },
+        {
+          name: "Comunicação",
+          description: "Comunicados, notificações e reuniões",
+        },
         { name: "Upload", description: "Envio de documentos e arquivos" },
         { name: "Observabilidade", description: "Monitoramento e métricas" },
         { name: "Módulos", description: "Sistema de módulos e fases" },
@@ -340,9 +381,38 @@ Resposta paginada:
     }
   });
 
-  // Health check
+  // Health check completo
   app.get("/health", async () => {
-    return { status: "ok", timestamp: new Date().toISOString() };
+    let dbStatus = "ok";
+    let dbLatency = 0;
+
+    try {
+      const start = Date.now();
+      await prisma.$queryRaw`SELECT 1`;
+      dbLatency = Date.now() - start;
+    } catch {
+      dbStatus = "error";
+    }
+
+    const uptime = process.uptime();
+    const memUsage = process.memoryUsage();
+
+    return {
+      status: dbStatus === "ok" ? "healthy" : "degraded",
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+      version: process.env.APP_VERSION || "1.0.0",
+      database: {
+        status: dbStatus,
+        latencyMs: dbLatency,
+      },
+      memory: {
+        heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+        rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+      },
+      node: process.version,
+    };
   });
 
   // Rotas
@@ -361,7 +431,9 @@ Resposta paginada:
   app.register(uploadRoutes, { prefix: "/api/upload" });
   app.register(frequenciaRoutes, { prefix: "/api/frequencia" });
   app.register(disciplinasRoutes, { prefix: "/api/disciplinas" });
-  app.register(configuracaoAvaliacaoRoutes, { prefix: "/api/configuracao-avaliacao" });
+  app.register(configuracaoAvaliacaoRoutes, {
+    prefix: "/api/configuracao-avaliacao",
+  });
   app.register(avaliacoesRoutes, { prefix: "/api/avaliacoes" });
   app.register(notasRoutes, { prefix: "/api/notas" });
   app.register(pontosRoutes, { prefix: "/api/pontos" });
@@ -369,7 +441,9 @@ Resposta paginada:
   app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
   app.register(aeeRoutes, { prefix: "/api/aee" });
   app.register(acompanhamentoRoutes, { prefix: "/api/acompanhamento" });
-  app.register(plantaoPedagogicoRoutes, { prefix: "/api/plantoes-pedagogicos" });
+  app.register(plantaoPedagogicoRoutes, {
+    prefix: "/api/plantoes-pedagogicos",
+  });
   app.register(reuniaoPaisRoutes, { prefix: "/api/reunioes-pais" });
   app.register(comunicadoRoutes, { prefix: "/api/comunicados" });
   app.register(notificacaoRoutes, { prefix: "/api/notificacoes" });
@@ -402,6 +476,16 @@ async function start() {
         logger.error("Erro ao coletar métricas do sistema", err as Error);
       });
     }, 60 * 1000);
+
+    // Limpar refresh tokens expirados a cada 6 horas
+    setInterval(
+      () => {
+        refreshTokenService.cleanupExpiredTokens().catch((err) => {
+          logger.error("Erro ao limpar tokens expirados", err as Error);
+        });
+      },
+      6 * 60 * 60 * 1000,
+    );
 
     // Coleta inicial
     await collectSystemMetrics();

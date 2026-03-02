@@ -1,5 +1,5 @@
 // Prisma Schema - Sistema de Gestão Educacional
-// Banco: PostgreSQL (remoto)
+// Banco: PostgreSQL (Supabase - Produção)
 
 generator client {
   provider = "prisma-client-js"
@@ -32,7 +32,25 @@ model User {
   matriculaId     String?              @unique
   matricula       Matricula?           @relation(fields: [matriculaId], references: [id])
 
+  refreshTokens   RefreshToken[]
+
   @@map("users")
+}
+
+// ==================== REFRESH TOKENS ====================
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
 }
 
 // ==================== ESTRUTURA ACADÊMICA ====================
