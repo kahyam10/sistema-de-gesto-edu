@@ -4,7 +4,7 @@
 # ==========================
 
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.18 AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY src ./src/
 RUN ./node_modules/.bin/tsc
 
 # Stage 2: Production
-FROM node:20-alpine AS runner
+FROM node:20-alpine3.18 AS runner
 
 WORKDIR /app
 
