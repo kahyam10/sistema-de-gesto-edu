@@ -29,7 +29,6 @@ COPY --from=builder /app/dist ./dist/
 
 EXPOSE 3202
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3202/health || exit 1
+# MCP Server uses stdio transport, no HTTP healthcheck needed
 
 CMD ["node", "dist/index.js"]
