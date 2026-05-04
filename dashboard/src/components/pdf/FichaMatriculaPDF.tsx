@@ -307,6 +307,13 @@ export const FichaMatriculaPDF: React.FC<FichaMatriculaPDFProps> = ({
           </View>
         )}
 
+        {matricula.observacoes && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>OBSERVAÇÕES</Text>
+            <Text style={styles.value}>{matricula.observacoes}</Text>
+          </View>
+        )}
+
         {/* Rodapé */}
         <View style={styles.footer}>
           <Text>

@@ -146,6 +146,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
     // Autorizacoes
     autorizacaoImagem: false,
     autorizacaoSaida: false,
+    observacoes: "",
   });
 
   // Buscar matrícula atual pelo ID
@@ -221,6 +222,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
         contatoEmergenciaParentesco: matricula.contatoEmergenciaParentesco || "",
         autorizacaoImagem: matricula.autorizacaoImagem || false,
         autorizacaoSaida: matricula.autorizacaoSaida || false,
+        observacoes: matricula.observacoes || "",
       });
       setIsEditOpen(true);
     }
@@ -258,6 +260,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
           contatoEmergenciaParentesco: formData.contatoEmergenciaParentesco || undefined,
           autorizacaoImagem: formData.autorizacaoImagem,
           autorizacaoSaida: formData.autorizacaoSaida,
+          observacoes: formData.observacoes,
           escolaId: matricula.escolaId,
           etapaId: matricula.etapaId,
         },
@@ -1143,6 +1146,25 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
                       Autorizo a saida do aluno desacompanhado
                     </Label>
                   </div>
+                </div>
+              </div>
+
+              {/* Observações */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <FileText size={16} />
+                  Observações
+                </h4>
+                <div className="space-y-2">
+                  <Label htmlFor="observacoes">Observações da matrícula</Label>
+                  <textarea
+                    id="observacoes"
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                    placeholder="Observações adicionais sobre o estudante"
+                    rows={4}
+                    className="flex min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
                 </div>
               </div>
             </form>
