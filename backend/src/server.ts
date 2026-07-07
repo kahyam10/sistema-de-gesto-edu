@@ -54,40 +54,42 @@ async function buildApp() {
     },
   });
 
-  // Swagger documentation
-  await app.register(swagger, {
-    openapi: {
-      info: {
-        title: "Sistema de Gestão Educacional API",
-        description:
-          "API para o Sistema de Gestão Educacional de Ibirapitanga-BA",
-        version: "1.0.0",
-      },
-      servers: [
-        {
-          url: `http://localhost:${process.env.PORT || 3333}`,
-          description: "Servidor de desenvolvimento",
+  // Swagger documentation — apenas fora de produção (rotas /docs são públicas)
+  if (!isProd) {
+    await app.register(swagger, {
+      openapi: {
+        info: {
+          title: "Sistema de Gestão Educacional API",
+          description:
+            "API para o Sistema de Gestão Educacional de Ibirapitanga-BA",
+          version: "1.0.0",
         },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            bearerFormat: "JWT",
+        servers: [
+          {
+            url: `http://localhost:${process.env.PORT || 3333}`,
+            description: "Servidor de desenvolvimento",
+          },
+        ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: "http",
+              scheme: "bearer",
+              bearerFormat: "JWT",
+            },
           },
         },
       },
-    },
-  });
+    });
 
-  await app.register(swaggerUi, {
-    routePrefix: "/docs",
-    uiConfig: {
-      docExpansion: "list",
-      deepLinking: false,
-    },
-  });
+    await app.register(swaggerUi, {
+      routePrefix: "/docs",
+      uiConfig: {
+        docExpansion: "list",
+        deepLinking: false,
+      },
+    });
+  }
 
   // Decorator para autenticação
   app.decorate(

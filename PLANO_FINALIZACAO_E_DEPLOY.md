@@ -81,18 +81,17 @@ Tudo abaixo foi implementado, compilado e testado (curl + builds):
 
 ---
 
-## 4. Pré-produção (P2) — migração para PostgreSQL e containers
+## 4. Pré-produção (P2) — ✅ APLICADA em 07/07/2026
 
-1. **Prisma → PostgreSQL (Supabase self-hosted)**:
-   - Trocar `provider = "sqlite"` por `"postgresql"` em `schema.prisma`.
-   - **Rebaseline das migrations** (a pasta atual é SQLite — `migration_lock.toml`): apagar `prisma/migrations/`, rodar `npx prisma migrate dev --name init` contra um Postgres vazio.
-   - Recomendado: converter `Phase.moduleIds`, `Matricula.documentosEntregues` e os novos `dadosCenso` de `String` para `Json` nativo.
-2. **Seed de produção**: novo `seed-prod.ts` **sem `deleteMany()`** e com admin/senha vindos de env (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) — o seed atual apaga o banco inteiro e cria `admin123`.
-3. **Dockerfiles** (multi-stage):
-   - `backend/Dockerfile`: `node:20-alpine` → `npm ci` → `prisma generate` → `tsc` → runtime só com `dist/`, `node_modules` de produção e `prisma/`; `CMD ["node", "dist/server.js"]`.
-   - `dashboard/Dockerfile`: build com `ARG NEXT_PUBLIC_API_URL` (a variável é **inlined no build**) → runtime da saída `standalone` (`node server.js`), já habilitada no `next.config.js`.
-4. **Swagger em produção**: decidir — desabilitar `/docs` quando `NODE_ENV=production` ou exigir auth.
-5. (Opcional) CI no GitHub Actions: build dos dois workspaces + `prisma migrate diff` em PRs.
+| # | Item | Como ficou |
+|---|------|------------|
+| 1 | **Prisma → PostgreSQL** | `provider = "postgresql"` no schema; **rebaseline feito** — migrations SQLite antigas removidas (preservadas no histórico git) e baseline única `init` gerada contra Postgres 16. Dev usa o Postgres do docker compose (porta **5435** do host); testes usam banco separado `gestao_edu_test` no mesmo Postgres (17/17 passando). Campos JSON continuam como `String` serializado — conversão para `Json` nativo fica como refinamento futuro (exige mudanças coordenadas no frontend) |
+| 2 | **Seed de produção** | `backend/prisma/seed-prod.cjs` — idempotente, roda a cada boot: cria admin de `ADMIN_EMAIL`/`ADMIN_PASSWORD` (não sobrescreve senha se já existir; exige ≥8 caracteres) e a hierarquia de ensino padrão só se a tabela estiver vazia. **Zero `deleteMany`** |
+| 3 | **Dockerfiles** | `backend/Dockerfile` multi-stage (build tsc + deps de produção com prisma CLI; boot = `migrate deploy` → `seed-prod` → `node dist/server.js`); `dashboard/Dockerfile` com `ARG NEXT_PUBLIC_API_URL` e runtime da saída `standalone`; `.dockerignore` em ambos; `prisma` CLI movido para `dependencies` (necessário no runtime) |
+| 4 | **Swagger em produção** | `/docs` registrado apenas quando `NODE_ENV !== "production"` |
+| 5 | **Compose local** | `docker-compose.yml` na raiz: postgres 16 (host 5435, volume `pgdata`, healthcheck) + backend (host 3333, healthcheck `/health`) + dashboard (host **3001** — 3000 estava ocupada na máquina). Segredos via `.env` na raiz (gitignored; template em `.env.docker.example`) |
+
+Pendência P2 restante: CI no GitHub Actions (build + testes em PRs) — opcional para o launch.
 
 ---
 
@@ -182,11 +181,12 @@ No navegador: `https://app.SEUDOMINIO` → redireciona a `/login` → entrar com
 - [x] Lint funcionando (0 erros) e testes Vitest 17/17
 - [x] Tracker de módulos e documentação refletindo o status real
 
-**Pré-deploy (P2 — pendente):**
-- [ ] Migração Prisma para PostgreSQL (rebaseline)
-- [ ] Seed de produção sem `deleteMany` e sem senha padrão
-- [ ] Dockerfiles backend + dashboard
-- [ ] Swagger `/docs` desabilitado ou protegido em produção
+**Pré-deploy (P2 — feito em 07/07/2026):**
+- [x] Migração Prisma para PostgreSQL (rebaseline `init`)
+- [x] Seed de produção idempotente, sem `deleteMany` e sem senha padrão
+- [x] Dockerfiles backend + dashboard + docker-compose.yml
+- [x] Swagger `/docs` desabilitado em produção
+- [x] Deploy local em containers testado nesta máquina
 
 **Infra (dia do deploy):**
 - [ ] VPS provisionada + DNS propagado + firewall

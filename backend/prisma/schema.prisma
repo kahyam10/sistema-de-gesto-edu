@@ -1,12 +1,12 @@
 // Prisma Schema - Sistema de Gestão Educacional
-// Banco: SQLite (desenvolvimento) -> PostgreSQL (produção)
+// Banco: PostgreSQL (dev via docker compose, prod via Supabase self-hosted)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
