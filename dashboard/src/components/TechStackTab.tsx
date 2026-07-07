@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TechStack } from '@/lib/types'
+import { techStack as defaultTechStack } from '@/lib/data'
 import { 
   Code, FileCode, Palette, Database, 
   Package, Key, Shield, HardDrive, CheckCircle, TestTube,
@@ -8,7 +9,7 @@ import {
 } from '@phosphor-icons/react'
 
 interface TechStackTabProps {
-  techStack: TechStack[]
+  techStack?: TechStack[]
 }
 
 const iconMap: Record<string, any> = {
@@ -17,7 +18,7 @@ const iconMap: Record<string, any> = {
   FileText, Cloud, FolderOpen, FileSearch: MagnifyingGlass
 }
 
-export function TechStackTab({ techStack }: TechStackTabProps) {
+export function TechStackTab({ techStack = defaultTechStack }: TechStackTabProps) {
   return (
     <div className="space-y-6">
       <div>

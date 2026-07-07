@@ -3,6 +3,9 @@ import { profissionalService } from "../services/index.js";
 import {
   createProfissionalSchema,
   updateProfissionalSchema,
+  createFormacaoSchema,
+  updateFormacaoSchema,
+  vincularEscolaSchema,
 } from "../schemas/index.js";
 
 interface ProfissionalFilters {
@@ -121,6 +124,28 @@ export async function profissionaisRoutes(app: FastifyInstance) {
     }
   );
 
+  // Salvar questionário do Censo Escolar do gestor/profissional
+  app.put(
+    "/:id/censo",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const profissional = await profissionalService.updateCenso(
+          id,
+          request.body
+        );
+        return reply.send(profissional);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao salvar censo";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
   // Deletar profissional
   app.delete(
     "/:id",
@@ -146,19 +171,14 @@ export async function profissionaisRoutes(app: FastifyInstance) {
   app.post(
     "/:id/escolas",
     async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { escolaId: string; funcao?: string; cargaHoraria?: number };
-      }>,
+      request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
       try {
         const { id } = request.params;
-        const { escolaId, funcao, cargaHoraria } = request.body as {
-          escolaId: string;
-          funcao?: string;
-          cargaHoraria?: number;
-        };
+        const { escolaId, funcao, cargaHoraria } = vincularEscolaSchema.parse(
+          request.body
+        );
         const vinculo = await profissionalService.vincularEscola(
           id,
           escolaId,
@@ -222,29 +242,12 @@ export async function profissionaisRoutes(app: FastifyInstance) {
   app.post(
     "/:id/formacoes",
     async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          tipo: string;
-          nome: string;
-          instituicao?: string;
-          anoConclusao?: number;
-          cargaHoraria?: number;
-          emAndamento?: boolean;
-        };
-      }>,
+      request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
       try {
         const { id } = request.params;
-        const data = request.body as {
-          tipo: string;
-          nome: string;
-          instituicao?: string;
-          anoConclusao?: number;
-          cargaHoraria?: number;
-          emAndamento?: boolean;
-        };
+        const data = createFormacaoSchema.parse(request.body);
         const formacao = await profissionalService.addFormacao(id, data);
         return reply.status(201).send(formacao);
       } catch (error: unknown) {
@@ -261,27 +264,12 @@ export async function profissionaisRoutes(app: FastifyInstance) {
     async (
       request: FastifyRequest<{
         Params: { id: string; formacaoId: string };
-        Body: {
-          tipo?: string;
-          nome?: string;
-          instituicao?: string;
-          anoConclusao?: number;
-          cargaHoraria?: number;
-          emAndamento?: boolean;
-        };
       }>,
       reply: FastifyReply
     ) => {
       try {
         const { formacaoId } = request.params;
-        const data = request.body as {
-          tipo?: string;
-          nome?: string;
-          instituicao?: string;
-          anoConclusao?: number;
-          cargaHoraria?: number;
-          emAndamento?: boolean;
-        };
+        const data = updateFormacaoSchema.parse(request.body);
         const formacao = await profissionalService.updateFormacao(
           formacaoId,
           data

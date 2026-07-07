@@ -29,6 +29,9 @@ import {
   Pencil,
   Trash,
   Eye,
+  MagnifyingGlass,
+  Funnel,
+  X,
 } from "@phosphor-icons/react";
 import {
   Dialog,
@@ -65,6 +68,15 @@ export function MatriculasManager() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMatricula, setEditingMatricula] = useState<Matricula | null>(null);
   const [viewingAlunoId, setViewingAlunoId] = useState<string | null>(null);
+  
+  // Estados de pesquisa e filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filtroSexo, setFiltroSexo] = useState<"all" | "M" | "F">("all");
+  const [filtroIdadeMin, setFiltroIdadeMin] = useState("");
+  const [filtroIdadeMax, setFiltroIdadeMax] = useState("");
+  const [filtroEtapaId, setFiltroEtapaId] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [formData, setFormData] = useState({
     escolaId: "",
     etapaId: "",
@@ -93,6 +105,69 @@ export function MatriculasManager() {
   );
 
   const isLoading = loadingEscolas || loadingEtapas || loadingSeries || loadingMatriculas;
+
+  // Função para calcular idade a partir da data de nascimento
+  const calcularIdade = (dataNascimento: string): number => {
+    const hoje = new Date();
+    const nascimento = new Date(dataNascimento);
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    const mesAtual = hoje.getMonth();
+    const mesNascimento = nascimento.getMonth();
+    if (mesAtual < mesNascimento || (mesAtual === mesNascimento && hoje.getDate() < nascimento.getDate())) {
+      idade--;
+    }
+    return idade;
+  };
+
+  // Filtrar matrículas com base nos critérios
+  const matriculasFiltradas = (matriculas || []).filter((matricula) => {
+    // Pesquisa por texto (nome do aluno, nome do responsável, CPF)
+    const termoBusca = searchTerm.toLowerCase().trim();
+    if (termoBusca) {
+      const nomeAlunoMatch = matricula.nomeAluno.toLowerCase().includes(termoBusca);
+      const nomeResponsavelMatch = matricula.nomeResponsavel.toLowerCase().includes(termoBusca);
+      const cpfAlunoMatch = matricula.cpfAluno?.replace(/\D/g, "").includes(termoBusca.replace(/\D/g, "")) || false;
+      const cpfResponsavelMatch = matricula.cpfResponsavel?.replace(/\D/g, "").includes(termoBusca.replace(/\D/g, "")) || false;
+      const rgMatch = matricula.rgAluno?.replace(/\D/g, "").includes(termoBusca.replace(/\D/g, "")) || false;
+      const matriculaNumeroMatch = matricula.numeroMatricula.toLowerCase().includes(termoBusca);
+      
+      if (!nomeAlunoMatch && !nomeResponsavelMatch && !cpfAlunoMatch && !cpfResponsavelMatch && !rgMatch && !matriculaNumeroMatch) {
+        return false;
+      }
+    }
+
+    // Filtro por sexo
+    if (filtroSexo !== "all" && matricula.sexo !== filtroSexo) {
+      return false;
+    }
+
+    // Filtro por idade
+    const idade = calcularIdade(matricula.dataNascimento);
+    if (filtroIdadeMin && idade < parseInt(filtroIdadeMin)) {
+      return false;
+    }
+    if (filtroIdadeMax && idade > parseInt(filtroIdadeMax)) {
+      return false;
+    }
+
+    // Filtro por etapa (série/ano)
+    if (filtroEtapaId !== "all" && matricula.etapaId !== filtroEtapaId) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Limpar todos os filtros
+  const limparFiltros = () => {
+    setSearchTerm("");
+    setFiltroSexo("all");
+    setFiltroIdadeMin("");
+    setFiltroIdadeMax("");
+    setFiltroEtapaId("all");
+  };
+
+  const temFiltrosAtivos = searchTerm || filtroSexo !== "all" || filtroIdadeMin || filtroIdadeMax || filtroEtapaId !== "all";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -555,10 +630,120 @@ export function MatriculasManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Matrículas Realizadas</CardTitle>
-          <CardDescription>
-            {(matriculas || []).length} matrícula(s) no sistema
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Matrículas Realizadas</CardTitle>
+              <CardDescription>
+                {temFiltrosAtivos 
+                  ? `${matriculasFiltradas.length} de ${(matriculas || []).length} matrícula(s)`
+                  : `${(matriculas || []).length} matrícula(s) no sistema`
+                }
+              </CardDescription>
+            </div>
+          </div>
+          
+          {/* Barra de Pesquisa e Filtros */}
+          <div className="space-y-4 pt-4">
+            {/* Pesquisa */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <MagnifyingGlass 
+                  size={18} 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                />
+                <Input
+                  placeholder="Pesquisar por nome do aluno, responsável, CPF, RG ou nº matrícula..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowFilters(!showFilters)}
+                title="Mostrar filtros"
+              >
+                <Funnel size={18} />
+              </Button>
+              {temFiltrosAtivos && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={limparFiltros}
+                  title="Limpar filtros"
+                >
+                  <X size={18} />
+                </Button>
+              )}
+            </div>
+            
+            {/* Filtros Avançados */}
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Sexo</Label>
+                  <Select
+                    value={filtroSexo}
+                    onValueChange={(value) => setFiltroSexo(value as "all" | "M" | "F")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Idade mínima</Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 5"
+                    value={filtroIdadeMin}
+                    onChange={(e) => setFiltroIdadeMin(e.target.value)}
+                    min={0}
+                    max={100}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Idade máxima</Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 18"
+                    value={filtroIdadeMax}
+                    onChange={(e) => setFiltroIdadeMax(e.target.value)}
+                    min={0}
+                    max={100}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Etapa de Ensino</Label>
+                  <Select
+                    value={filtroEtapaId}
+                    onValueChange={setFiltroEtapaId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {(etapas || []).map((etapa) => (
+                        <SelectItem key={etapa.id} value={etapa.id}>
+                          {etapa.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {!matriculas || matriculas.length === 0 ? (
@@ -575,9 +760,31 @@ export function MatriculasManager() {
                 Clique em "Nova Matrícula" para começar
               </p>
             </div>
+          ) : matriculasFiltradas.length === 0 ? (
+            <div className="text-center py-12">
+              <MagnifyingGlass
+                className="mx-auto mb-4 text-muted-foreground"
+                size={48}
+                weight="duotone"
+              />
+              <p className="text-muted-foreground">
+                Nenhuma matrícula encontrada com os filtros aplicados
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tente ajustar os critérios de busca
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={limparFiltros}
+                className="mt-4"
+              >
+                Limpar Filtros
+              </Button>
+            </div>
           ) : (
             <div className="space-y-3">
-              {matriculas.map((matricula) => (
+              {matriculasFiltradas.map((matricula) => (
                 <div
                   key={matricula.id}
                   className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"

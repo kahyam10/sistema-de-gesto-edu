@@ -20,7 +20,8 @@ async function request<T>(
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-  const token = localStorage.getItem("auth_token");
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
   const config: RequestInit = {
     method,
@@ -38,6 +39,17 @@ async function request<T>(
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
+    // Sessão expirada/inválida: limpa o token e volta ao login
+    if (
+      response.status === 401 &&
+      endpoint !== "/api/auth/login" &&
+      typeof window !== "undefined"
+    ) {
+      localStorage.removeItem("auth_token");
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
     const error = await response
       .json()
       .catch(() => ({ error: "Erro desconhecido" }));
@@ -91,14 +103,65 @@ export const authApi = {
   me: () => request<User>("/api/auth/me"),
 };
 
+// ==================== TIPO DE EDUCAÇÃO ====================
+
+export interface TipoEducacao {
+  id: string;
+  nome: string;
+  descricao?: string;
+  ordem: number;
+  ativo: boolean;
+  etapas?: EtapaEnsino[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const tiposEducacaoApi = {
+  list: () => request<TipoEducacao[]>("/api/tipos-educacao"),
+  get: (id: string) => request<TipoEducacao>(`/api/tipos-educacao/${id}`),
+  create: (data: { nome: string; descricao?: string; ordem?: number }) =>
+    request<TipoEducacao>("/api/tipos-educacao", {
+      method: "POST",
+      body: data,
+    }),
+  update: (
+    id: string,
+    data: Partial<{
+      nome: string;
+      descricao?: string;
+      ordem?: number;
+      ativo?: boolean;
+    }>
+  ) =>
+    request<TipoEducacao>(`/api/tipos-educacao/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/tipos-educacao/${id}`, { method: "DELETE" }),
+};
+
 // ==================== ETAPAS ====================
+
+export interface NivelEnsino {
+  id: string;
+  nome: string;
+  descricao?: string;
+  ordem: number;
+  ativo: boolean;
+  etapaId: string;
+  etapa?: EtapaEnsino;
+  series?: Serie[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Serie {
   id: string;
   nome: string;
   ordem: number;
-  etapaId: string;
-  etapa?: EtapaEnsino;
+  nivelId: string;
+  nivel?: NivelEnsino;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,7 +171,10 @@ export interface EtapaEnsino {
   nome: string;
   descricao?: string;
   ordem: number;
-  series?: Serie[];
+  ativo: boolean;
+  tipoEducacaoId: string;
+  tipoEducacao?: TipoEducacao;
+  niveis?: NivelEnsino[];
   createdAt: string;
   updatedAt: string;
 }
@@ -116,14 +182,56 @@ export interface EtapaEnsino {
 export const etapasApi = {
   list: () => request<EtapaEnsino[]>("/api/etapas"),
   get: (id: string) => request<EtapaEnsino>(`/api/etapas/${id}`),
-  create: (data: { nome: string; descricao?: string; ordem: number }) =>
-    request<EtapaEnsino>("/api/etapas", { method: "POST", body: data }),
+  create: (data: {
+    nome: string;
+    descricao?: string;
+    ordem?: number;
+    tipoEducacaoId: string;
+  }) => request<EtapaEnsino>("/api/etapas", { method: "POST", body: data }),
   update: (
     id: string,
-    data: Partial<{ nome: string; descricao?: string; ordem: number }>
+    data: Partial<{
+      nome: string;
+      descricao?: string;
+      ordem?: number;
+      ativo?: boolean;
+      tipoEducacaoId?: string;
+    }>
   ) => request<EtapaEnsino>(`/api/etapas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/etapas/${id}`, { method: "DELETE" }),
+};
+
+// ==================== NÍVEIS DE ENSINO ====================
+
+export const niveisEnsinoApi = {
+  list: () => request<NivelEnsino[]>("/api/niveis-ensino"),
+  get: (id: string) => request<NivelEnsino>(`/api/niveis-ensino/${id}`),
+  getByEtapa: (etapaId: string) =>
+    request<NivelEnsino[]>(`/api/niveis-ensino/etapa/${etapaId}`),
+  create: (data: {
+    nome: string;
+    descricao?: string;
+    ordem?: number;
+    etapaId: string;
+  }) =>
+    request<NivelEnsino>("/api/niveis-ensino", { method: "POST", body: data }),
+  update: (
+    id: string,
+    data: Partial<{
+      nome: string;
+      descricao?: string;
+      ordem?: number;
+      ativo?: boolean;
+      etapaId?: string;
+    }>
+  ) =>
+    request<NivelEnsino>(`/api/niveis-ensino/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/niveis-ensino/${id}`, { method: "DELETE" }),
 };
 
 // ==================== SÉRIES ====================
@@ -131,13 +239,13 @@ export const etapasApi = {
 export const seriesApi = {
   list: () => request<Serie[]>("/api/series"),
   get: (id: string) => request<Serie>(`/api/series/${id}`),
-  getByEtapa: (etapaId: string) =>
-    request<Serie[]>(`/api/series/etapa/${etapaId}`),
-  create: (data: { nome: string; ordem: number; etapaId: string }) =>
+  getByNivel: (nivelId: string) =>
+    request<Serie[]>(`/api/series/nivel/${nivelId}`),
+  create: (data: { nome: string; ordem: number; nivelId: string }) =>
     request<Serie>("/api/series", { method: "POST", body: data }),
   update: (
     id: string,
-    data: Partial<{ nome: string; ordem: number; etapaId: string }>
+    data: Partial<{ nome: string; ordem: number; nivelId: string }>
   ) => request<Serie>(`/api/series/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/series/${id}`, { method: "DELETE" }),
@@ -153,8 +261,13 @@ export interface Escola {
   telefone?: string;
   email?: string;
   quantidadeSalas: number;
+  dadosCenso?: string | null;
   ativo: boolean;
   etapas?: { etapa: EtapaEnsino }[];
+
+  // Gestor Escolar (Diretor)
+  diretorId?: string;
+  diretor?: ProfissionalEducacao;
 
   // Infraestrutura - Áreas comuns
   possuiPatio?: boolean;
@@ -349,6 +462,7 @@ export const escolasApi = {
       quantidadeSalas?: number;
       ativo?: boolean;
       etapasIds?: string[];
+      diretorId?: string;
     } & EscolaInfraestruturaUpdate
   ) => request<Escola>("/api/escolas", { method: "POST", body: data }),
   update: (
@@ -362,9 +476,12 @@ export const escolasApi = {
       quantidadeSalas?: number;
       ativo?: boolean;
       etapasIds?: string[];
+      diretorId?: string | null;
     }> &
       EscolaInfraestruturaUpdate
   ) => request<Escola>(`/api/escolas/${id}`, { method: "PUT", body: data }),
+  saveCenso: (id: string, dados: Record<string, unknown>) =>
+    request<Escola>(`/api/escolas/${id}/censo`, { method: "PUT", body: dados }),
   delete: (id: string) =>
     request<void>(`/api/escolas/${id}`, { method: "DELETE" }),
 };
@@ -378,6 +495,7 @@ export interface Turma {
   anoLetivo: number;
   capacidadeMaxima: number;
   limitePCD: number;
+  dadosCenso?: string | null;
   ativo: boolean;
   escolaId: string;
   escola?: Escola;
@@ -448,6 +566,8 @@ export const turmasApi = {
       ativo?: boolean;
     }>
   ) => request<Turma>(`/api/turmas/${id}`, { method: "PUT", body: data }),
+  saveCenso: (id: string, dados: Record<string, unknown>) =>
+    request<Turma>(`/api/turmas/${id}/censo`, { method: "PUT", body: dados }),
   delete: (id: string) =>
     request<void>(`/api/turmas/${id}`, { method: "DELETE" }),
   addAluno: (turmaId: string, matriculaId: string) =>
@@ -627,6 +747,7 @@ export interface ProfissionalEducacao {
   formacao?: string;
   especialidade?: string;
   matricula?: string;
+  dadosCenso?: string | null;
   ativo: boolean;
   escolas?: { escola: Escola }[];
   turmas?: { turma: Turma; tipo: string; disciplina?: string }[];
@@ -684,6 +805,11 @@ export const profissionaisApi = {
     request<ProfissionalEducacao>(`/api/profissionais/${id}`, {
       method: "PUT",
       body: data,
+    }),
+  saveCenso: (id: string, dados: Record<string, unknown>) =>
+    request<ProfissionalEducacao>(`/api/profissionais/${id}/censo`, {
+      method: "PUT",
+      body: dados,
     }),
   delete: (id: string) =>
     request<void>(`/api/profissionais/${id}`, { method: "DELETE" }),

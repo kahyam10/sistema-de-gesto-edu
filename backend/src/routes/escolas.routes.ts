@@ -107,6 +107,25 @@ export async function escolasRoutes(app: FastifyInstance) {
     }
   );
 
+  // Salvar questionário do Censo Escolar da escola
+  app.put(
+    "/:id/censo",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const escola = await escolaService.updateCenso(id, request.body);
+        return reply.send(escola);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao salvar censo";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
   // Deletar escola
   app.delete(
     "/:id",

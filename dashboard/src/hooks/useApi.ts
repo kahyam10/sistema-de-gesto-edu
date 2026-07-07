@@ -2,7 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  tiposEducacaoApi,
   etapasApi,
+  niveisEnsinoApi,
   seriesApi,
   escolasApi,
   turmasApi,
@@ -12,7 +14,9 @@ import {
   phasesApi,
   salasApi,
   calendarioApi,
+  TipoEducacao,
   EtapaEnsino,
+  NivelEnsino,
   Serie,
   Escola,
   Turma,
@@ -23,6 +27,80 @@ import {
   Phase,
 } from "@/lib/api";
 import { toast } from "sonner";
+
+// ==================== TIPOS DE EDUCAÇÃO ====================
+
+export function useTiposEducacao() {
+  return useQuery({
+    queryKey: ["tipos-educacao"],
+    queryFn: () => tiposEducacaoApi.list(),
+  });
+}
+
+export function useTipoEducacao(id: string) {
+  return useQuery({
+    queryKey: ["tipos-educacao", id],
+    queryFn: () => tiposEducacaoApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateTipoEducacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { nome: string; descricao?: string; ordem?: number }) =>
+      tiposEducacaoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tipos-educacao"] });
+      toast.success("Tipo de educação cadastrado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao cadastrar tipo de educação");
+    },
+  });
+}
+
+export function useUpdateTipoEducacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{
+        nome: string;
+        descricao?: string;
+        ordem?: number;
+        ativo?: boolean;
+      }>;
+    }) => tiposEducacaoApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tipos-educacao"] });
+      toast.success("Tipo de educação atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar tipo de educação");
+    },
+  });
+}
+
+export function useDeleteTipoEducacao() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => tiposEducacaoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tipos-educacao"] });
+      toast.success("Tipo de educação removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover tipo de educação");
+    },
+  });
+}
 
 // ==================== ETAPAS ====================
 
@@ -45,10 +123,15 @@ export function useCreateEtapa() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { nome: string; descricao?: string; ordem: number }) =>
-      etapasApi.create(data),
+    mutationFn: (data: {
+      nome: string;
+      descricao?: string;
+      ordem?: number;
+      tipoEducacaoId: string;
+    }) => etapasApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["etapas"] });
+      queryClient.invalidateQueries({ queryKey: ["tipos-educacao"] });
       toast.success("Etapa cadastrada com sucesso!");
     },
     onError: (error: Error) => {
@@ -66,10 +149,16 @@ export function useUpdateEtapa() {
       data,
     }: {
       id: string;
-      data: Partial<{ nome: string; descricao?: string; ordem: number }>;
+      data: Partial<{
+        nome: string;
+        descricao?: string;
+        ordem?: number;
+        tipoEducacaoId?: string;
+      }>;
     }) => etapasApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["etapas"] });
+      queryClient.invalidateQueries({ queryKey: ["tipos-educacao"] });
       toast.success("Etapa atualizada com sucesso!");
     },
     onError: (error: Error) => {
@@ -85,10 +174,100 @@ export function useDeleteEtapa() {
     mutationFn: (id: string) => etapasApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["etapas"] });
+      queryClient.invalidateQueries({ queryKey: ["tipos-educacao"] });
       toast.success("Etapa removida com sucesso!");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao remover etapa");
+    },
+  });
+}
+
+// ==================== NÍVEIS DE ENSINO ====================
+
+export function useNiveisEnsino() {
+  return useQuery({
+    queryKey: ["niveis-ensino"],
+    queryFn: () => niveisEnsinoApi.list(),
+  });
+}
+
+export function useNivelEnsino(id: string) {
+  return useQuery({
+    queryKey: ["niveis-ensino", id],
+    queryFn: () => niveisEnsinoApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useNiveisByEtapa(etapaId: string) {
+  return useQuery({
+    queryKey: ["niveis-ensino", "etapa", etapaId],
+    queryFn: () => niveisEnsinoApi.getByEtapa(etapaId),
+    enabled: !!etapaId,
+  });
+}
+
+export function useCreateNivelEnsino() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      nome: string;
+      descricao?: string;
+      ordem?: number;
+      etapaId: string;
+    }) => niveisEnsinoApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["niveis-ensino"] });
+      queryClient.invalidateQueries({ queryKey: ["etapas"] });
+      toast.success("Nível de ensino cadastrado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao cadastrar nível de ensino");
+    },
+  });
+}
+
+export function useUpdateNivelEnsino() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{
+        nome: string;
+        descricao?: string;
+        ordem?: number;
+        etapaId?: string;
+      }>;
+    }) => niveisEnsinoApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["niveis-ensino"] });
+      queryClient.invalidateQueries({ queryKey: ["etapas"] });
+      toast.success("Nível de ensino atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar nível de ensino");
+    },
+  });
+}
+
+export function useDeleteNivelEnsino() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => niveisEnsinoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["niveis-ensino"] });
+      queryClient.invalidateQueries({ queryKey: ["etapas"] });
+      toast.success("Nível de ensino removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover nível de ensino");
     },
   });
 }
@@ -102,11 +281,11 @@ export function useSeries() {
   });
 }
 
-export function useSeriesByEtapa(etapaId: string) {
+export function useSeriesByNivel(nivelId: string) {
   return useQuery({
-    queryKey: ["series", "etapa", etapaId],
-    queryFn: () => seriesApi.getByEtapa(etapaId),
-    enabled: !!etapaId,
+    queryKey: ["series", "nivel", nivelId],
+    queryFn: () => seriesApi.getByNivel(nivelId),
+    enabled: !!nivelId,
   });
 }
 
@@ -114,10 +293,11 @@ export function useCreateSerie() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { nome: string; ordem: number; etapaId: string }) =>
+    mutationFn: (data: { nome: string; ordem: number; nivelId: string }) =>
       seriesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["series"] });
+      queryClient.invalidateQueries({ queryKey: ["niveis-ensino"] });
       queryClient.invalidateQueries({ queryKey: ["etapas"] });
       toast.success("Série cadastrada com sucesso!");
     },
@@ -136,10 +316,11 @@ export function useUpdateSerie() {
       data,
     }: {
       id: string;
-      data: Partial<{ nome: string; ordem: number; etapaId: string }>;
+      data: Partial<{ nome: string; ordem: number; nivelId: string }>;
     }) => seriesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["series"] });
+      queryClient.invalidateQueries({ queryKey: ["niveis-ensino"] });
       queryClient.invalidateQueries({ queryKey: ["etapas"] });
       toast.success("Série atualizada com sucesso!");
     },
@@ -223,6 +404,7 @@ export function useUpdateEscola() {
         quantidadeSalas?: number;
         ativo?: boolean;
         etapasIds?: string[];
+        diretorId?: string | null;
       }>;
     }) => escolasApi.update(id, data),
     onSuccess: () => {
@@ -231,6 +413,27 @@ export function useUpdateEscola() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao atualizar escola");
+    },
+  });
+}
+
+export function useSaveCensoEscola() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      dados,
+    }: {
+      id: string;
+      dados: Record<string, unknown>;
+    }) => escolasApi.saveCenso(id, dados),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["escolas"] });
+      toast.success("Questionário do censo salvo com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao salvar questionário do censo");
     },
   });
 }
@@ -321,6 +524,27 @@ export function useUpdateTurma() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao atualizar turma");
+    },
+  });
+}
+
+export function useSaveCensoTurma() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      dados,
+    }: {
+      id: string;
+      dados: Record<string, unknown>;
+    }) => turmasApi.saveCenso(id, dados),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["turmas"] });
+      toast.success("Questionário do censo salvo com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao salvar questionário do censo");
     },
   });
 }
@@ -559,6 +783,28 @@ export function useUpdateProfissional() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao atualizar profissional");
+    },
+  });
+}
+
+export function useSaveCensoGestor() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      dados,
+    }: {
+      id: string;
+      dados: Record<string, unknown>;
+    }) => profissionaisApi.saveCenso(id, dados),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profissionais"] });
+      queryClient.invalidateQueries({ queryKey: ["escolas"] });
+      toast.success("Questionário do censo salvo com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao salvar questionário do censo");
     },
   });
 }

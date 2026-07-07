@@ -152,6 +152,25 @@ export async function turmasRoutes(app: FastifyInstance) {
     }
   );
 
+  // Salvar questionário do Censo Escolar da turma
+  app.put(
+    "/:id/censo",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const turma = await turmaService.updateCenso(id, request.body);
+        return reply.send(turma);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao salvar censo";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
   // Deletar turma
   app.delete(
     "/:id",

@@ -1,0 +1,488 @@
+                                                        CENSO ESCOLAR 2025
+                                                        QUESTIONÁRIO DE ESCOLA
+Código da escola
+
+
+
+VINCULAÇÃO INSTITUCIONAL E CONVÊNIO
+Vinculação Institucional
+1 – Dependência administrativa
+
+     Federal                      Estadual                 Municipal                Privada
+
+1a – Órgão a que a escola pública está vinculada
+ Assinalar mais de uma opção, se for o caso.
+
+     Secretaria de Educação/Ministério da Educação                               Secretaria da Saúde/Ministério da Saúde
+
+     Secretaria de Segurança Pública/Forças Armadas/Militar                      Outro órgão da administração pública
+
+1b – Órgão regional de ensino
+Informar código e/ou nome do órgão regional.
+
+
+2 – Regulamentação/autorização no conselho ou órgão municipal, estadual ou federal de educação
+
+     Sim                         Em tramitação            Não
+
+2a – Esfera administrativa do conselho ou órgão responsável pela regulamentação/autorização
+ Assinalar mais de uma opção, se for o caso.
+
+      Federal                    Estadual                  Municipal
+
+3 – Localização/Zona da escola
+      Urbana                      Rural
+
+
+4 – Entidade superior da escola
+ Preenchimento automático conforme informações da dependência administrativa e da esfera administrativa da regulamentação/autorização.
+
+Convênio
+5 – A escola possui parceria ou convênio com a Administração Pública e/ou outras instituições
+ Parceria ou convênio firmado entre a Administração Pública e instituições privadas ou instituições públicas de ensino, autarquias e fundações da
+ administração indireta e demais instituições de educação profissional técnica de nível médio dos serviços sociais autônomos que integram o
+ sistema federal de ensino, para financiamento do atendimento educacional ou para a oferta do itinerário de formação técnica e profissional do
+ ensino médio
+
+     Sim                         Não
+
+5a– Poder público responsável pela parceria ou convênio entre a Administração Pública e/ou outras instituições
+
+     Secretaria estadual         Secretaria Municipal
+
+
+5b – Forma(s) de contratação da parceria ou convênio entre a escola e a secretaria estadual de educação
+
+      Termo de colaboração (Lei nº 13.019/2014)          Acordo de cooperação (Lei nº 13.019/2014)         Termo de cooperação técnica e financeira
+
+      Termo de fomento (Lei nº 13.019/2014)                                                                Contrato de consórcio público/Convênio de
+                                                         Contrato de prestação de serviço                  cooperação
+
+5c – Forma(s) de contratação da parceria ou convênio entre a escola e a secretaria municipal de educação
+
+      Termo de colaboração (Lei nº 13.019/2014)          Acordo de cooperação (Lei nº 13.019/2014)        Termo de cooperação técnica e financeira
+
+      Termo de fomento (Lei nº 13.019/2014)                                                               Contrato de consórcio público/Convênio de
+                                                         Contrato de prestação de serviço                 cooperação
+                                                                                                                                                    1
+FUNCIONAMENTO E IDENTIFICAÇÃO
+Funcionamento
+61–- Situação
+     Situação de
+              defuncionamento
+                 funcionamento                                                7 – Ano letivo
+                                                                                                            Dia / Mês / Ano
+    Em atividade             Paralisada              Extinta
+                                                                                           7a - Início:
+
+                                                                              7b - Término (previsão):
+
+Identificação
+8 – Nome da escola
+
+
+
+
+9 – CEP                                  10 – UF     1110– -Município
+                                                             Município
+
+                 –
+
+
+
+11a – Região Administrativa
+Preenchimento obrigatório somente para as escolas do Distrito Federal - DF
+
+
+
+
+11b – Distrito
+
+
+
+12 – Endereço
+
+
+
+
+13 – Número                      14 – Complemento                                            15 – Bairro
+
+
+
+16 – DDD             17 – Telefone                                                     18 – Outro telefone de contato
+                                     –                                                                    –
+
+19 – Endereço eletrônico (e-mail) da escola
+
+
+
+20 – Localização diferenciada da escola
+
+    Não está em área de localização diferenciada         Comunidade quilombola            Área onde se localizam povos e comunidades tradicionais
+
+
+    Área de assentamento                                 Terra indígena
+
+21 – Localização geográfica
+
+Preenchimento automático pelo sistema.
+
+22 – Unidade vinculada à escola de educação básica ou unidade ofertante de educação superior
+
+     Unidade vinculada à escola de educação básica             Unidade ofertante de educação superior                   Sem vínculo com outra instituição
+
+                                                                                 Código da instituição de
+                          Código da escola sede
+                                                                                 educação superior (IES)
+
+                                                                                                                                                        2
+Dados da Escola Privada
+23 – Categoria da escola privada
+
+      Particular                                  Comunitária                         Confessional                                  Filantrópica
+
+ 24 – Mantenedora da escola privada
+ Assinalar mais de uma opção, se for o caso.
+                                                                                          Sindicatos de trabalhadores ou patronais, associações,
+     Empresa ou grupo empresarial do setor privado ou pessoa física
+                                                                                          cooperativas
+
+     Instituição sem fins lucrativos                                                      Sistema S (Sesi, Senai, Sesc, outros).
+
+     Organização não governamental (ONG) – nacional ou internacional                      Organização da sociedade civil de interesse público (Oscip)
+
+25 – CNPJ da mantenedora principal da escola privada                            26 – CNPJ da escola privada
+
+                            /                 –                                                               /                 –
+
+ESTRUTURA FÍSICA
+Estrutura e Ocupação do Espaço Escolar
+27 – Local de funcionamento da escola
+ Assinalar mais de uma opção, se for o caso.
+
+      Prédio escolar                                       Galpão/rancho/paiol/barracão                               Unidade prisional
+
+      Sala(s) em outra escola                               Unidade de atendimento socioeducativo                     Outros
+
+ 28 – Forma de ocupação do prédio escolar
+
+      Próprio                          Alugado                   Cedido
+
+29 – A escola compartilha o seu prédio com outra instituição de ensino
+      Sim                              Não
+
+29a – Código da escola com a qual compartilha
+
+
+
+
+Infraestrutura de Serviços Básicos
+30 – Fornece água potável para o consumo humano
+
+     Sim                               Não
+
+31 – Abastecimento de água
+ Assinalar mais de uma opção, se for o caso.
+                                                         Cacimba/cisterna/         Carro-pipa              Fonte/rio/igarapé/            Não há abastecimento
+      Rede pública              Poço artesiano
+                                                         poço                                              riacho/córrego                de água
+
+32 – Fonte de energia elétrica
+ Assinalar mais de uma opção, se for o caso.
+                                   Fontes de energia renováveis                 Gerador movido a
+      Rede pública                 ou alternativas (gerador eólico,                                                      Não há energia elétrica
+                                                                                combustível fóssil
+                                   Solar, outras)
+33 – Esgotamento sanitário
+ Assinalar mais de uma opção, se for o caso.
+      Rede pública                      Fossa séptica                          Fossa rudimentar/comum                   Não há esgotamento sanitário
+
+34 – Destinação do lixo
+ Assinalar mais de uma opção, se for o caso.
+                                                                                          Leva a uma destinação
+      Serviço de coleta             Queima                      Enterra                   final licenciada pelo           Descarta em outra área
+                                                                                          poder público
+                                                                                                                                                          3
+ 35 – Tratamento do lixo/resíduos pela escola
+  Assinalar mais de uma opção, se for o caso.
+      Separação do lixo/resíduos              Reaproveitamento/reutilização          Reciclagem                       Não faz tratamento
+
+
+Infraestrutura Física
+ 36 – Dependências físicas existentes na escola
+ I. Administração, armazenamento e alimentação                                V. Esportes, recreação, cultura e meio ambiente
+                                                                                  Parque infantil
+      Sala de diretoria
+
+      Sala de professores                                                         Pátio coberto
+
+      Sala de secretaria                                                           Pátio descoberto
+
+      Almoxarifado                                                                 Piscina
+
+      Despensa                                                                    Quadra de esportes coberta
+
+      Cozinha                                                                     Quadra de esportes descoberta
+
+      Refeitório                                                                  Terreirão (área para prática desportiva e
+                                                                                  recreação sem cobertura, sem piso e sem edificações).
+ II. Banheiros e vestiários                                                       Auditório
+      Banheiro
+                                                                                  Estúdio de gravação e edição
+      Banheiro acessível, adequado ao uso de pessoas com deficiência
+      ou mobilidade reduzida                                                      Sala/ateliê de artes
+      Banheiro adequado à educação infantil
+                                                                                  Sala/estúdio de dança
+      Banheiro exclusivo para os(as) funcionários(as)
+                                                                                  Sala de música/coral
+      Banheiro ou vestiário com chuveiro
+                                                                                  Sala multiuso (música, dança e artes)
+
+ III. Acomodação e descanso                                                       Área de horta, plantio e/ou produção agrícola
+
+      Dormitório de aluno(a)                                                      Área de vegetação ou gramado
+
+      Dormitório de professor(a)                                                  Viveiro/criação de animais
+
+      Sala de repouso para aluno(a)
+                                                                              VI. Nenhuma das dependências relacionadas
+ IV. Aprendizagens e atendimentos especializados
+                                                                                  Nenhuma das opções relacionadas
+      Biblioteca
+
+     Sala de leitura
+
+     Laboratório de ciências
+
+     Laboratório de informática
+
+     Laboratório específico para educação profissional
+
+     Sala de oficina da educação profissional
+     Sala de recursos multifuncionais para
+     Atendimento Educacional Especializado (AEE)
+
+ 37 – Recursos de acessibilidade para pessoas com deficiência ou mobilidade reduzida nas vias de circulação interna da escola
+      Corrimão e                                                                                                            Sinalização visual
+                                      Pisos táteis                 Rampas                     Sinalização sonora            (piso/paredes)
+      guarda-corpos
+                                      Portas com vão livre de      Sinalização/                                             Nenhum dos recursos de
+      Elevador                        no mínimo 80 cm              alarme luminoso            Sinalização tátil
+                                                                                                                            acessibilidade listados
+ 38 – Quantidade de salas de aula utilizadas pela escola (dentro e fora do prédio escolar)
+
+                       Salas de aula dentro do prédio escolar
+
+                       Salas de aula fora do prédio escolar                                                                                           4
+39 – Quantidade de salas de aula climatizadas ou com recursos de acessibilidade para pessoas com deficiência ou mobilidade
+reduzida (dentro e fora do prédio escolar)
+                   Salas de aula climatizadas (com ar condicionado, aquecedor ou climatizador)
+
+                   Salas de aula com recursos de acessibilidade para pessoas com deficiência ou mobilidade reduzida
+
+40 – Quantidade de salas de aula com Cantinho da Leitura para a Educação Infantil e o Ensino fundamental (Anos iniciais)
+
+                   Salas de aula com Cantinho da Leitura para a Educação Infantil e o Ensino fundamental (Anos iniciais)
+
+
+
+EQUIPAMENTOS E RECURSOS TECNOLÓGICOS
+Equipamentos
+41 – Equipamentos existentes na escola para uso técnico e administrativo
+
+                                                                     Impressora                                              Nenhum dos
+    Antena parabólica         Copiadora         Impressora                                 Computadores            Scanner
+                                                                     multifuncional                                          equipamentos listados
+
+42 – Quantidade de equipamentos para o processo de ensino-aprendizagem
+
+                  Aparelho de DVD/Blu-ray
+
+                   Aparelho de som
+
+                   Aparelho de televisão
+
+                   Projetor multimídia (Data show)
+
+                  Lousa digital
+
+
+43 – Quantidade de computadores em uso pelos alunos
+
+                  Computadores de mesa (desktop)
+
+                   Computadores portáteis
+
+                   Tablets
+
+
+Recursos Tecnológicos
+44 – Rede local de interligação de computadores
+
+     A cabo                        Wireless                       Não há rede local interligando computadores
+
+45 – Acesso à internet
+
+    Não possui acesso à internet
+
+    Para uso administrativo
+
+     Para uso no processo de ensino-aprendizagem
+
+    Para uso dos alunos
+
+    Para uso da comunidade
+
+
+46 – Equipamentos que os alunos usam para acessar a internet da escola
+
+    Computadores de mesa, portáteis e tablets da escola (no laboratório de informática, biblioteca, sala de aula etc.)
+
+    Dispositivos pessoais (computadores portáteis, celulares, tablets etc.)
+
+47 – Internet banda larga
+
+     Sim                Não
+                                                                                                                                                5
+RECURSOS HUMANOS
+48 – Total de profissionais que atuam nas seguintes funções na escola
+
+                 Agrônomos(as), horticultores(as), técnicos(as) ou
+                 monitores(as) responsáveis pela gestão da área de                  Psicólogo(a) escolar
+                 horta, plantio e/ou produção agrícola
+                 Auxiliares de secretaria ou auxiliares administrativos,            Profissionais de preparação e segurança alimentar,
+                 atendentes                                                         cozinheiro(a), merendeiro(a) e auxiliar de cozinha
+                                                                                    Profissionais de apoio e supervisão pedagógica:
+                 Auxiliar de serviços gerais, porteiro(a), zelador(a),              pedagogo(a), coordenador(a) pedagógico(a), orientador(a)
+                 faxineiro(a), jardineiro(a)                                        educacional, supervisor(a) escolar e coordenador(a) da área
+                                                                                    de ensino
+                 Bibliotecário(a), auxiliar de biblioteca ou monitor(a)             Revisor(a) de texto Braille, assistente vidente (assistente de
+                 da sala de leitura                                                 revisão do texto em Braille)
+                 Bombeiro(a) brigadista, profissionais de assistência
+                 a saúde (urgência e emergência), enfermeiro(a),                    Secretário(a) escolar
+                 técnico(a) de enfermagem e socorrista.
+                                                                                    Segurança, guarda ou segurança patrimonial
+                 Coordenador(a) de turno/disciplinar
+                                                                                    Técnicos(as), monitores(as), supervisores(as) ou auxiliares
+                 Fonoaudiólogo(a)                                                   de laboratório(s), de apoio a tecnologias educacionais ou em
+                                                                                    multimeios/multimídias eletrônico-digitais
+                                                                                    Tradutor(a) e Intérprete de Libras para atendimento em
+                 Nutricionista
+                                                                                    outros ambientes da escola que não seja sala de aula
+
+                 Orientador(a) comunitário(a) ou assistente social                  Vice-diretor(a) ou diretor(a) adjunto(a), profissionais
+                                                                                    responsáveis pela gestão administrativa e/ou financeira
+
+     Não há funcionários para as funções listadas
+
+
+
+ORGANIZAÇÃO ESCOLAR
+Alimentação Escolar
+49 – Alimentação escolar para os alunos
+
+     Oferece                     Não oferece
+
+
+Estrutura e Organização Pedagógica
+50 – Escola indígena
+
+     Sim                         Não
+
+50a – Língua em que o ensino é ministrado
+
+     Língua Indígena          Código de Língua Indígena
+                              (até 3 línguas)1
+
+     Língua Portuguesa
+
+51 – Instrumentos e materiais socioculturais e/ou pedagógicos em uso na escola para o desenvolvimento de atividades
+de ensino-aprendizagem
+
+     Acervo multimídia                                                     Materiais para prática desportiva e recreação
+
+     Brinquedos para educação infantil                                     Materiais pedagógicos para a educação bilíngue de surdos
+
+     Conjunto de materiais científicos                                     Materiais pedagógicos para a educação das relações étnico-raciais
+
+     Equipamento para amplificação e difusão de som/áudio                  Materiais pedagógicos para a educação do campo
+
+     Equipamentos e instrumentos para atividades em área de horta,
+                                                                           Materiais pedagógicos para a educação escolar indígena
+     plantio e/ou produção agrícola
+     Instrumentos musicais para conjunto/banda/fanfarra e/ou aulas
+                                                                           Materiais pedagógicos para a educação escolar quilombola
+     de música
+     Jogos educativos                                                      Materiais pedagógicos para a educação especial
+
+     Materiais para atividades culturais e artísticas                      Nenhum dos instrumentos listados
+
+     Materiais para educação profissional
+                                                                                                                                                66
+52 – A escola desenvolve ações na área de educação ambiental
+
+      Sim                          Não
+
+52a – Informe de qual(quais) forma(s) a educação ambiental é desenvolvida na escola
+
+      Como conteúdo dos componentes/campos de experiências presentes no currículo
+
+      Como um componente curricular especial,específico, flexível ou eletivo
+
+      Como um eixo estruturante do currículo
+
+      Em eventos
+
+      Em projetos transversais ou interdisciplinares
+
+      Nenhuma das opções listadas
+
+53 – O projeto político pedagógico ou a proposta pedagógica da escola (conforme art. 12 da LDB) foi atualizada nos últimos 12
+meses até a data de referência
+      Sim                          Não                     A escola não possui projeto político pedagógico/proposta pedagógica
+
+
+
+Participação e Integração Escola-Comunidade
+54 – Órgãos colegiados em funcionamento na escola
+
+      Não há órgãos colegiados em funcionamento            Associação de pais e mestres                      Grêmio estudantil
+
+      Associação de pais                                   Conselho escolar                                   Outros
+
+55 – A escola compartilha espaços para atividades de integração escola-comunidade
+
+     Sim                           Não
+
+56 – A escola usa espaços e equipamentos do entorno escolar para atividades regulares com os alunos
+
+     Sim                           Não
+
+57 – A escola possui site ou blog ou página em redes sociais para comunicação institucional
+
+      Sim                          Não
+
+
+Critérios de Acesso
+58 – A escola faz exame de seleção para ingresso de seus alunos (avaliação por prova e/ou análise curricular)
+
+      Sim                          Não
+
+
+59 – Reserva de vagas por sistema de cotas para grupos específicos de alunos
+
+      Sem reservas de vagas para sistema de cotas (ampla concorrência)
+
+      Autodeclarado preto, pardo ou indígena (PPI)
+
+      Condição de renda
+
+      Oriundo de escola pública
+
+      Pessoa com deficiência (PCD)
+
+     Outros grupos que não os listados
+                               6
+
+                                                                                                                                 7
+

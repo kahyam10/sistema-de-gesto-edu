@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import { z } from "zod";
 
 // Schemas de validação
@@ -28,6 +28,9 @@ const createSalaSchema = z.object({
 
 const updateSalaSchema = createSalaSchema.partial();
 
+// Registrado sem prefix em server.ts: as rotas vivem sob dois caminhos-base
+// distintos (/api/escolas/:escolaId/salas e /api/salas/:id), então um único
+// prefix não se aplica — os caminhos completos ficam hardcoded aqui.
 export async function salasRoutes(app: FastifyInstance) {
   // Listar todas as salas de uma escola
   app.get(
@@ -106,24 +109,24 @@ export async function salasRoutes(app: FastifyInstance) {
           return reply.status(404).send({ error: "Escola não encontrada" });
         }
 
-        const sala = await prisma.sala.create({
-          data: {
-            ...data,
-            escolaId,
-          },
-        });
-
-        // Atualizar quantidade de salas da escola se for sala de aula
-        if (data.tipo === "AULA") {
-          await prisma.escola.update({
-            where: { id: escolaId },
+        const sala = await prisma.$transaction(async (tx) => {
+          const nova = await tx.sala.create({
             data: {
-              quantidadeSalas: {
-                increment: 1,
-              },
+              ...data,
+              escolaId,
             },
           });
-        }
+
+          // Atualizar quantidade de salas da escola se for sala de aula
+          if (data.tipo === "AULA") {
+            await tx.escola.update({
+              where: { id: escolaId },
+              data: { quantidadeSalas: { increment: 1 } },
+            });
+          }
+
+          return nova;
+        });
 
         return reply.status(201).send(sala);
       } catch (error) {
@@ -159,26 +162,28 @@ export async function salasRoutes(app: FastifyInstance) {
           return reply.status(404).send({ error: "Sala não encontrada" });
         }
 
-        // Se o tipo mudou de/para AULA, atualizar contagem
-        if (data.tipo && data.tipo !== salaExistente.tipo) {
-          if (salaExistente.tipo === "AULA" && data.tipo !== "AULA") {
-            // Era sala de aula, não é mais
-            await prisma.escola.update({
-              where: { id: salaExistente.escolaId },
-              data: { quantidadeSalas: { decrement: 1 } },
-            });
-          } else if (salaExistente.tipo !== "AULA" && data.tipo === "AULA") {
-            // Não era sala de aula, agora é
-            await prisma.escola.update({
-              where: { id: salaExistente.escolaId },
-              data: { quantidadeSalas: { increment: 1 } },
-            });
+        const sala = await prisma.$transaction(async (tx) => {
+          // Se o tipo mudou de/para AULA, atualizar contagem
+          if (data.tipo && data.tipo !== salaExistente.tipo) {
+            if (salaExistente.tipo === "AULA" && data.tipo !== "AULA") {
+              // Era sala de aula, não é mais
+              await tx.escola.update({
+                where: { id: salaExistente.escolaId },
+                data: { quantidadeSalas: { decrement: 1 } },
+              });
+            } else if (salaExistente.tipo !== "AULA" && data.tipo === "AULA") {
+              // Não era sala de aula, agora é
+              await tx.escola.update({
+                where: { id: salaExistente.escolaId },
+                data: { quantidadeSalas: { increment: 1 } },
+              });
+            }
           }
-        }
 
-        const sala = await prisma.sala.update({
-          where: { id },
-          data,
+          return tx.sala.update({
+            where: { id },
+            data,
+          });
         });
 
         return reply.send(sala);
@@ -210,17 +215,19 @@ export async function salasRoutes(app: FastifyInstance) {
           return reply.status(404).send({ error: "Sala não encontrada" });
         }
 
-        await prisma.sala.delete({
-          where: { id },
-        });
-
-        // Atualizar quantidade de salas se era sala de aula
-        if (sala.tipo === "AULA") {
-          await prisma.escola.update({
-            where: { id: sala.escolaId },
-            data: { quantidadeSalas: { decrement: 1 } },
+        await prisma.$transaction(async (tx) => {
+          await tx.sala.delete({
+            where: { id },
           });
-        }
+
+          // Atualizar quantidade de salas se era sala de aula
+          if (sala.tipo === "AULA") {
+            await tx.escola.update({
+              where: { id: sala.escolaId },
+              data: { quantidadeSalas: { decrement: 1 } },
+            });
+          }
+        });
 
         return reply.status(204).send();
       } catch (error) {

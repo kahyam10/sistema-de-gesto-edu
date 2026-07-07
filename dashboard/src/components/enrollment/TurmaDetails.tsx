@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, GraduationCap, ChalkboardTeacher, UserCircle, Plus, X, Spinner } from '@phosphor-icons/react';
+import { ArrowLeft, GraduationCap, ChalkboardTeacher, UserCircle, Plus, X, Spinner, ClipboardText } from '@phosphor-icons/react';
 import type { Turma, Matricula, ProfissionalEducacao } from '@/lib/api';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -18,6 +19,7 @@ import {
   useEscolas,
   useEtapas,
   useSeries,
+  useNiveisEnsino,
   useAddProfessorToTurma,
   useRemoveProfessorFromTurma,
 } from '@/hooks/useApi';
@@ -28,12 +30,14 @@ interface TurmaDetailsProps {
 }
 
 export function TurmaDetails({ turma, onBack }: TurmaDetailsProps) {
+  const router = useRouter();
   const { data: currentTurma, isLoading: loadingTurma } = useTurma(turma.id);
   const { data: matriculas = [] } = useMatriculas({ turmaId: turma.id });
   const { data: profissionais = [] } = useProfissionais();
   const { data: escolas = [] } = useEscolas();
   const { data: etapas = [] } = useEtapas();
   const { data: series = [] } = useSeries();
+  const { data: niveis = [] } = useNiveisEnsino();
 
   const addProfessor = useAddProfessorToTurma();
   const removeProfessor = useRemoveProfessorFromTurma();
@@ -76,8 +80,9 @@ export function TurmaDetails({ turma, onBack }: TurmaDetailsProps) {
   const getSeriNome = (serieId: string) => {
     const serie = series.find(s => s.id === serieId);
     if (!serie) return 'N/A';
-    const etapa = etapas.find(e => e.id === serie.etapaId);
-    return etapa ? etapa.nome + ' - ' + serie.nome : serie.nome;
+    const nivel = niveis.find(n => n.id === serie.nivelId);
+    const etapa = etapas.find(e => e.id === nivel?.etapaId);
+    return etapa && nivel ? `${etapa.nome} - ${nivel.nome} - ${serie.nome}` : serie.nome;
   };
 
   const handleAddProfessor = async (profissionalId: string, tipo: string) => {
@@ -129,6 +134,13 @@ export function TurmaDetails({ turma, onBack }: TurmaDetailsProps) {
             {escola?.nome} - {getSeriNome(turmaData.serieId)}
           </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => router.push(`/questionario-turma/${turmaData.id}`)}
+        >
+          <ClipboardText size={18} />
+          Censo da Turma
+        </Button>
         <Badge variant={turmaData.ativo ? 'default' : 'secondary'} className="text-sm px-3 py-1">
           {turmaData.ativo ? 'Ativa' : 'Inativa'}
         </Badge>

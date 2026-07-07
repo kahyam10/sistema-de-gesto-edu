@@ -1,5 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { calendarioService } from "../services/calendario.service.js";
+import {
+  createAnoLetivoSchema,
+  updateAnoLetivoSchema,
+  createEventoSchema,
+  updateEventoSchema,
+} from "../schemas/index.js";
 
 export async function calendarioRoutes(app: FastifyInstance) {
   // ==================== ANO LETIVO ====================
@@ -68,17 +74,9 @@ export async function calendarioRoutes(app: FastifyInstance) {
   // Criar ano letivo
   app.post(
     "/anos-letivos",
-    async (
-      request: FastifyRequest<{
-        Body: {
-          ano: number;
-          ativo?: boolean;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { ano, ativo } = request.body;
+        const { ano, ativo } = createAnoLetivoSchema.parse(request.body);
         const anoLetivo = await calendarioService.createAnoLetivo({
           ano,
           ativo,
@@ -96,18 +94,12 @@ export async function calendarioRoutes(app: FastifyInstance) {
   app.put(
     "/anos-letivos/:id",
     async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          ano?: number;
-          ativo?: boolean;
-        };
-      }>,
+      request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
       try {
         const { id } = request.params;
-        const { ano, ativo } = request.body;
+        const { ano, ativo } = updateAnoLetivoSchema.parse(request.body);
         const anoLetivo = await calendarioService.updateAnoLetivo(id, {
           ano,
           ativo,
@@ -252,35 +244,10 @@ export async function calendarioRoutes(app: FastifyInstance) {
   // Criar evento
   app.post(
     "/eventos",
-    async (
-      request: FastifyRequest<{
-        Body: {
-          titulo: string;
-          descricao?: string;
-          dataInicio: string;
-          dataFim?: string;
-          horaInicio?: string;
-          horaFim?: string;
-          tipo: string;
-          escopo?: string;
-          recorrente?: boolean;
-          tipoRecorrencia?: string;
-          diaRecorrencia?: string;
-          cor?: string;
-          reduzDiaLetivo?: boolean;
-          anoLetivoId: string;
-          escolaId?: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const data = request.body;
-        const evento = await calendarioService.createEvento({
-          ...data,
-          dataInicio: new Date(data.dataInicio),
-          dataFim: data.dataFim ? new Date(data.dataFim) : undefined,
-        });
+        const data = createEventoSchema.parse(request.body);
+        const evento = await calendarioService.createEvento(data);
         return reply.status(201).send(evento);
       } catch (error: unknown) {
         const message =
@@ -294,35 +261,13 @@ export async function calendarioRoutes(app: FastifyInstance) {
   app.put(
     "/eventos/:id",
     async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          titulo?: string;
-          descricao?: string;
-          dataInicio?: string;
-          dataFim?: string;
-          horaInicio?: string;
-          horaFim?: string;
-          tipo?: string;
-          escopo?: string;
-          recorrente?: boolean;
-          tipoRecorrencia?: string;
-          diaRecorrencia?: string;
-          cor?: string;
-          reduzDiaLetivo?: boolean;
-          escolaId?: string;
-        };
-      }>,
+      request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
       try {
         const { id } = request.params;
-        const data = request.body;
-        const evento = await calendarioService.updateEvento(id, {
-          ...data,
-          dataInicio: data.dataInicio ? new Date(data.dataInicio) : undefined,
-          dataFim: data.dataFim ? new Date(data.dataFim) : undefined,
-        });
+        const data = updateEventoSchema.parse(request.body);
+        const evento = await calendarioService.updateEvento(id, data);
         return reply.send(evento);
       } catch (error: unknown) {
         const message =

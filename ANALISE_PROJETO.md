@@ -4,6 +4,14 @@
 **Autor Original:** Kahyam Souza Santos - KSsoft  
 **Repositório:** sistema-de-gesto-edu
 
+> ⚠️ **ATUALIZAÇÃO (07/07/2026):** esta análise é um retrato de nov/2025 e está
+> superada em pontos importantes: o backend Fastify + Prisma **existe e está
+> completo** para o domínio atual, o frontend migrou de Vite/Spark para
+> **Next.js 15**, a API é autenticada (JWT + RBAC) e há testes Vitest.
+> A análise atualizada, o status real por módulo e o plano de
+> finalização/deploy estão em
+> **[PLANO_FINALIZACAO_E_DEPLOY.md](PLANO_FINALIZACAO_E_DEPLOY.md)**.
+
 ---
 
 ## 🎯 Visão Geral do Projeto

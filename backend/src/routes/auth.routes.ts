@@ -1,10 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { authService } from "../services/index.js";
 import { registerSchema, loginSchema } from "../schemas/index.js";
+import { adminMiddleware } from "../middleware/auth.js";
 
 export async function authRoutes(app: FastifyInstance) {
-  // Registro de usuário
-  app.post("/register", async (request, reply) => {
+  // Registro de usuário — restrito a ADMIN/SEMEC (o schema aceita role,
+  // então registro público permitiria criar contas ADMIN)
+  app.post("/register", { preHandler: [adminMiddleware] }, async (request, reply) => {
     try {
       const data = registerSchema.parse(request.body);
       const user = await authService.register(data);

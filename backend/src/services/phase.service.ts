@@ -1,24 +1,8 @@
-import { prisma } from "../lib/prisma";
-
-export interface CreatePhaseData {
-  name: string;
-  description: string;
-  monthRange: string;
-  duration: string;
-  ordem?: number;
-  status?: string;
-  moduleIds?: string[];
-}
-
-export interface UpdatePhaseData {
-  name?: string;
-  description?: string;
-  monthRange?: string;
-  duration?: string;
-  ordem?: number;
-  status?: string;
-  moduleIds?: string[];
-}
+import { prisma } from "../lib/prisma.js";
+import type {
+  CreatePhaseInput as CreatePhaseData,
+  UpdatePhaseInput as UpdatePhaseData,
+} from "../schemas/index.js";
 
 export const phaseService = {
   async findAll() {

@@ -1,6 +1,8 @@
 export { authRoutes } from "./auth.routes.js";
 export { seriesRoutes } from "./series.routes.js";
+export { niveisEnsinoRoutes } from "./niveis-ensino.routes.js";
 export { etapasRoutes } from "./etapas.routes.js";
+export { tiposEducacaoRoutes } from "./tipos-educacao.routes.js";
 export { escolasRoutes } from "./escolas.routes.js";
 export { turmasRoutes } from "./turmas.routes.js";
 export { matriculasRoutes } from "./matriculas.routes.js";

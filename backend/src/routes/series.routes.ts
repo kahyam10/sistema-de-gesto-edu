@@ -39,16 +39,16 @@ export async function seriesRoutes(app: FastifyInstance) {
     }
   );
 
-  // Buscar séries por etapa
+  // Buscar séries por nível de ensino
   app.get(
-    "/etapa/:etapaId",
+    "/nivel/:nivelId",
     async (
-      request: FastifyRequest<{ Params: { etapaId: string } }>,
+      request: FastifyRequest<{ Params: { nivelId: string } }>,
       reply: FastifyReply
     ) => {
       try {
-        const { etapaId } = request.params;
-        const series = await serieService.findByEtapa(etapaId);
+        const { nivelId } = request.params;
+        const series = await serieService.findByNivel(nivelId);
         return reply.send(series);
       } catch (error: unknown) {
         const message =

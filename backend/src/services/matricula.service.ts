@@ -38,6 +38,7 @@ export class MatriculaService {
         escola: true,
         etapa: true,
         turma: { include: { serie: true } },
+        transferencias: { orderBy: { createdAt: "desc" } },
       },
     });
   }
@@ -143,14 +144,42 @@ export class MatriculaService {
     });
   }
 
-  async transferir(id: string, novaEscolaId: string, novaTurmaId?: string) {
-    return prisma.matricula.update({
-      where: { id },
-      data: {
-        escolaId: novaEscolaId,
-        turmaId: novaTurmaId || null,
-        status: "TRANSFERIDA",
-      },
+  async transferir(
+    id: string,
+    novaEscolaId: string,
+    novaTurmaId?: string,
+    motivo?: string
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const atual = await tx.matricula.findUnique({ where: { id } });
+      if (!atual) throw new Error("Matrícula não encontrada");
+
+      await tx.transferenciaMatricula.create({
+        data: {
+          matriculaId: id,
+          escolaOrigemId: atual.escolaId,
+          escolaDestinoId: novaEscolaId,
+          turmaOrigemId: atual.turmaId,
+          turmaDestinoId: novaTurmaId || null,
+          motivo: motivo || null,
+        },
+      });
+
+      return tx.matricula.update({
+        where: { id },
+        data: {
+          escolaId: novaEscolaId,
+          turmaId: novaTurmaId || null,
+          status: "TRANSFERIDA",
+        },
+      });
+    });
+  }
+
+  async getTransferencias(id: string) {
+    return prisma.transferenciaMatricula.findMany({
+      where: { matriculaId: id },
+      orderBy: { createdAt: "desc" },
     });
   }
 

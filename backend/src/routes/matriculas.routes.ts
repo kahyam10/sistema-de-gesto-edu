@@ -3,6 +3,7 @@ import { matriculaService } from "../services/index.js";
 import {
   createMatriculaSchema,
   updateMatriculaSchema,
+  transferirMatriculaSchema,
 } from "../schemas/index.js";
 
 interface MatriculaFilters {
@@ -222,22 +223,19 @@ export async function matriculasRoutes(app: FastifyInstance) {
   app.patch(
     "/:id/transferir",
     async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { escolaId: string; turmaId?: string };
-      }>,
+      request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
       try {
         const { id } = request.params;
-        const { escolaId, turmaId } = request.body as {
-          escolaId: string;
-          turmaId?: string;
-        };
+        const { escolaId, turmaId, motivo } = transferirMatriculaSchema.parse(
+          request.body
+        );
         const matricula = await matriculaService.transferir(
           id,
           escolaId,
-          turmaId
+          turmaId,
+          motivo
         );
         return reply.send(matricula);
       } catch (error: unknown) {
@@ -246,6 +244,27 @@ export async function matriculasRoutes(app: FastifyInstance) {
             ? error.message
             : "Erro ao transferir matrícula";
         return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // Histórico de transferências da matrícula
+  app.get(
+    "/:id/transferencias",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { id } = request.params;
+        const transferencias = await matriculaService.getTransferencias(id);
+        return reply.send(transferencias);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao buscar transferências";
+        return reply.status(500).send({ error: message });
       }
     }
   );

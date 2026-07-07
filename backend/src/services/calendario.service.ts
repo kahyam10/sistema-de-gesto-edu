@@ -712,7 +712,7 @@ export class CalendarioService {
     eventos.forEach((evento) => {
       if (evento.tipo === "SABADO_LETIVO") {
         // Adiciona todos os sábados do intervalo do evento
-        let current = new Date(evento.dataInicio);
+        const current = new Date(evento.dataInicio);
         const end = evento.dataFim ? new Date(evento.dataFim) : current;
         while (current <= end) {
           if (current.getDay() === 6) {
@@ -725,7 +725,7 @@ export class CalendarioService {
 
       if (evento.reduzDiaLetivo) {
         // Adiciona todos os dias do intervalo do evento
-        let current = new Date(evento.dataInicio);
+        const current = new Date(evento.dataInicio);
         const end = evento.dataFim ? new Date(evento.dataFim) : current;
         while (current <= end) {
           diasReduzidosSet.add(current.toISOString().split("T")[0]);

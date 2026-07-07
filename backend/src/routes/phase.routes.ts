@@ -1,48 +1,27 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { phaseService } from "../services/phase.service";
-
-interface CreatePhaseBody {
-  name: string;
-  description: string;
-  monthRange: string;
-  duration: string;
-  ordem?: number;
-  status?: string;
-  moduleIds?: string[];
-}
-
-interface UpdatePhaseBody {
-  name?: string;
-  description?: string;
-  monthRange?: string;
-  duration?: string;
-  ordem?: number;
-  status?: string;
-  moduleIds?: string[];
-}
+import { phaseService } from "../services/phase.service.js";
+import { createPhaseSchema, updatePhaseSchema } from "../schemas/index.js";
 
 interface IdParams {
   id: string;
 }
 
+// Registrado em server.ts com prefix "/api/phases"
 export async function phaseRoutes(app: FastifyInstance) {
-  // GET /api/phases - Listar todas as fases
-  app.get(
-    "/api/phases",
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const phases = await phaseService.findAll();
-        return reply.send(phases);
-      } catch (error) {
-        console.error("Error listing phases:", error);
-        return reply.status(500).send({ error: "Erro ao listar fases" });
-      }
+  // Listar todas as fases
+  app.get("/", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const phases = await phaseService.findAll();
+      return reply.send(phases);
+    } catch (error) {
+      console.error("Error listing phases:", error);
+      return reply.status(500).send({ error: "Erro ao listar fases" });
     }
-  );
+  });
 
-  // GET /api/phases/:id - Buscar fase por ID
+  // Buscar fase por ID
   app.get(
-    "/api/phases/:id",
+    "/:id",
     async (
       request: FastifyRequest<{ Params: IdParams }>,
       reply: FastifyReply
@@ -63,48 +42,29 @@ export async function phaseRoutes(app: FastifyInstance) {
     }
   );
 
-  // POST /api/phases - Criar nova fase
-  app.post(
-    "/api/phases",
-    async (
-      request: FastifyRequest<{ Body: CreatePhaseBody }>,
-      reply: FastifyReply
-    ) => {
-      try {
-        const data = request.body;
-
-        if (
-          !data.name ||
-          !data.description ||
-          !data.monthRange ||
-          !data.duration
-        ) {
-          return reply
-            .status(400)
-            .send({
-              error: "Nome, descrição, período e duração são obrigatórios",
-            });
-        }
-
-        const phase = await phaseService.create(data);
-        return reply.status(201).send(phase);
-      } catch (error) {
-        console.error("Error creating phase:", error);
-        return reply.status(500).send({ error: "Erro ao criar fase" });
-      }
+  // Criar nova fase
+  app.post("/", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const data = createPhaseSchema.parse(request.body);
+      const phase = await phaseService.create(data);
+      return reply.status(201).send(phase);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Erro ao criar fase";
+      return reply.status(400).send({ error: message });
     }
-  );
+  });
 
-  // PUT /api/phases/:id - Atualizar fase
+  // Atualizar fase
   app.put(
-    "/api/phases/:id",
+    "/:id",
     async (
-      request: FastifyRequest<{ Params: IdParams; Body: UpdatePhaseBody }>,
+      request: FastifyRequest<{ Params: IdParams }>,
       reply: FastifyReply
     ) => {
       try {
         const { id } = request.params;
-        const data = request.body;
+        const data = updatePhaseSchema.parse(request.body);
 
         const existing = await phaseService.findById(id);
         if (!existing) {
@@ -113,16 +73,17 @@ export async function phaseRoutes(app: FastifyInstance) {
 
         const phase = await phaseService.update(id, data);
         return reply.send(phase);
-      } catch (error) {
-        console.error("Error updating phase:", error);
-        return reply.status(500).send({ error: "Erro ao atualizar fase" });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Erro ao atualizar fase";
+        return reply.status(400).send({ error: message });
       }
     }
   );
 
-  // DELETE /api/phases/:id - Excluir fase
+  // Excluir fase
   app.delete(
-    "/api/phases/:id",
+    "/:id",
     async (
       request: FastifyRequest<{ Params: IdParams }>,
       reply: FastifyReply

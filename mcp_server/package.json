@@ -1,0 +1,32 @@
+{
+  "name": "nextjs-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server para otimização de desenvolvimento Next.js",
+  "type": "module",
+  "bin": {
+    "nextjs-mcp-server": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js",
+    "dev": "tsc --watch",
+    "start": "node build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "mcp",
+    "nextjs",
+    "development",
+    "tools"
+  ],
+  "license": "MIT"
+}

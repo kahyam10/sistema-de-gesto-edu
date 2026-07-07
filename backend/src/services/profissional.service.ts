@@ -100,33 +100,42 @@ export class ProfissionalService {
   async update(id: string, data: UpdateProfissionalInput) {
     const { escolasIds, ...profissionalData } = data;
 
-    // Se escolasIds foi fornecido, atualiza as escolas
-    if (escolasIds !== undefined) {
-      // Remove escolas antigas
-      await prisma.escolaProfissional.deleteMany({
-        where: { profissionalId: id },
-      });
-
-      // Adiciona novas escolas
-      if (escolasIds.length > 0) {
-        await prisma.escolaProfissional.createMany({
-          data: escolasIds.map((escolaId: string) => ({
-            profissionalId: id,
-            escolaId,
-          })),
+    return prisma.$transaction(async (tx) => {
+      // Se escolasIds foi fornecido, atualiza as escolas
+      if (escolasIds !== undefined) {
+        // Remove escolas antigas
+        await tx.escolaProfissional.deleteMany({
+          where: { profissionalId: id },
         });
-      }
-    }
 
+        // Adiciona novas escolas
+        if (escolasIds.length > 0) {
+          await tx.escolaProfissional.createMany({
+            data: escolasIds.map((escolaId: string) => ({
+              profissionalId: id,
+              escolaId,
+            })),
+          });
+        }
+      }
+
+      return tx.profissionalEducacao.update({
+        where: { id },
+        data: {
+          ...profissionalData,
+          email: profissionalData.email || null,
+        },
+        include: {
+          escolas: { include: { escola: true } },
+        },
+      });
+    });
+  }
+
+  async updateCenso(id: string, dados: unknown) {
     return prisma.profissionalEducacao.update({
       where: { id },
-      data: {
-        ...profissionalData,
-        email: profissionalData.email || null,
-      },
-      include: {
-        escolas: { include: { escola: true } },
-      },
+      data: { dadosCenso: JSON.stringify(dados) },
     });
   }
 

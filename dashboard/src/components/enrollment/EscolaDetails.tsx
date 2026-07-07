@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -41,6 +42,14 @@ import {
   BookOpen,
   Door,
   CalendarDots,
+  UserCircle,
+  ClipboardText,
+  Bell,
+  CheckCircle,
+  XCircle,
+  Clock,
+  FileText,
+  IdentificationCard,
 } from "@phosphor-icons/react";
 import { Escola, Turma, ProfissionalEducacao, EtapaEnsino } from "@/lib/api";
 import {
@@ -69,7 +78,9 @@ import {
   useEscolas,
   useUpdateEscola,
   useProfissionaisByEscola,
+  useProfissionais,
   useEtapas,
+  useNiveisEnsino,
 } from "@/hooks/useApi";
 import { TurmaDetails } from "./TurmaDetails";
 import { SalasManager } from "./SalasManager";
@@ -112,12 +123,20 @@ const tipoBadgeColors: Record<string, string> = {
 };
 
 export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
+  const router = useRouter();
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: allTurmas, isLoading: loadingTurmas } = useTurmas();
   const { data: allSeries, isLoading: loadingSeries } = useSeries();
+  const { data: allNiveis } = useNiveisEnsino();
   const { data: allMatriculas } = useMatriculas();
   const { data: profissionais = [], isLoading: loadingProfissionais } = useProfissionaisByEscola(escolaId);
+  const { data: allProfissionais = [] } = useProfissionais({ ativo: true });
   const { data: etapas = [] } = useEtapas();
+
+  // Filtrar profissionais que podem ser diretores
+  const diretoresDisponiveis = allProfissionais.filter((p) => 
+    ["PROFESSOR", "DIRETOR", "COORDENADOR"].includes(p.tipo) && p.ativo
+  );
 
   const createTurma = useCreateTurma();
   const updateTurma = useUpdateTurma();
@@ -143,6 +162,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     quantidadeSalas: 0,
     ativo: true,
     etapasIds: [] as string[],
+    diretorId: "" as string,
   });
   const [formData, setFormData] = useState({
     serieId: "",
@@ -179,18 +199,83 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     : !turnoAtingidoLimite;
   
   // Séries disponíveis baseadas nas etapas da escola
+  // Hierarquia: Etapa -> Nível -> Série
   const etapasIds = escola?.etapas?.map((e) => e.etapa.id) || [];
+  const niveisIds = (allNiveis || [])
+    .filter((n) => etapasIds.includes(n.etapaId))
+    .map((n) => n.id);
   const seriesDisponiveis = (allSeries || [])
-    .filter((s) => etapasIds.includes(s.etapaId))
-    .map((s) => ({
-      ...s,
-      etapaNome: escola?.etapas?.find((e) => e.etapa.id === s.etapaId)?.etapa.nome || "",
-    }));
+    .filter((s) => niveisIds.includes(s.nivelId))
+    .map((s) => {
+      const nivel = allNiveis?.find((n) => n.id === s.nivelId);
+      const etapa = etapas?.find((e) => e.id === nivel?.etapaId);
+      return {
+        ...s,
+        nivelNome: nivel?.nome || "",
+        etapaNome: etapa?.nome || "",
+      };
+    });
 
   // Calcular estatísticas
   const totalAlunos = turmas.reduce((acc, t) => acc + (t.matriculas?.length || 0), 0);
   const capacidadeTotal = turmas.reduce((acc, t) => acc + t.capacidadeMaxima, 0);
   const vagasDisponiveis = capacidadeTotal - totalAlunos;
+
+  // Status dos questionários do censo (persistidos no banco via dadosCenso)
+  const questionarioEscolaPreenchido = !!escola?.dadosCenso;
+  const questionarioGestorPreenchido = !!escola?.diretor?.dadosCenso;
+
+  // Gerar lista de notificações/pendências
+  const notificacoes = [];
+  
+  if (!questionarioEscolaPreenchido) {
+    notificacoes.push({
+      id: "questionario-escola",
+      tipo: "warning" as const,
+      titulo: "Questionário da Escola Pendente",
+      descricao: "O questionário do Censo Escolar 2025 ainda não foi preenchido para esta escola.",
+      acao: () => router.push(`/questionario-escola/${escolaId}`),
+      acaoLabel: "Preencher agora",
+    });
+  }
+
+  if (!escola?.diretor) {
+    notificacoes.push({
+      id: "sem-gestor",
+      tipo: "error" as const,
+      titulo: "Gestor Escolar Não Definido",
+      descricao: "Esta escola não possui um gestor/diretor atribuído. Configure um gestor para preencher o questionário.",
+      acao: () => setIsEditEscolaOpen(true),
+      acaoLabel: "Definir gestor",
+    });
+  } else if (!questionarioGestorPreenchido) {
+    notificacoes.push({
+      id: "questionario-gestor",
+      tipo: "warning" as const,
+      titulo: "Questionário do Gestor Pendente",
+      descricao: `O questionário do gestor ${escola.diretor.nome} ainda não foi preenchido.`,
+      acao: () => router.push(`/questionario-gestor/${escolaId}`),
+      acaoLabel: "Preencher agora",
+    });
+  }
+
+  if (turmas.length === 0) {
+    notificacoes.push({
+      id: "sem-turmas",
+      tipo: "info" as const,
+      titulo: "Nenhuma Turma Cadastrada",
+      descricao: "Esta escola ainda não possui turmas cadastradas para o ano letivo atual.",
+      acao: () => setIsFormOpen(true),
+      acaoLabel: "Criar turma",
+    });
+  }
+
+  // Determinar status geral da escola
+  const statusEscola = notificacoes.some((n) => n.tipo === "error")
+    ? "pendente"
+    : notificacoes.some((n) => n.tipo === "warning")
+    ? "incompleto"
+    : "ok";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,6 +344,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
         quantidadeSalas: escola.quantidadeSalas || 0,
         ativo: escola.ativo,
         etapasIds: escola.etapas?.map((e) => e.etapa.id) || [],
+        diretorId: escola.diretorId || "",
       });
       setIsEditEscolaOpen(true);
     }
@@ -278,6 +364,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
           quantidadeSalas: escolaFormData.quantidadeSalas,
           ativo: escolaFormData.ativo,
           etapasIds: escolaFormData.etapasIds,
+          diretorId: escolaFormData.diretorId || null,
         },
       });
       setIsEditEscolaOpen(false);
@@ -400,8 +487,13 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
             Código: {escola.codigo}
             {escola.endereco && ` • ${escola.endereco}`}
           </p>
+
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => router.push(`/questionario-escola/${escolaId}`)}>
+            <ClipboardText className="h-4 w-4 mr-2" />
+            Questionário
+          </Button>
           <Button variant="outline" onClick={() => setViewingCalendario(true)}>
             <CalendarDots className="h-4 w-4 mr-2" />
             Calendário
@@ -482,6 +574,182 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Seção de Notificações/Pendências */}
+      {notificacoes.length > 0 && (
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Bell className="h-5 w-5 text-amber-500" />
+              Pendências e Notificações
+              <Badge variant="secondary" className="ml-2">
+                {notificacoes.length}
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Itens que precisam de atenção para completar o cadastro da escola
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {notificacoes.map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg border ${
+                    notif.tipo === "error"
+                      ? "bg-red-50 border-red-200"
+                      : notif.tipo === "warning"
+                      ? "bg-amber-50 border-amber-200"
+                      : "bg-blue-50 border-blue-200"
+                  }`}
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    {notif.tipo === "error" ? (
+                      <XCircle className="h-5 w-5 text-red-500" />
+                    ) : notif.tipo === "warning" ? (
+                      <Clock className="h-5 w-5 text-amber-500" />
+                    ) : (
+                      <Bell className="h-5 w-5 text-blue-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{notif.titulo}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {notif.descricao}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={notif.tipo === "error" ? "destructive" : "outline"}
+                    onClick={notif.acao}
+                    className="flex-shrink-0"
+                  >
+                    {notif.acaoLabel}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Status Geral da Escola */}
+      {notificacoes.length === 0 && (
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-green-500" />
+              <div>
+                <p className="font-medium">Cadastro Completo</p>
+                <p className="text-sm text-muted-foreground">
+                  Todos os formulários e informações da escola estão preenchidos.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Card do Gestor Escolar */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <IdentificationCard className="h-5 w-5" />
+                Gestor Escolar
+              </CardTitle>
+              <CardDescription>
+                Diretor(a) responsável pela gestão da escola
+              </CardDescription>
+            </div>
+            {escola.diretor && (
+              <Badge
+                variant={questionarioGestorPreenchido ? "default" : "secondary"}
+                className={questionarioGestorPreenchido ? "bg-green-100 text-green-800" : ""}
+              >
+                {questionarioGestorPreenchido ? (
+                  <>
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Questionário Preenchido
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-3 w-3 mr-1" />
+                    Questionário Pendente
+                  </>
+                )}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {escola.diretor ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-100 rounded-full">
+                  <UserCircle className="h-8 w-8 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-lg">{escola.diretor.nome}</p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    {escola.diretor.email && (
+                      <span className="flex items-center gap-1">
+                        <Envelope className="h-3 w-3" />
+                        {escola.diretor.email}
+                      </span>
+                    )}
+                    {escola.diretor.telefone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {escola.diretor.telefone}
+                      </span>
+                    )}
+                  </div>
+                  {escola.diretor.formacao && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Formação: {escola.diretor.formacao}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/questionario-gestor/${escolaId}`)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {questionarioGestorPreenchido ? "Ver Questionário" : "Preencher Questionário"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditEscolaOpen(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <div className="p-4 bg-muted rounded-full w-fit mx-auto mb-4">
+                <UserCircle className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-muted-foreground">
+                Nenhum gestor definido
+              </p>
+              <p className="text-sm text-muted-foreground mt-1 mb-4">
+                Defina um gestor/diretor para esta escola
+              </p>
+              <Button onClick={() => setIsEditEscolaOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Definir Gestor
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Informações da escola */}
       <Card>
@@ -770,7 +1038,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                 <SelectContent>
                   {seriesDisponiveis.map((serie) => (
                     <SelectItem key={serie.id} value={serie.id}>
-                      {serie.nome} ({serie.etapaNome})
+                      {serie.nome} ({serie.nivelNome} - {serie.etapaNome})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1111,6 +1379,39 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <UserCircle className="h-4 w-4" />
+                Diretor/Gestor Escolar
+              </Label>
+              <Select
+                value={escolaFormData.diretorId || "sem_diretor"}
+                onValueChange={(value) =>
+                  setEscolaFormData({
+                    ...escolaFormData,
+                    diretorId: value === "sem_diretor" ? "" : value,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o diretor da escola" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sem_diretor">
+                    <span className="text-muted-foreground">Sem diretor definido</span>
+                  </SelectItem>
+                  {diretoresDisponiveis.map((prof) => (
+                    <SelectItem key={prof.id} value={prof.id}>
+                      {prof.nome} - {prof.tipo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                O diretor deve ser um profissional cadastrado como Professor, Diretor ou Coordenador
+              </p>
             </div>
 
             <div className="flex items-center space-x-2">

@@ -11,7 +11,15 @@ export class TurmaService {
       where: filters,
       include: {
         escola: true,
-        serie: { include: { etapa: true } },
+        serie: {
+          include: {
+            nivel: {
+              include: {
+                etapa: { include: { tipoEducacao: true } },
+              },
+            },
+          },
+        },
         matriculas: {
           select: { id: true, nomeAluno: true, possuiDeficiencia: true },
         },
@@ -28,7 +36,15 @@ export class TurmaService {
       where: { id },
       include: {
         escola: true,
-        serie: { include: { etapa: true } },
+        serie: {
+          include: {
+            nivel: {
+              include: {
+                etapa: { include: { tipoEducacao: true } },
+              },
+            },
+          },
+        },
         matriculas: true,
         professores: {
           include: { profissional: true },
@@ -44,7 +60,13 @@ export class TurmaService {
         ...(anoLetivo && { anoLetivo }),
       },
       include: {
-        serie: { include: { etapa: true } },
+        serie: {
+          include: {
+            nivel: {
+              include: { etapa: true },
+            },
+          },
+        },
         matriculas: {
           select: { id: true, nomeAluno: true, possuiDeficiencia: true },
         },
@@ -67,7 +89,13 @@ export class TurmaService {
       },
       include: {
         escola: true,
-        serie: { include: { etapa: true } },
+        serie: {
+          include: {
+            nivel: {
+              include: { etapa: true },
+            },
+          },
+        },
       },
     });
   }
@@ -78,8 +106,21 @@ export class TurmaService {
       data,
       include: {
         escola: true,
-        serie: { include: { etapa: true } },
+        serie: {
+          include: {
+            nivel: {
+              include: { etapa: true },
+            },
+          },
+        },
       },
+    });
+  }
+
+  async updateCenso(id: string, dados: unknown) {
+    return prisma.turma.update({
+      where: { id },
+      data: { dadosCenso: JSON.stringify(dados) },
     });
   }
 

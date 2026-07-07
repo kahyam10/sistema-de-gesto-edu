@@ -1,24 +1,31 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Plus, Buildings, Pencil, Trash, GraduationCap, Spinner,
-  MagnifyingGlass, Student, Users, CaretRight, Door,
+  MagnifyingGlass, Student, Users, CaretRight, Door, ClipboardText, UserCircle,
 } from "@phosphor-icons/react";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useEscolas, useEtapas, useTurmas, useCreateEscola, useUpdateEscola, useDeleteEscola,
+  useEscolas, useEtapas, useTurmas, useCreateEscola, useUpdateEscola, useDeleteEscola, useProfissionais,
 } from "@/hooks/useApi";
 import { Escola as EscolaType } from "@/lib/api";
 
@@ -27,9 +34,11 @@ interface EscolasManagerProps {
 }
 
 export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
+  const router = useRouter();
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: turmas, isLoading: loadingTurmas } = useTurmas();
+  const { data: profissionais, isLoading: loadingProfissionais } = useProfissionais({ ativo: true });
   const createEscola = useCreateEscola();
   const updateEscola = useUpdateEscola();
   const deleteEscola = useDeleteEscola();
@@ -40,7 +49,16 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
   const [formData, setFormData] = useState({
     nome: "", codigo: "", endereco: "", telefone: "", email: "",
     quantidadeSalas: 0, etapasIds: [] as string[], ativa: true,
+    diretorId: "" as string,
   });
+
+  // Filtrar profissionais que podem ser diretores (PROFESSOR, DIRETOR, COORDENADOR)
+  const diretoresDisponiveis = useMemo(() => {
+    if (!profissionais) return [];
+    return profissionais.filter((p) => 
+      ["PROFESSOR", "DIRETOR", "COORDENADOR"].includes(p.tipo) && p.ativo
+    );
+  }, [profissionais]);
 
   const escolasComStats = useMemo(() => {
     if (!escolas || !turmas) return [];
@@ -71,6 +89,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
       email: formData.email || undefined,
       quantidadeSalas: formData.quantidadeSalas,
       etapasIds: formData.etapasIds, ativo: formData.ativa,
+      diretorId: formData.diretorId || null,
     };
     if (editingEscola) {
       await updateEscola.mutateAsync({ id: editingEscola.id, data });
@@ -81,7 +100,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
   };
 
   const resetForm = () => {
-    setFormData({ nome: "", codigo: "", endereco: "", telefone: "", email: "", quantidadeSalas: 0, etapasIds: [], ativa: true });
+    setFormData({ nome: "", codigo: "", endereco: "", telefone: "", email: "", quantidadeSalas: 0, etapasIds: [], ativa: true, diretorId: "" });
     setEditingEscola(null);
     setIsFormOpen(false);
   };
@@ -94,6 +113,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
       nome: escola.nome, codigo: escola.codigo, endereco: escola.endereco || "",
       telefone: escola.telefone || "", email: escola.email || "",
       quantidadeSalas: escola.quantidadeSalas || 0, etapasIds, ativa: escola.ativo,
+      diretorId: escola.diretorId || "",
     });
     setIsFormOpen(true);
   };
@@ -116,7 +136,12 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
 
   const getEtapaNome = (etapaId: string) => etapas?.find((e) => e.id === etapaId)?.nome || "Etapa";
 
-  const isLoading = loadingEscolas || loadingEtapas || loadingTurmas;
+  const getDiretorNome = (diretorId: string | undefined) => {
+    if (!diretorId || !profissionais) return null;
+    return profissionais.find((p) => p.id === diretorId)?.nome || null;
+  };
+
+  const isLoading = loadingEscolas || loadingEtapas || loadingTurmas || loadingProfissionais;
 
   if (isLoading) {
     return (
@@ -185,6 +210,37 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                 <Input id="endereco" required value={formData.endereco} onChange={(e) => setFormData((p) => ({ ...p, endereco: e.target.value }))} placeholder="Rua, número, bairro" />
               </div>
             </div>
+            
+            {/* Gestor Escolar (Diretor) */}
+            <div className="space-y-2 p-4 border rounded-lg bg-muted/20">
+              <Label htmlFor="diretorId" className="flex items-center gap-2">
+                <UserCircle size={18} weight="duotone" className="text-primary" />
+                Gestor Escolar (Diretor)
+              </Label>
+              <Select 
+                value={formData.diretorId || "sem_diretor"} 
+                onValueChange={(value) => setFormData((p) => ({ ...p, diretorId: value === "sem_diretor" ? "" : value }))}
+              >
+                <SelectTrigger id="diretorId">
+                  <SelectValue placeholder="Selecione o gestor escolar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sem_diretor">Sem diretor definido</SelectItem>
+                  {diretoresDisponiveis.map((prof) => (
+                    <SelectItem key={prof.id} value={prof.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{prof.nome}</span>
+                        <Badge variant="outline" className="text-xs">{prof.tipo}</Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Selecione um profissional cadastrado como Professor, Coordenador ou Diretor
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Etapas de ensino oferecidas</Label>
               {!etapas || etapas.length === 0 ? (
@@ -199,7 +255,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                         <Checkbox id={`etapa-${etapa.id}`} checked={formData.etapasIds.includes(etapa.id)} onCheckedChange={() => toggleEtapa(etapa.id)} />
                         <Label htmlFor={`etapa-${etapa.id}`} className="cursor-pointer flex-1">
                           <div className="font-medium">{etapa.nome}</div>
-                          <div className="text-xs text-muted-foreground mt-1">{etapa.series?.length || 0} série(s)</div>
+                          <div className="text-xs text-muted-foreground mt-1">{etapa.niveis?.length || 0} nível(is)</div>
                         </Label>
                       </div>
                     ))}
@@ -252,9 +308,15 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                         <h4 className="font-semibold text-lg truncate">{escola.nome}</h4>
                         <Badge variant={escola.ativo ? "default" : "secondary"} className="text-xs flex-shrink-0">{escola.ativo ? "Ativa" : "Inativa"}</Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                         <span>Código: {escola.codigo}</span>
                         {escola.quantidadeSalas > 0 && (<span className="flex items-center gap-1"><Door size={14} />{escola.quantidadeSalas} salas</span>)}
+                        {escola.diretor && (
+                          <span className="flex items-center gap-1">
+                            <UserCircle size={14} weight="duotone" />
+                            Gestor: {escola.diretor.nome}
+                          </span>
+                        )}
                       </div>
                       {escolaEtapasIds.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -281,6 +343,26 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-primary hover:text-primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/questionario-escola/${escola.id}`);
+                              }}
+                            >
+                              <ClipboardText size={16} weight="duotone" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Questionário Censo Escolar</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => handleEdit(e, escola)}><Pencil size={16} /></Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" onClick={(e) => handleDelete(e, escola.id)} disabled={deleteEscola.isPending}><Trash size={16} /></Button>
                       <CaretRight size={20} className="text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />

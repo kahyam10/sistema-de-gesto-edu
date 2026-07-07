@@ -6,16 +6,22 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Iniciando seed do banco de dados...");
 
-  // Limpar dados existentes
+  // Limpar dados existentes (ordem importa por causa das foreign keys)
   await prisma.turmaProfessor.deleteMany();
   await prisma.escolaProfissional.deleteMany();
+  await prisma.formacaoProfissional.deleteMany();
   await prisma.matricula.deleteMany();
   await prisma.turma.deleteMany();
   await prisma.escolaEtapa.deleteMany();
   await prisma.serie.deleteMany();
+  await prisma.nivelEnsino.deleteMany();
   await prisma.profissionalEducacao.deleteMany();
+  await prisma.sala.deleteMany();
   await prisma.escola.deleteMany();
   await prisma.etapaEnsino.deleteMany();
+  await prisma.tipoEducacao.deleteMany();
+  await prisma.eventosCalendario?.deleteMany();
+  await prisma.anoLetivo?.deleteMany();
   await prisma.user.deleteMany();
 
   console.log("✅ Dados antigos removidos");
@@ -32,86 +38,195 @@ async function main() {
   });
   console.log(`✅ Usuário admin criado: ${admin.email}`);
 
-  // Criar etapas de ensino
-  const etapas = await Promise.all([
-    prisma.etapaEnsino.create({
-      data: {
-        nome: "Educação Infantil",
-        descricao: "Creche e Pré-escola (0 a 5 anos)",
-        ordem: 1,
-      },
-    }),
-    prisma.etapaEnsino.create({
-      data: {
-        nome: "Ensino Fundamental I",
-        descricao: "1º ao 5º ano (6 a 10 anos)",
-        ordem: 2,
-      },
-    }),
-    prisma.etapaEnsino.create({
-      data: {
-        nome: "Ensino Fundamental II",
-        descricao: "6º ao 9º ano (11 a 14 anos)",
-        ordem: 3,
-      },
-    }),
-  ]);
+  // ==================== ESTRUTURA HIERÁRQUICA ====================
+  // TipoEducacao → EtapaEnsino → NivelEnsino → Serie
+  console.log("\n📚 Criando estrutura hierárquica de ensino...");
+
+  // 1. Criar Tipo de Educação (Educação Básica)
+  const tipoEducacaoBasica = await prisma.tipoEducacao.create({
+    data: {
+      nome: "Educação Básica",
+      descricao: "Educação Infantil, Ensino Fundamental e Ensino Médio",
+      ordem: 1,
+    },
+  });
+  console.log(`✅ Tipo de educação criado: ${tipoEducacaoBasica.nome}`);
+
+  // 2. Criar Etapas de Ensino (vinculadas ao Tipo)
+  const etapaInfantil = await prisma.etapaEnsino.create({
+    data: {
+      nome: "Educação Infantil",
+      descricao: "Primeira etapa da educação básica (0 a 5 anos)",
+      ordem: 1,
+      tipoEducacaoId: tipoEducacaoBasica.id,
+    },
+  });
+
+  const etapaFundamental = await prisma.etapaEnsino.create({
+    data: {
+      nome: "Ensino Fundamental",
+      descricao: "Segunda etapa da educação básica (6 a 14 anos)",
+      ordem: 2,
+      tipoEducacaoId: tipoEducacaoBasica.id,
+    },
+  });
+
+  const etapaMedio = await prisma.etapaEnsino.create({
+    data: {
+      nome: "Ensino Médio",
+      descricao: "Terceira etapa da educação básica (15 a 17 anos)",
+      ordem: 3,
+      tipoEducacaoId: tipoEducacaoBasica.id,
+    },
+  });
+
+  const etapas = [etapaInfantil, etapaFundamental, etapaMedio];
   console.log(`✅ ${etapas.length} etapas de ensino criadas`);
 
-  // Criar séries para cada etapa
-  const seriesInfantil = await Promise.all([
+  // 3. Criar Níveis de Ensino (vinculados às Etapas)
+  // Educação Infantil → Creche, Pré-escola
+  const nivelCreche = await prisma.nivelEnsino.create({
+    data: {
+      nome: "Creche",
+      descricao: "Atendimento a crianças de 0 a 3 anos",
+      ordem: 1,
+      etapaId: etapaInfantil.id,
+    },
+  });
+
+  const nivelPreEscola = await prisma.nivelEnsino.create({
+    data: {
+      nome: "Pré-escola",
+      descricao: "Atendimento a crianças de 4 e 5 anos",
+      ordem: 2,
+      etapaId: etapaInfantil.id,
+    },
+  });
+
+  // Ensino Fundamental → Anos Iniciais, Anos Finais
+  const nivelAnosIniciais = await prisma.nivelEnsino.create({
+    data: {
+      nome: "Anos Iniciais",
+      descricao: "1º ao 5º ano (6 a 10 anos)",
+      ordem: 1,
+      etapaId: etapaFundamental.id,
+    },
+  });
+
+  const nivelAnosFinais = await prisma.nivelEnsino.create({
+    data: {
+      nome: "Anos Finais",
+      descricao: "6º ao 9º ano (11 a 14 anos)",
+      ordem: 2,
+      etapaId: etapaFundamental.id,
+    },
+  });
+
+  // Ensino Médio → Médio Regular
+  const nivelMedioRegular = await prisma.nivelEnsino.create({
+    data: {
+      nome: "Médio Regular",
+      descricao: "1ª a 3ª série do Ensino Médio",
+      ordem: 1,
+      etapaId: etapaMedio.id,
+    },
+  });
+
+  const niveis = [
+    nivelCreche,
+    nivelPreEscola,
+    nivelAnosIniciais,
+    nivelAnosFinais,
+    nivelMedioRegular,
+  ];
+  console.log(`✅ ${niveis.length} níveis de ensino criados`);
+
+  // 4. Criar Séries (vinculadas aos Níveis)
+  // Creche
+  const seriesCreche = await Promise.all([
     prisma.serie.create({
-      data: { nome: "Creche I", ordem: 1, etapaId: etapas[0].id },
+      data: { nome: "Berçário I", ordem: 1, nivelId: nivelCreche.id },
     }),
     prisma.serie.create({
-      data: { nome: "Creche II", ordem: 2, etapaId: etapas[0].id },
+      data: { nome: "Berçário II", ordem: 2, nivelId: nivelCreche.id },
     }),
     prisma.serie.create({
-      data: { nome: "Creche III", ordem: 3, etapaId: etapas[0].id },
+      data: { nome: "Maternal I", ordem: 3, nivelId: nivelCreche.id },
     }),
     prisma.serie.create({
-      data: { nome: "Pré I", ordem: 4, etapaId: etapas[0].id },
-    }),
-    prisma.serie.create({
-      data: { nome: "Pré II", ordem: 5, etapaId: etapas[0].id },
+      data: { nome: "Maternal II", ordem: 4, nivelId: nivelCreche.id },
     }),
   ]);
 
-  const seriesFundI = await Promise.all([
+  // Pré-escola
+  const seriesPreEscola = await Promise.all([
     prisma.serie.create({
-      data: { nome: "1º Ano", ordem: 1, etapaId: etapas[1].id },
+      data: { nome: "Pré I (4 anos)", ordem: 1, nivelId: nivelPreEscola.id },
     }),
     prisma.serie.create({
-      data: { nome: "2º Ano", ordem: 2, etapaId: etapas[1].id },
-    }),
-    prisma.serie.create({
-      data: { nome: "3º Ano", ordem: 3, etapaId: etapas[1].id },
-    }),
-    prisma.serie.create({
-      data: { nome: "4º Ano", ordem: 4, etapaId: etapas[1].id },
-    }),
-    prisma.serie.create({
-      data: { nome: "5º Ano", ordem: 5, etapaId: etapas[1].id },
+      data: { nome: "Pré II (5 anos)", ordem: 2, nivelId: nivelPreEscola.id },
     }),
   ]);
 
-  const seriesFundII = await Promise.all([
+  // Anos Iniciais (1º ao 5º ano)
+  const seriesAnosIniciais = await Promise.all([
     prisma.serie.create({
-      data: { nome: "6º Ano", ordem: 1, etapaId: etapas[2].id },
+      data: { nome: "1º Ano", ordem: 1, nivelId: nivelAnosIniciais.id },
     }),
     prisma.serie.create({
-      data: { nome: "7º Ano", ordem: 2, etapaId: etapas[2].id },
+      data: { nome: "2º Ano", ordem: 2, nivelId: nivelAnosIniciais.id },
     }),
     prisma.serie.create({
-      data: { nome: "8º Ano", ordem: 3, etapaId: etapas[2].id },
+      data: { nome: "3º Ano", ordem: 3, nivelId: nivelAnosIniciais.id },
     }),
     prisma.serie.create({
-      data: { nome: "9º Ano", ordem: 4, etapaId: etapas[2].id },
+      data: { nome: "4º Ano", ordem: 4, nivelId: nivelAnosIniciais.id },
+    }),
+    prisma.serie.create({
+      data: { nome: "5º Ano", ordem: 5, nivelId: nivelAnosIniciais.id },
     }),
   ]);
+
+  // Anos Finais (6º ao 9º ano)
+  const seriesAnosFinais = await Promise.all([
+    prisma.serie.create({
+      data: { nome: "6º Ano", ordem: 1, nivelId: nivelAnosFinais.id },
+    }),
+    prisma.serie.create({
+      data: { nome: "7º Ano", ordem: 2, nivelId: nivelAnosFinais.id },
+    }),
+    prisma.serie.create({
+      data: { nome: "8º Ano", ordem: 3, nivelId: nivelAnosFinais.id },
+    }),
+    prisma.serie.create({
+      data: { nome: "9º Ano", ordem: 4, nivelId: nivelAnosFinais.id },
+    }),
+  ]);
+
+  // Ensino Médio Regular
+  const seriesMedio = await Promise.all([
+    prisma.serie.create({
+      data: { nome: "1ª Série", ordem: 1, nivelId: nivelMedioRegular.id },
+    }),
+    prisma.serie.create({
+      data: { nome: "2ª Série", ordem: 2, nivelId: nivelMedioRegular.id },
+    }),
+    prisma.serie.create({
+      data: { nome: "3ª Série", ordem: 3, nivelId: nivelMedioRegular.id },
+    }),
+  ]);
+
+  // Para compatibilidade com o código existente
+  const seriesInfantil = [...seriesCreche, ...seriesPreEscola];
+  const seriesFundI = seriesAnosIniciais;
+  const seriesFundII = seriesAnosFinais;
 
   const totalSeries =
-    seriesInfantil.length + seriesFundI.length + seriesFundII.length;
+    seriesCreche.length +
+    seriesPreEscola.length +
+    seriesAnosIniciais.length +
+    seriesAnosFinais.length +
+    seriesMedio.length;
   console.log(`✅ ${totalSeries} séries criadas`);
 
   // Criar escolas
@@ -297,7 +412,7 @@ async function main() {
         capacidadeMaxima: 20,
         limitePCD: 2,
         escolaId: escolas[1].id,
-        serieId: seriesInfantil[4].id,
+        serieId: seriesPreEscola[1].id,
       },
     }),
     prisma.turma.create({
@@ -314,13 +429,13 @@ async function main() {
     // CEI
     prisma.turma.create({
       data: {
-        nome: "Creche II - A",
+        nome: "Maternal II - A",
         turno: "INTEGRAL",
         anoLetivo,
         capacidadeMaxima: 15,
         limitePCD: 2,
         escolaId: escolas[2].id,
-        serieId: seriesInfantil[1].id,
+        serieId: seriesCreche[3].id,
       },
     }),
   ]);
@@ -345,7 +460,7 @@ async function main() {
         estado: "BA",
         cep: "45555-000",
         escolaId: escolas[0].id,
-        etapaId: etapas[1].id,
+        etapaId: etapaFundamental.id,
         turmaId: turmas[0].id,
       },
     }),
@@ -367,7 +482,7 @@ async function main() {
         estado: "BA",
         cep: "45555-000",
         escolaId: escolas[1].id,
-        etapaId: etapas[0].id,
+        etapaId: etapaInfantil.id,
         turmaId: turmas[2].id,
       },
     }),
@@ -386,7 +501,7 @@ async function main() {
         cidade: "Ibirapitanga",
         estado: "BA",
         escolaId: escolas[0].id,
-        etapaId: etapas[2].id,
+        etapaId: etapaFundamental.id,
         turmaId: turmas[1].id,
       },
     }),
@@ -403,7 +518,7 @@ async function main() {
         cidade: "Ibirapitanga",
         estado: "BA",
         escolaId: escolas[2].id,
-        etapaId: etapas[0].id,
+        etapaId: etapaInfantil.id,
         turmaId: turmas[4].id,
       },
     }),
@@ -424,7 +539,7 @@ async function main() {
         cidade: "Ibirapitanga",
         estado: "BA",
         escolaId: escolas[1].id,
-        etapaId: etapas[1].id,
+        etapaId: etapaFundamental.id,
         turmaId: turmas[3].id,
       },
     }),
@@ -480,34 +595,36 @@ async function main() {
         "Sistema completo para matrículas online/presencial, controle de vagas e gestão de alunos",
       icon: "UserPlus",
       phase: 1,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 60,
       ordem: 0,
       subModules: [
         {
           name: "Matrículas Online e Presencial",
           description:
             "Portal para realização de matrículas via web e atendimento presencial",
-          status: "planning",
+          status: "in-progress",
+          observacao:
+            "Fluxo administrativo (presencial) completo; matrícula online pelo responsável não iniciada",
           ordem: 0,
         },
         {
           name: "Controle de Vagas",
           description: "Gestão de disponibilidade de vagas por turma e escola",
-          status: "planning",
+          status: "completed",
           ordem: 1,
         },
         {
           name: "Regras Especiais PCD",
           description:
             "Controle automático: máximo 3 alunos PCD por turma regular",
-          status: "planning",
+          status: "completed",
           ordem: 2,
         },
         {
           name: "Cadastro Completo de Alunos",
           description: "Ficha cadastral completa com histórico e documentação",
-          status: "planning",
+          status: "completed",
           ordem: 3,
         },
         {
@@ -524,15 +641,15 @@ async function main() {
         "Calendários, frequência, notas, planejamento e acompanhamento acadêmico",
       icon: "BookOpen",
       phase: 2,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 20,
       ordem: 1,
       subModules: [
         {
           name: "Calendários",
           description:
             "Calendário letivo, avaliações, conselhos de classe e recuperação",
-          status: "planning",
+          status: "completed",
           ordem: 0,
         },
         {
@@ -619,20 +736,22 @@ async function main() {
         "Cadastro de servidores, lotação, horários, folha de ponto e licenças",
       icon: "Users",
       phase: 1,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 20,
       ordem: 3,
       subModules: [
         {
           name: "Cadastro de Servidores",
           description: "Base completa de dados dos funcionários",
-          status: "planning",
+          status: "completed",
           ordem: 0,
         },
         {
           name: "Lotação de Professores",
           description: "Alocação de docentes por escola e disciplina",
-          status: "planning",
+          status: "in-progress",
+          observacao:
+            "Vínculo escola/turma implementado; lotação formal por disciplina e carga horária pendente",
           ordem: 1,
         },
         {
@@ -863,7 +982,7 @@ async function main() {
       monthRange: "Meses 1-3",
       duration: "3 meses",
       ordem: 0,
-      status: "planning",
+      status: "in-progress",
       moduleNames: [
         "Gestão de Matrículas e Alunos",
         "Gestão de Recursos Humanos",
@@ -876,7 +995,7 @@ async function main() {
       monthRange: "Meses 4-6",
       duration: "3 meses",
       ordem: 1,
-      status: "planning",
+      status: "in-progress",
       moduleNames: ["Gestão Pedagógica", "Portais de Acesso"],
     },
     {
@@ -922,7 +1041,9 @@ async function main() {
   console.log("\n🎉 Seed concluído com sucesso!");
   console.log("\n📋 Dados criados:");
   console.log(`   - 1 usuário admin (admin@ibirapitanga.ba.gov.br / admin123)`);
+  console.log(`   - 1 tipo de educação (Educação Básica)`);
   console.log(`   - ${etapas.length} etapas de ensino`);
+  console.log(`   - ${niveis.length} níveis de ensino`);
   console.log(`   - ${totalSeries} séries`);
   console.log(`   - ${escolas.length} escolas`);
   console.log(`   - ${profissionais.length} profissionais`);

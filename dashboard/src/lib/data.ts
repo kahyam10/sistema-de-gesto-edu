@@ -460,42 +460,44 @@ export const techStack: TechStack[] = [
   {
     category: 'Frontend',
     items: [
-      { name: 'Next.js', description: 'Framework React para aplicações web', icon: 'Code' },
-      { name: 'TypeScript', description: 'JavaScript com tipagem estática', icon: 'FileCode' },
-      { name: 'Tailwind CSS', description: 'Framework CSS utilitário', icon: 'Palette' }
+      { name: 'Next.js 15 (App Router)', description: 'Framework React para aplicações web', icon: 'Code' },
+      { name: 'React 19 + TypeScript', description: 'UI com tipagem estática', icon: 'FileCode' },
+      { name: 'TanStack Query 5', description: 'Cache e sincronização com a API', icon: 'ArrowsClockwise' },
+      { name: 'Tailwind CSS + shadcn/ui', description: 'Estilização e componentes', icon: 'Palette' }
     ]
   },
   {
     category: 'Backend',
     items: [
-      { name: 'Node.js', description: 'Runtime JavaScript server-side', icon: 'Server' },
-      { name: 'Fastify', description: 'Framework web de alta performance', icon: 'Zap' },
-      { name: 'PostgreSQL', description: 'Banco de dados relacional', icon: 'Database' },
-      { name: 'Prisma', description: 'ORM TypeScript-first', icon: 'Box' }
+      { name: 'Node.js 20', description: 'Runtime JavaScript server-side', icon: 'Server' },
+      { name: 'Fastify 4', description: 'Framework web de alta performance', icon: 'Zap' },
+      { name: 'SQLite (dev) → PostgreSQL (prod)', description: 'Banco relacional via Supabase self-hosted', icon: 'Database' },
+      { name: 'Prisma 5', description: 'ORM TypeScript-first', icon: 'Box' }
     ]
   },
   {
     category: 'Segurança',
     items: [
-      { name: 'JWT', description: 'Autenticação baseada em tokens', icon: 'Key' },
-      { name: 'LGPD Compliance', description: 'Conformidade com proteção de dados', icon: 'Shield' },
-      { name: 'Backup Automático', description: 'Redundância e recuperação', icon: 'HardDrive' }
+      { name: 'JWT com expiração', description: 'Autenticação em todas as rotas da API', icon: 'Key' },
+      { name: 'RBAC por papel', description: 'ADMIN, SEMEC, DIRETOR, COORDENADOR, SECRETARIA', icon: 'Shield' },
+      { name: 'bcrypt', description: 'Hash de senhas', icon: 'HardDrive' }
     ]
   },
   {
     category: 'Qualidade',
     items: [
-      { name: 'Zod', description: 'Validação de esquemas TypeScript', icon: 'CheckCircle' },
-      { name: 'Testes Automatizados', description: 'Jest + Testing Library', icon: 'TestTube' },
-      { name: 'Swagger', description: 'Documentação automática de API', icon: 'FileText' }
+      { name: 'Zod', description: 'Validação de entrada em todas as rotas de escrita', icon: 'CheckCircle' },
+      { name: 'Vitest', description: 'Testes dos serviços críticos (auth, matrícula, calendário)', icon: 'TestTube' },
+      { name: 'ESLint', description: 'Análise estática do backend e dashboard', icon: 'MagnifyingGlass' },
+      { name: 'Swagger', description: 'Documentação automática de API em /docs', icon: 'FileText' }
     ]
   },
   {
     category: 'Infraestrutura',
     items: [
-      { name: 'Cloud Hosting', description: 'AWS/Azure/Google Cloud', icon: 'Cloud' },
-      { name: 'Armazenamento de Arquivos', description: 'S3-compatible storage', icon: 'FolderOpen' },
-      { name: 'Logs de Auditoria', description: 'Rastreamento completo de ações', icon: 'FileSearch' }
+      { name: 'VPS + Coolify', description: 'Deploy self-hosted com HTTPS automático', icon: 'Cloud' },
+      { name: 'Supabase self-hosted', description: 'PostgreSQL de produção + Studio', icon: 'Database' },
+      { name: 'Backups automáticos', description: 'Agendados via Coolify', icon: 'FolderOpen' }
     ]
   }
 ]

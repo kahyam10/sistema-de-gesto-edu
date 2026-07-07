@@ -1,11 +1,18 @@
 # Sistema de Gestão Educacional de Ibirapitanga
 
+> ⚠️ **ATUALIZAÇÃO (07/07/2026):** partes deste PRD estão desatualizadas — ele
+> descreve a stack antiga (React + Vite + GitHub Spark/useKV). A stack real é
+> **Next.js 15 + Fastify 4 + Prisma** (ver `.github/copilot-instructions.md`).
+> O status real do sistema, o plano de finalização e o passo a passo de deploy
+> estão em **[PLANO_FINALIZACAO_E_DEPLOY.md](PLANO_FINALIZACAO_E_DEPLOY.md)**.
+> Os requisitos funcionais e o escopo dos 9 módulos abaixo continuam válidos.
+
 Sistema completo de gestão educacional para o município de Ibirapitanga, integrando matrículas, gestão pedagógica, recursos humanos, programas especiais e muito mais.
 
 ## Status do Projeto
 
-**Fase Atual**: Desenvolvimento Ativo - Fase 1 (Fundação)
-**Módulos em Desenvolvimento**: Gestão de Matrículas e Alunos
+**Fase Atual**: Desenvolvimento Ativo - Fases 1 e 2 (ver PLANO_FINALIZACAO_E_DEPLOY.md)
+**Módulos em Desenvolvimento**: Matrículas e Alunos, RH, Gestão Pedagógica (Calendário)
 
 **Experience Qualities**:
 1. **Professional** - Creates confidence and credibility for presenting to municipal stakeholders and education officials

@@ -5,7 +5,13 @@ export class EtapaService {
   async findAll() {
     return prisma.etapaEnsino.findMany({
       include: {
-        series: { orderBy: { ordem: "asc" } },
+        tipoEducacao: true,
+        niveis: {
+          orderBy: { ordem: "asc" },
+          include: {
+            series: { orderBy: { ordem: "asc" } },
+          },
+        },
       },
       orderBy: { ordem: "asc" },
     });
@@ -15,7 +21,13 @@ export class EtapaService {
     return prisma.etapaEnsino.findUnique({
       where: { id },
       include: {
-        series: { orderBy: { ordem: "asc" } },
+        tipoEducacao: true,
+        niveis: {
+          orderBy: { ordem: "asc" },
+          include: {
+            series: { orderBy: { ordem: "asc" } },
+          },
+        },
         escolas: { include: { escola: true } },
       },
     });
@@ -27,8 +39,14 @@ export class EtapaService {
         nome: data.nome,
         descricao: data.descricao,
         ordem: data.ordem,
+        tipoEducacaoId: data.tipoEducacaoId,
       },
-      include: { series: true },
+      include: {
+        tipoEducacao: true,
+        niveis: {
+          include: { series: true },
+        },
+      },
     });
   }
 
@@ -36,7 +54,12 @@ export class EtapaService {
     return prisma.etapaEnsino.update({
       where: { id },
       data,
-      include: { series: true },
+      include: {
+        tipoEducacao: true,
+        niveis: {
+          include: { series: true },
+        },
+      },
     });
   }
 

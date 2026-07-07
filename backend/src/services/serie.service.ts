@@ -4,21 +4,43 @@ import { CreateSerieInput, UpdateSerieInput } from "../schemas/index.js";
 export class SerieService {
   async findAll() {
     return prisma.serie.findMany({
-      include: { etapa: true },
-      orderBy: { ordem: "asc" },
+      include: {
+        nivel: {
+          include: {
+            etapa: {
+              include: { tipoEducacao: true },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { nivel: { etapa: { ordem: "asc" } } },
+        { nivel: { ordem: "asc" } },
+        { ordem: "asc" },
+      ],
     });
   }
 
   async findById(id: string) {
     return prisma.serie.findUnique({
       where: { id },
-      include: { etapa: true, turmas: true },
+      include: {
+        nivel: {
+          include: {
+            etapa: {
+              include: { tipoEducacao: true },
+            },
+          },
+        },
+        turmas: true,
+      },
     });
   }
 
-  async findByEtapa(etapaId: string) {
+  async findByNivel(nivelId: string) {
     return prisma.serie.findMany({
-      where: { etapaId },
+      where: { nivelId },
+      include: { nivel: true },
       orderBy: { ordem: "asc" },
     });
   }
@@ -28,9 +50,13 @@ export class SerieService {
       data: {
         nome: data.nome,
         ordem: data.ordem,
-        etapaId: data.etapaId,
+        nivelId: data.nivelId,
       },
-      include: { etapa: true },
+      include: {
+        nivel: {
+          include: { etapa: true },
+        },
+      },
     });
   }
 
@@ -38,7 +64,11 @@ export class SerieService {
     return prisma.serie.update({
       where: { id },
       data,
-      include: { etapa: true },
+      include: {
+        nivel: {
+          include: { etapa: true },
+        },
+      },
     });
   }
 

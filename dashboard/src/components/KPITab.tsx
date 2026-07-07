@@ -1,10 +1,11 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { KPI } from '@/lib/types'
+import { kpis as defaultKpis } from '@/lib/data'
 import { TrendUp, Gauge, ChartBar } from '@phosphor-icons/react'
 
 interface KPITabProps {
-  kpis: KPI[]
+  kpis?: KPI[]
 }
 
 const categoryLabels = {
@@ -19,7 +20,7 @@ const categoryColors = {
   technical: 'bg-primary text-primary-foreground'
 }
 
-export function KPITab({ kpis }: KPITabProps) {
+export function KPITab({ kpis = defaultKpis }: KPITabProps) {
   const educationalKPIs = kpis.filter(k => k.category === 'educational')
   const operationalKPIs = kpis.filter(k => k.category === 'operational')
   const technicalKPIs = kpis.filter(k => k.category === 'technical')
@@ -44,7 +45,7 @@ export function KPITab({ kpis }: KPITabProps) {
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Atual</p>
+            <p className="text-xs text-muted-foreground mb-1">Linha de base (diagnóstico)</p>
             <p className="text-2xl font-bold text-foreground">
               {kpi.current}
             </p>
@@ -59,7 +60,8 @@ export function KPITab({ kpis }: KPITabProps) {
       <div>
         <h2 className="text-2xl font-bold mb-2">Indicadores de Sucesso (KPIs)</h2>
         <p className="text-muted-foreground">
-          Métricas para avaliar o impacto e efetividade do sistema
+          Metas do projeto e linha de base do diagnóstico municipal — a medição
+          automática depende dos módulos de frequência e notas (ainda não implantados)
         </p>
       </div>
 
@@ -113,8 +115,9 @@ export function KPITab({ kpis }: KPITabProps) {
           <div>
             <p className="font-medium mb-1">Coleta de Dados</p>
             <p className="text-muted-foreground">
-              Indicadores são calculados automaticamente pelo sistema com base em dados reais
-              de uso, integrando informações de múltiplos módulos.
+              Os valores exibidos são a linha de base do diagnóstico municipal.
+              O cálculo automático a partir de dados reais será habilitado conforme
+              os módulos de frequência, notas e portais forem implantados.
             </p>
           </div>
           <div>

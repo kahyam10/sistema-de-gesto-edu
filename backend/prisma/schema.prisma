@@ -31,35 +31,78 @@ model User {
 
 // ==================== ESTRUTURA ACADÊMICA ====================
 
-model Serie {
+// Tipo de Educação (Educação Básica, Educação Superior, Educação Profissional, etc.)
+model TipoEducacao {
   id        String   @id @default(cuid())
-  nome      String
-  ordem     Int
+  nome      String   @unique // Ex: "Educação Básica", "Educação Superior"
+  descricao String?
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  etapas EtapaEnsino[]
+
+  @@map("tipos_educacao")
+}
+
+// Etapa de Ensino (Educação Infantil, Ensino Fundamental, Ensino Médio)
+model EtapaEnsino {
+  id        String   @id @default(cuid())
+  nome      String   // Ex: "Educação Infantil", "Ensino Fundamental", "Ensino Médio"
+  descricao String?
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  tipoEducacaoId String
+  tipoEducacao   TipoEducacao @relation(fields: [tipoEducacaoId], references: [id], onDelete: Cascade)
+  
+  niveis     NivelEnsino[]
+  escolas    EscolaEtapa[]
+  matriculas Matricula[]
+
+  @@map("etapas_ensino")
+}
+
+// Nível de Ensino (Creche, Pré-escola, Anos Iniciais, Anos Finais, etc.)
+model NivelEnsino {
+  id        String   @id @default(cuid())
+  nome      String   // Ex: "Creche", "Pré-escola", "Anos Iniciais", "Anos Finais"
+  descricao String?
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
   etapaId String
   etapa   EtapaEnsino @relation(fields: [etapaId], references: [id], onDelete: Cascade)
-  turmas  Turma[]
+  
+  series Serie[]
 
-  @@map("series")
+  @@map("niveis_ensino")
 }
 
-model EtapaEnsino {
+// Série/Ano (1º Ano, 2º Ano, etc.)
+model Serie {
   id        String   @id @default(cuid())
-  nome      String
-  descricao String?
-  ordem     Int
+  nome      String   // Ex: "1º Ano", "2º Ano", "Berçário I"
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  series     Serie[]
-  escolas    EscolaEtapa[]
-  matriculas Matricula[]
+  nivelId String
+  nivel   NivelEnsino @relation(fields: [nivelId], references: [id], onDelete: Cascade)
+  
+  turmas Turma[]
 
-  @@map("etapas_ensino")
+  @@map("series")
 }
 
 model Escola {
@@ -70,9 +113,14 @@ model Escola {
   telefone        String?
   email           String?
   quantidadeSalas Int      @default(0)
+  dadosCenso      String?  // JSON - respostas do questionário Censo Escolar (INEP)
   ativo           Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Gestor Escolar (Diretor)
+  diretorId       String?
+  diretor         ProfissionalEducacao? @relation("EscolaDiretor", fields: [diretorId], references: [id])
 
   // Infraestrutura - Áreas comuns
   possuiPatio         Boolean @default(false)
@@ -169,6 +217,7 @@ model Turma {
   anoLetivo        Int
   capacidadeMaxima Int      @default(25)
   limitePCD        Int      @default(3)
+  dadosCenso       String?  // JSON - respostas do questionário Censo Escolar (INEP)
   ativo            Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -240,7 +289,26 @@ model Matricula {
   turmaId String?
   turma   Turma? @relation(fields: [turmaId], references: [id])
 
+  transferencias TransferenciaMatricula[]
+
   @@map("matriculas")
+}
+
+// Trilha de auditoria das transferências de matrícula
+model TransferenciaMatricula {
+  id              String   @id @default(cuid())
+  matriculaId     String
+  escolaOrigemId  String
+  escolaDestinoId String
+  turmaOrigemId   String?
+  turmaDestinoId  String?
+  motivo          String?
+  createdAt       DateTime @default(now())
+
+  matricula Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@index([matriculaId])
+  @@map("transferencias_matricula")
 }
 
 // ==================== PROFISSIONAIS ====================
@@ -255,6 +323,7 @@ model ProfissionalEducacao {
   formacao      String?  // Campo legado - manter compatibilidade
   especialidade String?
   matricula     String?  @unique
+  dadosCenso    String?  // JSON - respostas do questionário Censo Escolar (gestor/INEP)
   ativo         Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -263,6 +332,7 @@ model ProfissionalEducacao {
   escolas   EscolaProfissional[]
   turmas    TurmaProfessor[]
   formacoes FormacaoProfissional[]
+  escolasDiretor Escola[] @relation("EscolaDiretor")
 
   @@map("profissionais_educacao")
 }
@@ -396,7 +466,8 @@ model EventoCalendario {
   horaFim     String?   // Ex: "17:00"
   
   // Tipo do evento - INICIO_ANO_LETIVO e FIM_ANO_LETIVO são obrigatórios e únicos por ano
-  tipo        String   // INICIO_ANO_LETIVO, FIM_ANO_LETIVO, FERIADO, RECESSO, SABADO_LETIVO, EVENTO, AC, AVALIACAO, REUNIAO, CONSELHO_CLASSE, PLANEJAMENTO, FORMACAO, OUTRO
+  // Valores validados por tipoEventoEnum em src/schemas/index.ts
+  tipo        String   // INICIO_ANO_LETIVO, FIM_ANO_LETIVO, INICIO_AULAS_REGULARES, FIM_AULAS_REGULARES, FERIADO, RECESSO, SABADO_LETIVO, EVENTO, AC, AVALIACAO, REUNIAO, CONSELHO_CLASSE, PLANEJAMENTO, FORMACAO, OUTRO
   
   // Escopo do evento
   escopo      String   @default("REDE") // REDE (toda rede), ESCOLA (específico da escola)

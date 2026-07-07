@@ -5,18 +5,22 @@
   "private": true,
   "workspaces": [
     "backend",
-    "dashboard"
+    "dashboard",
+    "mcp_server"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\"",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:dashboard": "npm run dev --workspace=dashboard",
+    "dev:mcp": "npm run dev --workspace=mcp_server",
     "build": "npm run build --workspaces --if-present",
     "build:backend": "npm run build --workspace=backend",
     "build:dashboard": "npm run build --workspace=dashboard",
+    "build:mcp": "npm run build --workspace=mcp_server",
     "start": "concurrently \"npm run start:backend\" \"npm run start:dashboard\"",
     "start:backend": "npm run start --workspace=backend",
     "start:dashboard": "npm run start --workspace=dashboard",
+    "start:mcp": "npm run start --workspace=mcp_server",
     "db:push": "npm run db:push --workspace=backend",
     "db:seed": "npm run db:seed --workspace=backend",
     "db:studio": "npm run db:studio --workspace=backend"
