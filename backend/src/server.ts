@@ -1,8 +1,10 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
+import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { errorHandler } from "./middleware/error-handler.js";
 
 import {
   authRoutes,
@@ -45,6 +47,12 @@ async function buildApp() {
   await app.register(cors, {
     origin: isProd ? corsOrigins! : corsOrigins ?? true,
     credentials: true,
+  });
+
+  // Rate limiting global (proteção básica contra abuso/brute-force)
+  await app.register(rateLimit, {
+    max: 300,
+    timeWindow: "1 minute",
   });
 
   await app.register(jwt, {
@@ -191,21 +199,8 @@ async function buildApp() {
   app.register(salasRoutes); // sem prefix: usa dois caminhos-base distintos (ver salas.routes.ts)
   app.register(calendarioRoutes, { prefix: "/api/calendario" });
 
-  // Error handler global
-  app.setErrorHandler((error, request, reply) => {
-    app.log.error(error);
-
-    if (error.validation) {
-      return reply.status(400).send({
-        error: "Erro de validação",
-        details: error.validation,
-      });
-    }
-
-    return reply.status(error.statusCode || 500).send({
-      error: error.message || "Erro interno do servidor",
-    });
-  });
+  // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
+  app.setErrorHandler(errorHandler);
 
   return app;
 }
