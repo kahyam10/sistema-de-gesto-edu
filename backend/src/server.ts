@@ -31,6 +31,11 @@ import { gradeHorariaRoutes } from "./routes/grade-horaria.routes.js";
 import { buscaAtivaRoutes } from "./routes/busca-ativa.routes.js";
 import { aeeRoutes } from "./routes/aee.routes.js";
 import { acompanhamentoRoutes } from "./routes/acompanhamento.routes.js";
+// Módulo 9 — Comunicação e Eventos
+import { comunicadoRoutes } from "./routes/comunicado.routes.js";
+import { notificacaoRoutes } from "./routes/notificacao.routes.js";
+import { plantaoPedagogicoRoutes } from "./routes/plantao-pedagogico.routes.js";
+import { reuniaoPaisRoutes } from "./routes/reuniao-pais.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -135,6 +140,8 @@ async function buildApp() {
   const OPERACAO = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
   // Professores lançam frequência, notas e consultam/gerem sua grade
   const PEDAGOGICO = [...OPERACAO, "PROFESSOR"];
+  // Ações pessoais (recibos de leitura) valem para qualquer autenticado
+  const TODOS = [...PEDAGOGICO, "USER"];
 
   const REGRAS_ESCRITA: Array<{
     pattern: RegExp;
@@ -165,6 +172,18 @@ async function buildApp() {
     // Programas especiais: busca ativa, AEE e acompanhamento (equipe + professores AEE)
     {
       pattern: /^\/api\/(busca-ativa|aee|acompanhamento)(\/|$)/,
+      roles: PEDAGOGICO,
+    },
+    // Recibos de leitura/confirmação: qualquer usuário autenticado
+    {
+      pattern:
+        /^\/api\/(notificacoes\/([^/]+\/marcar-lida|usuario\/[^/]+\/marcar-todas-lidas)|comunicados\/[^/]+\/confirmar)$/,
+      roles: TODOS,
+    },
+    // Comunicação e eventos: escrita pela equipe pedagógica
+    {
+      pattern:
+        /^\/api\/(comunicados|notificacoes|plantoes-pedagogicos|reunioes-pais)(\/|$)/,
       roles: PEDAGOGICO,
     },
     // Estrutura pedagógica (disciplinas e regras de avaliação) = gestão
@@ -240,6 +259,11 @@ async function buildApp() {
   app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
   app.register(aeeRoutes, { prefix: "/api/aee" });
   app.register(acompanhamentoRoutes, { prefix: "/api/acompanhamento" });
+  // Módulo 9 — Comunicação e Eventos
+  app.register(comunicadoRoutes, { prefix: "/api/comunicados" });
+  app.register(notificacaoRoutes, { prefix: "/api/notificacoes" });
+  app.register(plantaoPedagogicoRoutes, { prefix: "/api/plantoes-pedagogicos" });
+  app.register(reuniaoPaisRoutes, { prefix: "/api/reunioes-pais" });
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);

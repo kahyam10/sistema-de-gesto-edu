@@ -28,6 +28,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { href: '/cadastros/profissionais', label: 'Profissionais', icon: 'users', roles: 'all' },
       { href: '/cadastros/calendario', label: 'Calendário Letivo', icon: 'calendarDays', roles: 'all' },
       { href: '/programas', label: 'Programas Especiais', icon: 'clipboard', roles: 'all' },
+      { href: '/comunicacao', label: 'Comunicação', icon: 'speaker', roles: 'all' },
     ],
   },
   {
