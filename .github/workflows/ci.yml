@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (build + lint + testes)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: gestao_edu_test
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://postgres:ci@localhost:5435/gestao_edu_test?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:ci@localhost:5435/gestao_edu_test?schema=public
+      JWT_SECRET: ci-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Instalar dependências (workspace)
+        run: npm ci
+        working-directory: .
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+      - name: Build (tsc)
+        run: npm run build
+      - name: Lint
+        run: npm run lint
+      - name: Testes (vitest)
+        run: npm test
+
+  dashboard:
+    name: Dashboard (build + testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3333
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Instalar dependências (workspace)
+        run: npm ci
+        working-directory: .
+      - name: Testes (vitest)
+        run: npm test
+      - name: Build (next)
+        run: npm run build
