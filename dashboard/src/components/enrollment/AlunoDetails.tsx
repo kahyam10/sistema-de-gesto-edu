@@ -56,9 +56,6 @@ import {
   useTurmas,
 } from "@/hooks/useApi";
 import { toast } from "sonner";
-import { pdf } from "@react-pdf/renderer";
-import { FichaMatriculaPDF } from "@/components/pdf/FichaMatriculaPDF";
-import { DeclaracaoMatriculaPDF } from "@/components/pdf/DeclaracaoMatriculaPDF";
 
 interface AlunoDetailsProps {
   matriculaId: string;
@@ -224,8 +221,13 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
   const idade = calcularIdade(matricula.dataNascimento);
 
   // Geração de PDFs (Ficha e Declaração de matrícula)
+  // Import dinâmico: o @react-pdf/renderer só entra no bundle ao clicar
   const handleDownloadFicha = async () => {
     try {
+      const [{ pdf }, { FichaMatriculaPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/components/pdf/FichaMatriculaPDF"),
+      ]);
       const blob = await pdf(
         <FichaMatriculaPDF
           matricula={matricula}
@@ -249,6 +251,10 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
 
   const handleDownloadDeclaracao = async () => {
     try {
+      const [{ pdf }, { DeclaracaoMatriculaPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/components/pdf/DeclaracaoMatriculaPDF"),
+      ]);
       const blob = await pdf(
         <DeclaracaoMatriculaPDF
           matricula={matricula}

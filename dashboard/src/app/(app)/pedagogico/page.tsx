@@ -1,17 +1,36 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PageWrap } from "@/components/ui/page-wrap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyWidget } from "@/components/ui/empty-state";
 import { FrequenciaManager } from "@/components/pedagogico/FrequenciaManager";
 import { NotasManager } from "@/components/pedagogico/NotasManager";
 import { BoletimDigital } from "@/components/pedagogico/BoletimDigital";
-import { GradeHorariaManager } from "@/components/pedagogico/GradeHorariaManager";
-import { RelatorioFrequenciaMensal } from "@/components/pedagogico/RelatorioFrequenciaMensal";
 import { DisciplinasManager } from "@/components/pedagogico/DisciplinasManager";
 import { ConfiguracaoAvaliacaoManager } from "@/components/pedagogico/ConfiguracaoAvaliacaoManager";
 import { RecuperacaoManager } from "@/components/pedagogico/RecuperacaoManager";
 import { ConselhoClasseManager } from "@/components/pedagogico/ConselhoClasseManager";
 import { ConflitosHorarioManager } from "@/components/pedagogico/ConflitosHorarioManager";
+
+// Abas que dependem do @react-pdf/renderer (pesado) carregam sob demanda
+const carregando = () => (
+  <EmptyWidget icon="clock" label="Carregando módulo..." />
+);
+const GradeHorariaManager = dynamic(
+  () =>
+    import("@/components/pedagogico/GradeHorariaManager").then(
+      (m) => m.GradeHorariaManager
+    ),
+  { ssr: false, loading: carregando }
+);
+const RelatorioFrequenciaMensal = dynamic(
+  () =>
+    import("@/components/pedagogico/RelatorioFrequenciaMensal").then(
+      (m) => m.RelatorioFrequenciaMensal
+    ),
+  { ssr: false, loading: carregando }
+);
 
 const TABS = [
   { value: "frequencia", label: "Frequência", component: <FrequenciaManager /> },

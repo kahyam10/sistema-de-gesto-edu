@@ -14,7 +14,23 @@ import {
   useMatriculas,
   useProfissionais,
   useModules,
+  useEtapas,
 } from "@/hooks/useApi";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+const CHART_COLORS = ["#1351B4", "#1F6FB2", "#A94B8C", "#D97706", "#3B86A8", "#5C7A4F"];
 
 const COLORS = {
   brand: "#1351B4",
@@ -26,6 +42,7 @@ const COLORS = {
 };
 
 export default function DashboardPage() {
+  const { data: etapas = [] } = useEtapas();
   const { data: escolas = [] } = useEscolas();
   const { data: turmas = [] } = useTurmas();
   const { data: matriculas = [] } = useMatriculas();
@@ -113,6 +130,19 @@ export default function DashboardPage() {
     n: matriculas.filter((m) => m.status === s.status).length,
   }));
   const maxStatus = Math.max(...porStatus.map((s) => s.n), 1);
+
+  // ── Dados dos gráficos (Recharts) ──
+  const chartOcupacao = ocupacaoEscolas.map((o) => ({
+    name: o.escola.nome.replace(/^Escola Municipal /, "EM "),
+    Alunos: o.alunos,
+    Capacidade: o.capacidade,
+  }));
+  const chartEtapas = etapas
+    .map((etapa) => ({
+      name: etapa.nome,
+      alunos: matriculasAtivas.filter((m) => m.etapaId === etapa.id).length,
+    }))
+    .filter((e) => e.alunos > 0);
 
   // ── Progresso do desenvolvimento (tracker real) ──
   const progresso = modules
@@ -280,6 +310,84 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+          </Panel>
+        </div>
+      </div>
+
+      {/* Gráficos (Recharts) */}
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <Panel title="Alunos × capacidade por escola">
+            {chartOcupacao.length === 0 ? (
+              <EmptyWidget icon="chart" label="Sem dados de ocupação para exibir." />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={chartOcupacao} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="2 3" stroke="#E3E7E4" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10.5, fill: "#6B7872" }}
+                    tickLine={false}
+                    axisLine={{ stroke: "#E3E7E4" }}
+                    interval={0}
+                    angle={-12}
+                    height={44}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10.5, fill: "#6B7872", fontFamily: "var(--font-mono)" }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "#FAFBFD" }}
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid #E3E7E4",
+                      fontSize: 12,
+                      boxShadow: "0 1px 3px rgba(15,23,40,0.06)",
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11.5 }} />
+                  <Bar dataKey="Alunos" fill="#1351B4" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="Capacidade" fill="#A9CBFF" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </Panel>
+        </div>
+        <div className="lg:col-span-2">
+          <Panel title="Alunos por etapa de ensino">
+            {chartEtapas.length === 0 ? (
+              <EmptyWidget icon="graduation" label="Nenhuma matrícula ativa para agrupar por etapa." />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={chartEtapas}
+                    dataKey="alunos"
+                    nameKey="name"
+                    innerRadius={58}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    strokeWidth={0}
+                  >
+                    {chartEtapas.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid #E3E7E4",
+                      fontSize: 12,
+                      boxShadow: "0 1px 3px rgba(15,23,40,0.06)",
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11.5 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </Panel>
         </div>
       </div>
