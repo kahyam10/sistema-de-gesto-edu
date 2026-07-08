@@ -675,6 +675,16 @@ export interface CreateMatriculaData {
   cep?: string;
   documentosEntregues?: string;
   observacoes?: string;
+  // Saúde e emergência
+  tipoSanguineo?: string;
+  alergias?: string;
+  medicamentos?: string;
+  condicoesSaude?: string;
+  numeroCartaoSUS?: string;
+  planoSaude?: string;
+  contatoEmergenciaNome?: string;
+  contatoEmergenciaTelefone?: string;
+  contatoEmergenciaParentesco?: string;
   escolaId: string;
   etapaId: string;
   turmaId?: string;

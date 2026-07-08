@@ -192,6 +192,17 @@ export const createMatriculaSchema = z.object({
   documentosEntregues: z.string().optional(),
   observacoes: z.string().optional(),
 
+  // Saúde e Emergência
+  tipoSanguineo: z.string().optional(),
+  alergias: z.string().optional(),
+  medicamentos: z.string().optional(),
+  condicoesSaude: z.string().optional(),
+  numeroCartaoSUS: z.string().optional(),
+  planoSaude: z.string().optional(),
+  contatoEmergenciaNome: z.string().optional(),
+  contatoEmergenciaTelefone: z.string().optional(),
+  contatoEmergenciaParentesco: z.string().optional(),
+
   // Relacionamentos
   escolaId: z.string().min(1, "Escola é obrigatória"),
   etapaId: z.string().min(1, "Etapa é obrigatória"),

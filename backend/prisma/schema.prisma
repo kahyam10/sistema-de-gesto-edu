@@ -292,6 +292,17 @@ model Matricula {
   // Documentos e Observações
   documentosEntregues String?  // JSON string com lista de documentos
   observacoes       String?
+
+  // Saúde e Emergência
+  tipoSanguineo     String?  // A+, O-, etc.
+  alergias          String?
+  medicamentos      String?  // Medicamentos de uso contínuo
+  condicoesSaude    String?  // Condições que a escola deve conhecer
+  numeroCartaoSUS   String?
+  planoSaude        String?
+  contatoEmergenciaNome       String?
+  contatoEmergenciaTelefone   String?
+  contatoEmergenciaParentesco String?
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

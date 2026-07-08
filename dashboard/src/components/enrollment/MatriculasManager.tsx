@@ -91,6 +91,14 @@ export function MatriculasManager() {
     endereco: "",
     possuiDeficiencia: false,
     tipoDeficiencia: "",
+    tipoSanguineo: "",
+    alergias: "",
+    medicamentos: "",
+    condicoesSaude: "",
+    numeroCartaoSUS: "",
+    contatoEmergenciaNome: "",
+    contatoEmergenciaTelefone: "",
+    contatoEmergenciaParentesco: "",
   });
 
   const escolasAtivas = (escolas || []).filter((e) => e.ativo);
@@ -189,6 +197,14 @@ export function MatriculasManager() {
       endereco: formData.endereco || undefined,
       possuiDeficiencia: formData.possuiDeficiencia,
       tipoDeficiencia: formData.possuiDeficiencia ? formData.tipoDeficiencia : undefined,
+      tipoSanguineo: formData.tipoSanguineo || undefined,
+      alergias: formData.alergias || undefined,
+      medicamentos: formData.medicamentos || undefined,
+      condicoesSaude: formData.condicoesSaude || undefined,
+      numeroCartaoSUS: formData.numeroCartaoSUS || undefined,
+      contatoEmergenciaNome: formData.contatoEmergenciaNome || undefined,
+      contatoEmergenciaTelefone: formData.contatoEmergenciaTelefone || undefined,
+      contatoEmergenciaParentesco: formData.contatoEmergenciaParentesco || undefined,
       escolaId: formData.escolaId,
       etapaId: formData.etapaId,
     };
@@ -220,6 +236,14 @@ export function MatriculasManager() {
       endereco: "",
       possuiDeficiencia: false,
       tipoDeficiencia: "",
+      tipoSanguineo: "",
+      alergias: "",
+      medicamentos: "",
+      condicoesSaude: "",
+      numeroCartaoSUS: "",
+      contatoEmergenciaNome: "",
+      contatoEmergenciaTelefone: "",
+      contatoEmergenciaParentesco: "",
     });
     setEditingMatricula(null);
     setIsFormOpen(false);
@@ -241,6 +265,14 @@ export function MatriculasManager() {
       endereco: matricula.endereco || "",
       possuiDeficiencia: matricula.possuiDeficiencia,
       tipoDeficiencia: matricula.tipoDeficiencia || "",
+      tipoSanguineo: matricula.tipoSanguineo || "",
+      alergias: matricula.alergias || "",
+      medicamentos: matricula.medicamentos || "",
+      condicoesSaude: matricula.condicoesSaude || "",
+      numeroCartaoSUS: matricula.numeroCartaoSUS || "",
+      contatoEmergenciaNome: matricula.contatoEmergenciaNome || "",
+      contatoEmergenciaTelefone: matricula.contatoEmergenciaTelefone || "",
+      contatoEmergenciaParentesco: matricula.contatoEmergenciaParentesco || "",
     });
     setIsFormOpen(true);
   };
@@ -597,6 +629,91 @@ export function MatriculasManager() {
                       />
                     </div>
                   )}
+                </div>
+
+                {/* Saúde e Emergência */}
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="text-[13.5px] font-semibold text-ink tracking-[-0.1px]">
+                    Saúde e emergência (opcional)
+                  </h4>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="tipoSanguineo">Tipo sanguíneo</Label>
+                      <Input
+                        id="tipoSanguineo"
+                        value={formData.tipoSanguineo}
+                        onChange={(e) => setFormData((p) => ({ ...p, tipoSanguineo: e.target.value }))}
+                        placeholder="Ex: O+"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="numeroCartaoSUS">Cartão SUS</Label>
+                      <Input
+                        id="numeroCartaoSUS"
+                        value={formData.numeroCartaoSUS}
+                        onChange={(e) => setFormData((p) => ({ ...p, numeroCartaoSUS: e.target.value }))}
+                        placeholder="Número do cartão SUS"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="alergias">Alergias</Label>
+                      <Input
+                        id="alergias"
+                        value={formData.alergias}
+                        onChange={(e) => setFormData((p) => ({ ...p, alergias: e.target.value }))}
+                        placeholder="Ex: dipirona, amendoim"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="medicamentos">Medicamentos de uso contínuo</Label>
+                      <Input
+                        id="medicamentos"
+                        value={formData.medicamentos}
+                        onChange={(e) => setFormData((p) => ({ ...p, medicamentos: e.target.value }))}
+                        placeholder="Ex: Ritalina 10mg"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="condicoesSaude">Condições de saúde que a escola deve conhecer</Label>
+                    <Input
+                      id="condicoesSaude"
+                      value={formData.condicoesSaude}
+                      onChange={(e) => setFormData((p) => ({ ...p, condicoesSaude: e.target.value }))}
+                      placeholder="Ex: asma, diabetes, epilepsia"
+                    />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="contatoEmergenciaNome">Contato de emergência</Label>
+                      <Input
+                        id="contatoEmergenciaNome"
+                        value={formData.contatoEmergenciaNome}
+                        onChange={(e) => setFormData((p) => ({ ...p, contatoEmergenciaNome: e.target.value }))}
+                        placeholder="Nome"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contatoEmergenciaTelefone">Telefone</Label>
+                      <Input
+                        id="contatoEmergenciaTelefone"
+                        value={formData.contatoEmergenciaTelefone}
+                        onChange={(e) => setFormData((p) => ({ ...p, contatoEmergenciaTelefone: e.target.value }))}
+                        placeholder="(73) 9 9999-9999"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contatoEmergenciaParentesco">Parentesco</Label>
+                      <Input
+                        id="contatoEmergenciaParentesco"
+                        value={formData.contatoEmergenciaParentesco}
+                        onChange={(e) => setFormData((p) => ({ ...p, contatoEmergenciaParentesco: e.target.value }))}
+                        placeholder="Ex: avó"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </form>
