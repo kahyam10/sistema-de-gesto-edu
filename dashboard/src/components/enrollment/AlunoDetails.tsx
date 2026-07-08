@@ -56,6 +56,9 @@ import {
   useTurmas,
 } from "@/hooks/useApi";
 import { toast } from "sonner";
+import { pdf } from "@react-pdf/renderer";
+import { FichaMatriculaPDF } from "@/components/pdf/FichaMatriculaPDF";
+import { DeclaracaoMatriculaPDF } from "@/components/pdf/DeclaracaoMatriculaPDF";
 
 interface AlunoDetailsProps {
   matriculaId: string;
@@ -220,6 +223,54 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
 
   const idade = calcularIdade(matricula.dataNascimento);
 
+  // Geração de PDFs (Ficha e Declaração de matrícula)
+  const handleDownloadFicha = async () => {
+    try {
+      const blob = await pdf(
+        <FichaMatriculaPDF
+          matricula={matricula}
+          escolaNome={escola?.nome}
+          etapaNome={etapa?.nome}
+          serieName={turmaVinculada?.serie?.nome}
+          turmaNome={turmaVinculada?.nome}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ficha-matricula-${matricula.numeroMatricula}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Ficha de matrícula gerada com sucesso!");
+    } catch {
+      toast.error("Erro ao gerar ficha de matrícula");
+    }
+  };
+
+  const handleDownloadDeclaracao = async () => {
+    try {
+      const blob = await pdf(
+        <DeclaracaoMatriculaPDF
+          matricula={matricula}
+          escolaNome={escola?.nome}
+          etapaNome={etapa?.nome}
+          serieName={turmaVinculada?.serie?.nome}
+          turmaNome={turmaVinculada?.nome}
+          turnoNome={turmaVinculada?.turno}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `declaracao-matricula-${matricula.numeroMatricula}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Declaração de matrícula gerada com sucesso!");
+    } catch {
+      toast.error("Erro ao gerar declaração");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com botão voltar - estilo igual ao EscolaDetails */}
@@ -239,6 +290,12 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleDownloadFicha}>
+            Ficha PDF
+          </Button>
+          <Button variant="outline" onClick={handleDownloadDeclaracao}>
+            Declaração PDF
+          </Button>
           <Button variant="outline" onClick={openEdit}>
             <Pencil className="h-4 w-4 mr-2" />
             Editar

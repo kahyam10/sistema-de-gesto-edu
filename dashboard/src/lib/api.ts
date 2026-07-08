@@ -623,6 +623,16 @@ export interface Matricula {
   cep?: string;
   documentosEntregues?: string;
   observacoes?: string;
+  // Saúde e emergência (opcionais — usados na Ficha de Matrícula PDF)
+  tipoSanguineo?: string;
+  alergias?: string;
+  medicamentos?: string;
+  condicoesSaude?: string;
+  numeroCartaoSUS?: string;
+  planoSaude?: string;
+  contatoEmergenciaNome?: string;
+  contatoEmergenciaTelefone?: string;
+  contatoEmergenciaParentesco?: string;
   escolaId: string;
   escola?: Escola;
   etapaId: string;
