@@ -529,3 +529,78 @@ export type UpdateConfiguracaoAvaliacaoInput = z.infer<
 >;
 export type CreateAvaliacaoInput = z.infer<typeof createAvaliacaoSchema>;
 export type UpdateAvaliacaoInput = z.infer<typeof updateAvaliacaoSchema>;
+
+// ==================== MÓDULO 4: RH (schemas) ====================
+// ==================== PONTO DIGITAL ====================
+
+export const createPontoSchema = z.object({
+  profissionalId: z.string().min(1, "Profissional é obrigatório"),
+  escolaId: z.string().optional().nullable(),
+  data: z.coerce.date(),
+  entrada: z.string().optional().nullable(),
+  saida: z.string().optional().nullable(),
+  entrada2: z.string().optional().nullable(),
+  saida2: z.string().optional().nullable(),
+  tipoRegistro: z
+    .enum(["NORMAL", "ATESTADO", "FALTA", "FALTA_JUSTIFICADA", "FERIAS", "LICENCA"])
+    .default("NORMAL"),
+  observacoes: z.string().optional().nullable(),
+  justificativa: z.string().optional().nullable(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
+});
+
+export const updatePontoSchema = createPontoSchema.partial();
+
+export const registrarPontoSchema = z.object({
+  profissionalId: z.string().min(1, "Profissional é obrigatório"),
+  escolaId: z.string().optional().nullable(),
+  tipo: z.enum(["ENTRADA", "SAIDA", "ENTRADA2", "SAIDA2"]),
+  horario: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato de horário inválido (HH:MM)"),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
+});
+
+// ==================== LICENÇAS ====================
+
+export const createLicencaSchema = z.object({
+  profissionalId: z.string().min(1, "Profissional é obrigatório"),
+  tipo: z.enum([
+    "LICENCA_MEDICA",
+    "LICENCA_MATERNIDADE",
+    "LICENCA_PATERNIDADE",
+    "LICENCA_PREMIO",
+    "LICENCA_SEM_VENCIMENTO",
+    "FERIAS",
+  ]),
+  dataInicio: z.coerce.date(),
+  dataFim: z.coerce.date(),
+  motivo: z.string().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
+  documentoPath: z.string().optional().nullable(),
+});
+
+export const updateLicencaSchema = createLicencaSchema.partial();
+
+export const aprovarLicencaSchema = z.object({
+  aprovadaPor: z.string().min(1, "Usuário aprovador é obrigatório"),
+  status: z.enum(["APROVADA", "REJEITADA"]),
+  justificativaRejeicao: z.string().optional().nullable(),
+});
+
+// ==================== PAGINAÇÃO ====================
+
+export const paginationSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+});
+
+
+// Tipos exportados do Módulo 4
+export type PaginationInput = z.infer<typeof paginationSchema>;
+export type CreatePontoInput = z.infer<typeof createPontoSchema>;
+export type UpdatePontoInput = z.infer<typeof updatePontoSchema>;
+export type RegistrarPontoInput = z.infer<typeof registrarPontoSchema>;
+export type CreateLicencaInput = z.infer<typeof createLicencaSchema>;
+export type UpdateLicencaInput = z.infer<typeof updateLicencaSchema>;
+export type AprovarLicencaInput = z.infer<typeof aprovarLicencaSchema>;

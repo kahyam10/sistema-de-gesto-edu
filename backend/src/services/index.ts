@@ -17,3 +17,6 @@ export { avaliacaoService } from "./avaliacao.service.js";
 export { disciplinaService } from "./disciplina.service.js";
 export { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
 export { gradeHorariaService } from "./grade-horaria.service.js";
+// Módulo 4 — RH
+export { pontoService } from "./ponto.service.js";
+export { licencaService } from "./licenca.service.js";

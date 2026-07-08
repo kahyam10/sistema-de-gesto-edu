@@ -36,6 +36,9 @@ import { comunicadoRoutes } from "./routes/comunicado.routes.js";
 import { notificacaoRoutes } from "./routes/notificacao.routes.js";
 import { plantaoPedagogicoRoutes } from "./routes/plantao-pedagogico.routes.js";
 import { reuniaoPaisRoutes } from "./routes/reuniao-pais.routes.js";
+// Módulo 4 — RH
+import { pontosRoutes } from "./routes/pontos.routes.js";
+import { licencasRoutes } from "./routes/licencas.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -264,6 +267,9 @@ async function buildApp() {
   app.register(notificacaoRoutes, { prefix: "/api/notificacoes" });
   app.register(plantaoPedagogicoRoutes, { prefix: "/api/plantoes-pedagogicos" });
   app.register(reuniaoPaisRoutes, { prefix: "/api/reunioes-pais" });
+  // Módulo 4 — RH
+  app.register(pontosRoutes, { prefix: "/api/pontos" });
+  app.register(licencasRoutes, { prefix: "/api/licencas" });
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);

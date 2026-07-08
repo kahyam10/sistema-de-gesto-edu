@@ -27,6 +27,10 @@ import {
   reuniaoPaisApi,
   comunicadoApi,
   notificacaoApi,
+  pontosApi,
+  licencasApi,
+  Ponto,
+  Licenca,
   BuscaAtiva,
   PlantaoPedagogico,
   ReuniaoPais,
@@ -3071,3 +3075,288 @@ export function useAtualizarStatusEnvioNotificacao() {
     },
   });
 }
+// ==================== PONTO DIGITAL ====================
+
+export function usePontos(filters?: {
+  profissionalId?: string;
+  escolaId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  tipoRegistro?: string;
+}) {
+  return useQuery<Ponto[]>({
+    queryKey: ["pontos", filters],
+    queryFn: () => pontosApi.list(filters) as Promise<Ponto[]>,
+  });
+}
+
+export function usePontosPaginated(
+  filters?: {
+    profissionalId?: string;
+    escolaId?: string;
+    dataInicio?: string;
+    dataFim?: string;
+    tipoRegistro?: string;
+  },
+  pagination?: { page?: number; limit?: number },
+) {
+  return useQuery<
+    | Ponto[]
+    | {
+        data: Ponto[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
+    queryKey: ["pontos", "paginated", filters, pagination],
+    queryFn: () => pontosApi.list(filters, pagination),
+  });
+}
+
+export function usePonto(id: string) {
+  return useQuery({
+    queryKey: ["pontos", id],
+    queryFn: () => pontosApi.getById(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreatePonto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<Ponto>) => pontosApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pontos"] });
+      toast.success("Ponto registrado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar ponto");
+    },
+  });
+}
+
+export function useRegistrarPonto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      profissionalId: string;
+      escolaId?: string;
+      tipo: "ENTRADA" | "SAIDA" | "ENTRADA2" | "SAIDA2";
+      horario: string;
+      latitude?: number;
+      longitude?: number;
+    }) => pontosApi.registrar(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pontos"] });
+      toast.success("Ponto registrado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar ponto");
+    },
+  });
+}
+
+export function useUpdatePonto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Ponto> }) =>
+      pontosApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pontos"] });
+      toast.success("Ponto atualizado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar ponto");
+    },
+  });
+}
+
+export function useDeletePonto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => pontosApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pontos"] });
+      toast.success("Ponto removido com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover ponto");
+    },
+  });
+}
+
+export function useRelatorioMensal(
+  profissionalId: string | undefined,
+  mes: number,
+  ano: number,
+) {
+  return useQuery({
+    queryKey: ["relatorio-mensal", profissionalId, mes, ano],
+    queryFn: () => pontosApi.relatorioMensal(profissionalId!, mes, ano),
+    enabled: !!profissionalId,
+  });
+}
+
+// ==================== LICENÇAS ====================
+
+export function useLicencas(filters?: {
+  profissionalId?: string;
+  status?: string;
+  tipo?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}) {
+  return useQuery<Licenca[]>({
+    queryKey: ["licencas", filters],
+    queryFn: () => licencasApi.list(filters) as Promise<Licenca[]>,
+  });
+}
+
+export function useLicencasPaginated(
+  filters?: {
+    profissionalId?: string;
+    status?: string;
+    tipo?: string;
+    dataInicio?: string;
+    dataFim?: string;
+  },
+  pagination?: { page?: number; limit?: number },
+) {
+  return useQuery<
+    | Licenca[]
+    | {
+        data: Licenca[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  >({
+    queryKey: ["licencas", "paginated", filters, pagination],
+    queryFn: () => licencasApi.list(filters, pagination),
+  });
+}
+
+export function useLicenca(id: string) {
+  return useQuery({
+    queryKey: ["licencas", id],
+    queryFn: () => licencasApi.getById(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateLicenca() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<Licenca>) => licencasApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["licencas"] });
+      toast.success("Licença solicitada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao solicitar licença");
+    },
+  });
+}
+
+export function useUpdateLicenca() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Licenca> }) =>
+      licencasApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["licencas"] });
+      toast.success("Licença atualizada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar licença");
+    },
+  });
+}
+
+export function useAprovarLicenca() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        aprovadaPor: string;
+        status: "APROVADA" | "REJEITADA";
+        justificativaRejeicao?: string;
+      };
+    }) => licencasApi.aprovar(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["licencas"] });
+      toast.success("Licença processada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao processar licença");
+    },
+  });
+}
+
+export function useCancelarLicenca() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => licencasApi.cancelar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["licencas"] });
+      toast.success("Licença cancelada com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao cancelar licença");
+    },
+  });
+}
+
+export function useDeleteLicenca() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => licencasApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["licencas"] });
+      toast.success("Licença removida com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover licença");
+    },
+  });
+}
+
+export function useLicencasAtivas() {
+  return useQuery({
+    queryKey: ["licencas", "ativas"],
+    queryFn: () => licencasApi.listAtivas(),
+  });
+}
+
+export function useRelatorioLicencas(
+  profissionalId: string | undefined,
+  anoInicio?: number,
+  anoFim?: number,
+) {
+  return useQuery({
+    queryKey: ["relatorio-licencas", profissionalId, anoInicio, anoFim],
+    queryFn: () => licencasApi.relatorio(profissionalId!, anoInicio, anoFim),
+    enabled: !!profissionalId,
+  });
+}
+
