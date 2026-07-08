@@ -208,6 +208,12 @@ async function buildApp() {
     { pattern: /^\/api\//, roles: OPERACAO },
   ];
 
+  // Leituras restritas: dados sensíveis de RH (licenças médicas, ponto,
+  // dados bancários) só para a equipe operacional — não PROFESSOR/USER.
+  const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
+    { pattern: /^\/api\/(licencas|pontos)(\/|$)/, roles: OPERACAO },
+  ];
+
   app.addHook("onRequest", async (request, reply) => {
     const url = request.raw.url?.split("?")[0] ?? "";
     if (!url.startsWith("/api") || PUBLIC_API.has(url)) return;
@@ -218,7 +224,16 @@ async function buildApp() {
       return reply.status(401).send({ error: "Não autorizado" });
     }
 
-    if (!WRITE_METHODS.has(request.method)) return;
+    if (!WRITE_METHODS.has(request.method)) {
+      const restrita = LEITURA_RESTRITA.find((r) => r.pattern.test(url));
+      if (restrita) {
+        const user = request.user as { role: string };
+        if (!restrita.roles.includes(user.role)) {
+          return reply.status(403).send({ error: "Acesso negado" });
+        }
+      }
+      return;
+    }
 
     const regra = REGRAS_ESCRITA.find(
       (r) =>

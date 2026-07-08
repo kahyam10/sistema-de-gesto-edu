@@ -344,11 +344,13 @@ Registra entrada ou saída do profissional em tempo real.
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-
+      // Modelo administrativo: o registro de ponto é feito pela equipe
+      // operacional (guard global restringe leitura/escrita a OPERACAO).
+      // Auto-registro pelo próprio profissional exigirá vínculo
+      // User↔ProfissionalEducacao (não existe no schema atual).
       const body = registrarPontoSchema.parse(request.body);
       const ponto = await pontoService.registrarPonto(body);
       return reply.status(201).send(ponto);
-
     }
   );
 

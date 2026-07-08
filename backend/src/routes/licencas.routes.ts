@@ -572,8 +572,17 @@ Aprova ou rejeita uma solicitação de licença.
       const { id } = request.params;
       const { aprovado, motivo } = request.body as { aprovado: boolean; motivo?: string };
 
-      // Transformar o formato do Swagger para o formato do service
-      const userId = (request.user as any)?.id || "cmln23unb0000isumnxuf5c0z"; // fallback para admin
+      // Aprovação exige identidade real e papel de gestão (sem fallback)
+      const user = request.user as { id?: string; role?: string } | undefined;
+      if (!user?.id) {
+        return reply.status(401).send({ error: "Não autorizado" });
+      }
+      if (!["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR"].includes(user.role ?? "")) {
+        return reply
+          .status(403)
+          .send({ error: "Apenas a gestão pode aprovar ou rejeitar licenças" });
+      }
+      const userId = user.id;
       const data = {
         aprovadaPor: userId,
         status: aprovado ? "APROVADA" as const : "REJEITADA" as const,
