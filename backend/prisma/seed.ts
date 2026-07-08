@@ -642,7 +642,7 @@ async function main() {
       icon: "BookOpen",
       phase: 2,
       status: "in-progress",
-      progress: 20,
+      progress: 60,
       ordem: 1,
       subModules: [
         {
@@ -656,19 +656,22 @@ async function main() {
           name: "Frequência Diária",
           description:
             "Registro de presença com integração ao Sistema Presença (Gov. Federal)",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Registro diário por turma implementado; integração Sistema Presença pendente",
           ordem: 1,
         },
         {
           name: "Lançamento de Notas",
           description: "Sistema de avaliação e registro de conceitos",
-          status: "planning",
+          status: "completed",
           ordem: 2,
         },
         {
           name: "Acompanhamento de Aprendizagens",
           description: "Monitoramento do desenvolvimento acadêmico dos alunos",
-          status: "planning",
+          status: "in-progress",
+          observacao: "Boletim digital com médias e situação implementado",
           ordem: 3,
         },
         {
@@ -737,7 +740,7 @@ async function main() {
       icon: "Users",
       phase: 1,
       status: "in-progress",
-      progress: 20,
+      progress: 60,
       ordem: 3,
       subModules: [
         {
@@ -763,13 +766,13 @@ async function main() {
         {
           name: "Folha de Ponto Digital",
           description: "Registro eletrônico de presença de servidores",
-          status: "planning",
+          status: "completed",
           ordem: 3,
         },
         {
           name: "Licenças e Afastamentos",
           description: "Controle de ausências e substituições",
-          status: "planning",
+          status: "completed",
           ordem: 4,
         },
       ],
@@ -779,27 +782,27 @@ async function main() {
       description: "Busca Ativa Escolar e Educação Especial (AEE)",
       icon: "Heart",
       phase: 4,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 90,
       ordem: 4,
       subModules: [
         {
           name: "Busca Ativa Escolar",
           description:
             "Interface para assistentes sociais, registro e acompanhamento",
-          status: "planning",
+          status: "completed",
           ordem: 0,
         },
         {
           name: "Educação Especial",
           description: "Cadastro de alunos especiais, AEE e salas de recursos",
-          status: "planning",
+          status: "completed",
           ordem: 1,
         },
         {
           name: "Acompanhamento Individualizado",
           description: "Planos personalizados e monitoramento contínuo",
-          status: "planning",
+          status: "completed",
           ordem: 2,
         },
       ],
@@ -914,32 +917,33 @@ async function main() {
       description: "Plantões, reuniões de pais, comunicados e notificações",
       icon: "Bell",
       phase: 4,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 75,
       ordem: 8,
       subModules: [
         {
           name: "Plantão Pedagógico",
           description: "Agendamento e registro de atendimentos",
-          status: "planning",
+          status: "completed",
           ordem: 0,
         },
         {
           name: "Reuniões de Pais",
           description: "Convocações, atas e controle de frequência",
-          status: "planning",
+          status: "completed",
           ordem: 1,
         },
         {
           name: "Comunicados Gerais",
           description: "Sistema de avisos para comunidade escolar",
-          status: "planning",
+          status: "completed",
           ordem: 2,
         },
         {
           name: "Notificações Push/SMS/Email",
           description: "Alertas automáticos multicanal",
-          status: "planning",
+          status: "in-progress",
+          observacao: "Notificações no app implementadas; envio push/SMS/email pendente",
           ordem: 3,
         },
       ],

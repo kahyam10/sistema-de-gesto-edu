@@ -95,6 +95,23 @@ Pendência P2 restante: CI no GitHub Actions (build + testes em PRs) — opciona
 
 ---
 
+## 4b. Resgate da linha do servidor — ✅ APLICADO em 08/07/2026
+
+Porte manual dos módulos auditados em [docs/AUDITORIA_LINHA_SERVIDOR.md](docs/AUDITORIA_LINHA_SERVIDOR.md), adaptados à hierarquia atual (Serie→Nível→Etapa), ao RBAC global e ao redesign:
+
+| Resgate | Conteúdo | Rota |
+|---|---|---|
+| Sistema de erros | AppError + 166 códigos + handler (Zod/Prisma→HTTP) + logger pino + rate-limit 300/min | transversal |
+| **Módulo 2 Pedagógico** | Frequência diária, notas com média ponderada, boletim com situação (média+frequência<75%), grade horária com PDF, relatório mensal, disciplinas, configuração de avaliação, recuperação, conselho de classe (muda status da matrícula), conflitos de horário — 6 models, 6 services, 10 telas | `/pedagogico` |
+| **Módulo 5 Programas Especiais** | Busca ativa (visitas domiciliares + encaminhamentos a órgãos), Educação Especial (PEI/AEE/salas de recursos), acompanhamento individualizado — 7 models | `/programas` |
+| **Módulo 9 Comunicação** | Comunicados com confirmação de leitura, notificações, plantão pedagógico, reuniões de pais com presença — 6 models | `/comunicacao` |
+| **Módulo 4 RH** | Ponto digital com cálculo de horas, licenças com fluxo de aprovação (restrito à gestão), afastamentos/certificações/histórico + campos de RH no profissional | `/rh` |
+| PDFs | Ficha e Declaração de matrícula (@react-pdf/renderer) no detalhe do aluno | — |
+
+**Segurança do resgate:** backdoor de login da linha do servidor descartado; fallback de admin hardcodado removido da aprovação de licenças; leitura de licenças/pontos restrita à equipe operacional; RBAC estendido com perfil PEDAGOGICO (professor lança frequência/notas) e recibos de leitura abertos a autenticados. Tracker de módulos atualizado (M2 60%, M4 60%, M5 90%, M9 75%).
+
+**Descartado conscientemente:** portais wrapper do M3 (órfãos), Cadastros regredidos, Docker/Swagger/paginação deles (já tínhamos melhor), auth-bypass.
+
 ## 5. Passo a passo do deploy de lançamento — VPS + Coolify + Supabase self-hosted
 
 ### 5.1 Provisionar a VPS
