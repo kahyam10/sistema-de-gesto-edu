@@ -198,7 +198,11 @@ export const createMatriculaSchema = z.object({
   turmaId: z.string().optional(),
 });
 
-export const updateMatriculaSchema = createMatriculaSchema.partial();
+export const updateMatriculaSchema = createMatriculaSchema.partial().extend({
+  status: z
+    .enum(["ATIVA", "TRANSFERIDA", "CANCELADA", "CONCLUIDA"])
+    .optional(),
+});
 
 // ==================== PROFISSIONAL ====================
 

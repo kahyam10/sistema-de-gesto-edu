@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -709,7 +709,12 @@ export const matriculasApi = {
   },
   create: (data: CreateMatriculaData) =>
     request<Matricula>("/api/matriculas", { method: "POST", body: data }),
-  update: (id: string, data: Partial<CreateMatriculaData>) =>
+  update: (
+    id: string,
+    data: Partial<CreateMatriculaData> & {
+      status?: "ATIVA" | "TRANSFERIDA" | "CANCELADA" | "CONCLUIDA";
+    }
+  ) =>
     request<Matricula>(`/api/matriculas/${id}`, { method: "PUT", body: data }),
   delete: (id: string) =>
     request<void>(`/api/matriculas/${id}`, { method: "DELETE" }),
@@ -1232,3 +1237,595 @@ export const calendarioApi = {
 };
 
 export { ApiError };
+
+// ==================== MÓDULO 2: PEDAGÓGICO ====================
+
+// Pagination types
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
+export interface GradeHorario {
+  id: string;
+  turmaId: string;
+  diaSemana: "SEGUNDA" | "TERCA" | "QUARTA" | "QUINTA" | "SEXTA" | "SABADO";
+  horaInicio: string;
+  horaFim: string;
+  disciplina: string;
+  observacoes?: string;
+  profissionalId?: string | null;
+  profissional?: ProfissionalEducacao | null;
+  turma?: Turma;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CargaHorariaResumo {
+  profissionalId: string;
+  profissionalNome: string;
+  totalAulas: number;
+  totalMinutos: number;
+}
+
+export interface CargaHorariaEscolaResumo {
+  escolaId: string;
+  escolaNome: string;
+  totalAulas: number;
+  totalMinutos: number;
+}
+
+export interface CargaHorariaTurmaResumo {
+  turmaId: string;
+  turmaNome: string;
+  escolaNome: string;
+  totalAulas: number;
+  totalMinutos: number;
+}
+
+// ==================== GRADE HORÁRIA ====================
+
+export const gradeHorariaApi = {
+  list: (filters?: { turmaId?: string; profissionalId?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.profissionalId)
+      params.append("profissionalId", filters.profissionalId);
+    const query = params.toString();
+    return request<GradeHorario[]>(
+      `/api/grade-horaria${query ? `?${query}` : ""}`,
+    );
+  },
+  get: (id: string) => request<GradeHorario>(`/api/grade-horaria/${id}`),
+  create: (data: {
+    turmaId: string;
+    diaSemana: GradeHorario["diaSemana"];
+    horaInicio: string;
+    horaFim: string;
+    disciplina: string;
+    profissionalId?: string;
+    observacoes?: string;
+  }) =>
+    request<GradeHorario>("/api/grade-horaria", { method: "POST", body: data }),
+  update: (
+    id: string,
+    data: Partial<{
+      turmaId: string;
+      diaSemana: GradeHorario["diaSemana"];
+      horaInicio: string;
+      horaFim: string;
+      disciplina: string;
+      profissionalId?: string;
+      observacoes?: string;
+    }>,
+  ) =>
+    request<GradeHorario>(`/api/grade-horaria/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/grade-horaria/${id}`, { method: "DELETE" }),
+  getCargaResumo: (profissionalId?: string) => {
+    const params = new URLSearchParams();
+    if (profissionalId) params.append("profissionalId", profissionalId);
+    const query = params.toString();
+    return request<CargaHorariaResumo[]>(
+      `/api/grade-horaria/relatorios/carga${query ? `?${query}` : ""}`,
+    );
+  },
+  getCargaResumoPorEscola: () =>
+    request<CargaHorariaEscolaResumo[]>("/api/grade-horaria/relatorios/escola"),
+  getCargaResumoPorTurma: () =>
+    request<CargaHorariaTurmaResumo[]>("/api/grade-horaria/relatorios/turma"),
+};
+
+// ==================== FREQUÊNCIA ====================
+
+export interface Frequencia {
+  id: string;
+  data: string;
+  status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+  justificativa?: string;
+  observacao?: string;
+  matriculaId: string;
+  turmaId: string;
+  matricula?: {
+    id: string;
+    numeroMatricula: string;
+    nomeAluno: string;
+  };
+  turma?: {
+    id: string;
+    nome: string;
+    serie?: { nome: string };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EstatisticasFrequencia {
+  totalAulas: number;
+  presencas: number;
+  faltas: number;
+  faltasJustificadas: number;
+  percentualPresenca: number;
+  percentualFaltas: number;
+  abaixoDoLimite: boolean;
+}
+
+export interface AlunoComBaixaFrequencia {
+  matricula: {
+    id: string;
+    numeroMatricula: string;
+    nomeAluno: string;
+  };
+  estatisticas: EstatisticasFrequencia;
+}
+
+export const frequenciaApi = {
+  // Listar frequências
+  list: (params?: {
+    turmaId?: string;
+    matriculaId?: string;
+    dataInicio?: string;
+    dataFim?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.turmaId) query.append("turmaId", params.turmaId);
+    if (params?.matriculaId) query.append("matriculaId", params.matriculaId);
+    if (params?.dataInicio) query.append("dataInicio", params.dataInicio);
+    if (params?.dataFim) query.append("dataFim", params.dataFim);
+    const queryString = query.toString();
+    return request<Frequencia[]>(
+      `/api/frequencia${queryString ? `?${queryString}` : ""}`,
+    );
+  },
+
+  // Buscar frequência por ID
+  get: (id: string) => request<Frequencia>(`/api/frequencia/${id}`),
+
+  // Criar registro de frequência
+  create: (data: {
+    matriculaId: string;
+    turmaId: string;
+    data: string;
+    status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+    justificativa?: string;
+    observacao?: string;
+  }) =>
+    request<Frequencia>("/api/frequencia", {
+      method: "POST",
+      body: data,
+    }),
+
+  // Registrar frequência de turma completa
+  registrarTurma: (data: {
+    turmaId: string;
+    data: string;
+    presencas: Array<{
+      matriculaId: string;
+      status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+      justificativa?: string;
+      observacao?: string;
+    }>;
+  }) =>
+    request<{
+      message: string;
+      registros: Frequencia[];
+    }>("/api/frequencia/turma", {
+      method: "POST",
+      body: data,
+    }),
+
+  // Atualizar frequência
+  update: (
+    id: string,
+    data: {
+      status?: "PRESENTE" | "FALTA" | "JUSTIFICADA";
+      justificativa?: string;
+      observacao?: string;
+    },
+  ) =>
+    request<Frequencia>(`/api/frequencia/${id}`, {
+      method: "PATCH",
+      body: data,
+    }),
+
+  // Deletar frequência
+  delete: (id: string) =>
+    request<{ message: string }>(`/api/frequencia/${id}`, {
+      method: "DELETE",
+    }),
+
+  // Estatísticas de frequência
+  getEstatisticas: (
+    matriculaId: string,
+    turmaId: string,
+    dataInicio?: string,
+    dataFim?: string,
+  ) => {
+    const query = new URLSearchParams();
+    if (dataInicio) query.append("dataInicio", dataInicio);
+    if (dataFim) query.append("dataFim", dataFim);
+    const queryString = query.toString();
+    return request<EstatisticasFrequencia>(
+      `/api/frequencia/estatisticas/${matriculaId}/${turmaId}${queryString ? `?${queryString}` : ""}`,
+    );
+  },
+
+  // Alunos com baixa frequência
+  listarBaixaFrequencia: (
+    turmaId: string,
+    dataInicio?: string,
+    dataFim?: string,
+  ) => {
+    const query = new URLSearchParams();
+    if (dataInicio) query.append("dataInicio", dataInicio);
+    if (dataFim) query.append("dataFim", dataFim);
+    const queryString = query.toString();
+    return request<AlunoComBaixaFrequencia[]>(
+      `/api/frequencia/turma/${turmaId}/baixa-frequencia${queryString ? `?${queryString}` : ""}`,
+    );
+  },
+
+  // Resumo de frequência da turma (todos os alunos)
+  getResumoTurma: (turmaId: string, dataInicio?: string, dataFim?: string) => {
+    const query = new URLSearchParams();
+    if (dataInicio) query.append("dataInicio", dataInicio);
+    if (dataFim) query.append("dataFim", dataFim);
+    const queryString = query.toString();
+    return request<AlunoComBaixaFrequencia[]>(
+      `/api/frequencia/turma/${turmaId}/resumo${queryString ? `?${queryString}` : ""}`,
+    );
+  },
+
+  // Buscar frequência por data
+  buscarPorData: (turmaId: string, data: string) =>
+    request<Frequencia[]>(`/api/frequencia/turma/${turmaId}/data/${data}`),
+};
+
+// ==================== DISCIPLINAS ====================
+
+export interface Disciplina {
+  id: string;
+  nome: string;
+  codigo: string;
+  descricao?: string;
+  cargaHorariaSemanal?: number;
+  obrigatoria: boolean;
+  ativo: boolean;
+  ordem: number;
+  etapaId: string;
+  etapa?: EtapaEnsino;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const disciplinasApi = {
+  list: (filters?: { etapaId?: string; ativo?: boolean }) => {
+    const params = new URLSearchParams();
+    if (filters?.etapaId) params.append("etapaId", filters.etapaId);
+    if (filters?.ativo !== undefined)
+      params.append("ativo", filters.ativo.toString());
+    const query = params.toString();
+    return request<Disciplina[]>(`/api/disciplinas${query ? `?${query}` : ""}`);
+  },
+  get: (id: string) => request<Disciplina>(`/api/disciplinas/${id}`),
+  getByEtapa: (etapaId: string) =>
+    request<Disciplina[]>(`/api/disciplinas/etapa/${etapaId}`),
+  create: (data: {
+    nome: string;
+    codigo: string;
+    descricao?: string;
+    cargaHorariaSemanal?: number;
+    obrigatoria?: boolean;
+    ativo?: boolean;
+    ordem?: number;
+    etapaId: string;
+  }) => request<Disciplina>("/api/disciplinas", { method: "POST", body: data }),
+  update: (
+    id: string,
+    data: Partial<{
+      nome: string;
+      codigo: string;
+      descricao?: string;
+      cargaHorariaSemanal?: number;
+      obrigatoria?: boolean;
+      ativo?: boolean;
+      ordem?: number;
+      etapaId: string;
+    }>,
+  ) =>
+    request<Disciplina>(`/api/disciplinas/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/disciplinas/${id}`, { method: "DELETE" }),
+};
+
+// ==================== CONFIGURAÇÃO DE AVALIAÇÃO ====================
+
+export interface ConfiguracaoAvaliacao {
+  id: string;
+  anoLetivo: number;
+  sistemaAvaliacao: string;
+  numeroPeriodos: number;
+  mediaMinima: number;
+  percentualFrequenciaMinima: number;
+  recuperacaoParalela: boolean;
+  recuperacaoFinal: boolean;
+  escolaId?: string;
+  escola?: Escola;
+  etapaId?: string;
+  etapa?: EtapaEnsino;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const configuracaoAvaliacaoApi = {
+  list: (filters?: {
+    anoLetivo?: number;
+    escolaId?: string;
+    etapaId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.anoLetivo)
+      params.append("anoLetivo", filters.anoLetivo.toString());
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    if (filters?.etapaId) params.append("etapaId", filters.etapaId);
+    const query = params.toString();
+    return request<ConfiguracaoAvaliacao[]>(
+      `/api/configuracao-avaliacao${query ? `?${query}` : ""}`,
+    );
+  },
+  get: (id: string) =>
+    request<ConfiguracaoAvaliacao>(`/api/configuracao-avaliacao/${id}`),
+  create: (data: {
+    anoLetivo: number;
+    sistemaAvaliacao?: string;
+    numeroPeriodos?: number;
+    mediaMinima?: number;
+    percentualFrequenciaMinima?: number;
+    recuperacaoParalela?: boolean;
+    recuperacaoFinal?: boolean;
+    escolaId?: string;
+    etapaId?: string;
+  }) =>
+    request<ConfiguracaoAvaliacao>("/api/configuracao-avaliacao", {
+      method: "POST",
+      body: data,
+    }),
+  update: (
+    id: string,
+    data: Partial<{
+      anoLetivo: number;
+      sistemaAvaliacao: string;
+      numeroPeriodos: number;
+      mediaMinima: number;
+      percentualFrequenciaMinima: number;
+      recuperacaoParalela: boolean;
+      recuperacaoFinal: boolean;
+      escolaId?: string;
+      etapaId?: string;
+    }>,
+  ) =>
+    request<ConfiguracaoAvaliacao>(`/api/configuracao-avaliacao/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/configuracao-avaliacao/${id}`, { method: "DELETE" }),
+};
+
+// ==================== AVALIAÇÕES ====================
+
+export interface Avaliacao {
+  id: string;
+  nome: string;
+  tipo: "PROVA" | "TRABALHO" | "ATIVIDADE" | "PARTICIPACAO" | "RECUPERACAO";
+  peso: number;
+  valorMaximo: number;
+  data: string;
+  bimestre: number;
+  observacao?: string;
+  turmaId: string;
+  turma?: Turma;
+  disciplinaId: string;
+  disciplina?: Disciplina;
+  profissionalId?: string;
+  profissional?: ProfissionalEducacao;
+  notas?: Nota[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const avaliacoesApi = {
+  list: (filters?: {
+    turmaId?: string;
+    disciplinaId?: string;
+    bimestre?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.disciplinaId)
+      params.append("disciplinaId", filters.disciplinaId);
+    if (filters?.bimestre)
+      params.append("bimestre", filters.bimestre.toString());
+    const query = params.toString();
+    return request<Avaliacao[]>(`/api/avaliacoes${query ? `?${query}` : ""}`);
+  },
+  get: (id: string) => request<Avaliacao>(`/api/avaliacoes/${id}`),
+  create: (data: {
+    nome: string;
+    tipo: string;
+    peso?: number;
+    valorMaximo?: number;
+    data: string;
+    bimestre: number;
+    observacao?: string;
+    turmaId: string;
+    disciplinaId: string;
+    profissionalId?: string;
+  }) => request<Avaliacao>("/api/avaliacoes", { method: "POST", body: data }),
+  update: (
+    id: string,
+    data: Partial<{
+      nome: string;
+      tipo: string;
+      peso: number;
+      valorMaximo: number;
+      data: string;
+      bimestre: number;
+      observacao?: string;
+    }>,
+  ) =>
+    request<Avaliacao>(`/api/avaliacoes/${id}`, { method: "PUT", body: data }),
+  delete: (id: string) =>
+    request<void>(`/api/avaliacoes/${id}`, { method: "DELETE" }),
+};
+
+// ==================== NOTAS ====================
+
+export interface Nota {
+  id: string;
+  valor: number;
+  observacao?: string;
+  turmaId: string;
+  disciplina: string;
+  bimestre: number;
+  avaliacaoId?: string | null;
+  avaliacao?: Avaliacao;
+  matriculaId: string;
+  matricula?: Matricula;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BoletimDisciplina {
+  disciplinaId: string;
+  disciplinaNome: string;
+  disciplinaCodigo?: string;
+  bimestres: {
+    bimestre: number;
+    media: number | null;
+    avaliacoes: {
+      id: string;
+      nome: string;
+      tipo: string;
+      peso: number;
+      valorMaximo?: number;
+      nota: number | null;
+    }[];
+  }[];
+  mediaFinal: number | null;
+  situacao: string;
+}
+
+export interface Boletim {
+  matricula: {
+    id: string;
+    numeroMatricula: string;
+    nomeAluno: string;
+  };
+  turma?: {
+    id: string;
+    nome: string;
+    serie?: string | { nome: string };
+    escola?: { nome: string };
+  };
+  disciplinas: BoletimDisciplina[];
+  frequencia?: {
+    totalAulas: number;
+    presencas: number;
+    faltas: number;
+    percentualPresenca: number;
+    abaixoDoLimite: boolean;
+  };
+  situacaoGeral?: string;
+}
+
+export const notasApi = {
+  list: (filters?: {
+    turmaId?: string;
+    disciplina?: string;
+    matriculaId?: string;
+    bimestre?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.turmaId) params.append("turmaId", filters.turmaId);
+    if (filters?.disciplina) params.append("disciplina", filters.disciplina);
+    if (filters?.matriculaId) params.append("matriculaId", filters.matriculaId);
+    if (filters?.bimestre)
+      params.append("bimestre", filters.bimestre.toString());
+    const queryString = params.toString();
+    return request<Nota[]>(`/api/notas${queryString ? `?${queryString}` : ""}`);
+  },
+  create: (data: {
+    matriculaId: string;
+    turmaId: string;
+    disciplina: string;
+    bimestre: number;
+    avaliacaoId: string | null;
+    valor: number;
+    observacao?: string;
+  }) => request<Nota>("/api/notas", { method: "POST", body: data }),
+  get: (id: string) => request<Nota>(`/api/notas/${id}`),
+  lancarTurma: (data: {
+    avaliacaoId: string;
+    notas: Array<{ matriculaId: string; valor: number; observacao?: string }>;
+  }) => request<Nota[]>("/api/notas/turma", { method: "POST", body: data }),
+  update: (id: string, data: { valor?: number; observacao?: string }) =>
+    request<Nota>(`/api/notas/${id}`, { method: "PUT", body: data }),
+  delete: (id: string) =>
+    request<void>(`/api/notas/${id}`, { method: "DELETE" }),
+  getBoletim: (matriculaId: string, turmaId?: string) => {
+    const params = turmaId ? `?turmaId=${turmaId}` : "";
+    return request<Boletim>(`/api/notas/boletim/${matriculaId}${params}`);
+  },
+  getMediaFinal: (matriculaId: string, turmaId: string, disciplinaId: string) =>
+    request<{ media: number }>(
+      `/api/notas/media/${matriculaId}/${turmaId}/${disciplinaId}`,
+    ),
+  getSituacao: (matriculaId: string, turmaId: string, disciplinaId: string) =>
+    request<{
+      situacao: string;
+      mediaFinal: number;
+      frequenciaPercentual: number;
+    }>(`/api/notas/situacao/${matriculaId}/${turmaId}/${disciplinaId}`),
+};
+

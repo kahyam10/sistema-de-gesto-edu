@@ -22,6 +22,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: 'Operação',
     items: [
       { href: '/', label: 'Dashboard', icon: 'dashboard', roles: 'all' },
+      { href: '/pedagogico', label: 'Pedagógico', icon: 'book', roles: 'all' },
       { href: '/cadastros/matriculas', label: 'Matrículas', icon: 'userPlus', roles: 'all' },
       { href: '/cadastros/escolas', label: 'Escolas', icon: 'building', roles: 'all' },
       { href: '/cadastros/profissionais', label: 'Profissionais', icon: 'users', roles: 'all' },
