@@ -58,7 +58,7 @@ export function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <div className="text-right leading-tight">
+        <div className="hidden text-right leading-tight sm:block">
           <div className="text-[12.5px] font-semibold tracking-[-0.1px] text-ink">{user.nome}</div>
           <div className="text-[11px] text-ink-muted">{roleLabel}</div>
         </div>

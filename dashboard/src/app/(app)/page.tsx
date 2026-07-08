@@ -245,7 +245,9 @@ export default function DashboardPage() {
             {ocupacaoEscolas.length === 0 ? (
               <EmptyWidget icon="building" label="Nenhuma escola cadastrada." />
             ) : (
-              <OcupacaoTable rows={ocupacaoEscolas} />
+              <div className="overflow-x-auto">
+                <OcupacaoTable rows={ocupacaoEscolas} />
+              </div>
             )}
           </Panel>
         </div>

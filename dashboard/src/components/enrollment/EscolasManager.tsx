@@ -295,11 +295,11 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
             return (
               <Card key={escola.id} className="cursor-pointer hover:shadow-md transition-all hover:border-primary/50 group" onClick={() => onSelectEscola?.(escola)}>
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
                       <Buildings className="text-primary" size={28} weight="duotone" />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-[180px]">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-lg truncate">{escola.nome}</h4>
                         <Badge variant={escola.ativo ? "default" : "secondary"} className="text-xs flex-shrink-0">{escola.ativo ? "Ativa" : "Inativa"}</Badge>
@@ -338,7 +338,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                         <p className="text-xs text-muted-foreground">Vagas</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="ml-auto flex items-center gap-1">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>

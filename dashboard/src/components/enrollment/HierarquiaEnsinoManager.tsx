@@ -352,20 +352,20 @@ export function HierarquiaEnsinoManager() {
                   onOpenChange={() => toggleExpand(tipo.id)}
                 >
                   <CollapsibleTrigger asChild>
-                    <div className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-y-1 p-3 hover:bg-muted/50 cursor-pointer">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                         {expandedItems.has(tipo.id) ? (
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-4 w-4 shrink-0" />
                         ) : (
-                          <ChevronRight className="h-4 w-4" />
+                          <ChevronRight className="h-4 w-4 shrink-0" />
                         )}
-                        <GraduationCap className="h-5 w-5 text-primary" />
+                        <GraduationCap className="h-5 w-5 shrink-0 text-primary" />
                         <span className="font-semibold">{tipo.nome}</span>
                         <Badge variant="outline" className="ml-2">
                           {tipo.etapas.length} etapa(s)
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"

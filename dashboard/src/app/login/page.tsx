@@ -147,8 +147,8 @@ export default function LoginPage() {
       </div>
 
       {/* ── Direita · formulário ───────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-12 bg-surface">
-        <form onSubmit={onSubmit} className="w-full max-w-[380px]">
+      <div className="flex-1 flex items-center justify-center p-6 py-10 md:p-12 bg-surface">
+        <form onSubmit={onSubmit} className="w-full max-w-[380px] min-w-0">
           <h2 className="m-0 font-display text-[28px] font-medium tracking-[-0.6px]">
             Acesse o painel
           </h2>

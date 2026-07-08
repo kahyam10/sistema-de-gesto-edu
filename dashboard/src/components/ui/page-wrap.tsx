@@ -24,7 +24,7 @@ export function PageWrap({
   className,
 }: PageWrapProps) {
   return (
-    <div className={cn('px-6 py-5 space-y-5', className)}>
+    <div className={cn('px-4 py-4 sm:px-6 sm:py-5 space-y-5', className)}>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           {breadcrumb && breadcrumb.length > 0 && <Breadcrumb items={breadcrumb} />}
