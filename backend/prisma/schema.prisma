@@ -26,6 +26,11 @@ model User {
   escolaId String?
   escola   Escola? @relation(fields: [escolaId], references: [id])
 
+  // Vínculo com o cadastro de profissional (habilita auto-serviço de
+  // ponto e portais por papel no futuro)
+  profissionalId String? @unique
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id])
+
   @@map("users")
 }
 
@@ -389,6 +394,7 @@ model ProfissionalEducacao {
   comunicadosAutor        Comunicado[]
   certificacoes  CertificacaoProfissional[]
   historicoContratacoes HistoricoContratacao[]
+  usuario        User?
   afastamentos   Afastamento[]
   pontos         Ponto[]
   licencas       Licenca[]

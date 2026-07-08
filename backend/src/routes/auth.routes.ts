@@ -18,6 +18,7 @@ export async function authRoutes(app: FastifyInstance) {
         email: user.email,
         nome: user.nome,
         role: user.role,
+        escolaId: user.escola?.id ?? null,
       });
 
       return reply.status(201).send({ user, token });
@@ -47,6 +48,7 @@ export async function authRoutes(app: FastifyInstance) {
         email: user.email,
         nome: user.nome,
         role: user.role,
+        escolaId: user.escolaId ?? null,
       });
 
       return reply.send({ user, token });

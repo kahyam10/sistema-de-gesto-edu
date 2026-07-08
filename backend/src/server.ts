@@ -5,6 +5,7 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { errorHandler } from "./middleware/error-handler.js";
+import { prisma } from "./lib/prisma.js";
 
 import {
   authRoutes,
@@ -233,6 +234,24 @@ async function buildApp() {
         }
       }
       return;
+    }
+
+    // Propriedade: DIRETOR só escreve na PRÓPRIA escola
+    // (cobre /api/escolas/:id, /api/escolas/:id/censo e /api/escolas/:id/salas*)
+    const userToken = request.user as { id: string; role: string };
+    if (userToken.role === "DIRETOR") {
+      const escolaMatch = url.match(/^\/api\/escolas\/([^/]+)/);
+      if (escolaMatch) {
+        const usuario = await prisma.user.findUnique({
+          where: { id: userToken.id },
+          select: { escolaId: true },
+        });
+        if (!usuario?.escolaId || usuario.escolaId !== escolaMatch[1]) {
+          return reply
+            .status(403)
+            .send({ error: "Diretores só podem alterar a própria escola" });
+        }
+      }
     }
 
     const regra = REGRAS_ESCRITA.find(
