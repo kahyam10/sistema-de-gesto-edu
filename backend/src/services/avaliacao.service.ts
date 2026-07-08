@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { NotFoundError } from "../errors/index.js";
 import {
   CreateAvaliacaoInput,
   UpdateAvaliacaoInput,
@@ -114,7 +115,7 @@ export class AvaliacaoService {
       where: { id: data.turmaId },
     });
     if (!turma) {
-      throw new Error("Turma não encontrada");
+      throw new NotFoundError("NF_005");
     }
 
     // Verifica se disciplina existe
@@ -122,7 +123,7 @@ export class AvaliacaoService {
       where: { id: data.disciplinaId },
     });
     if (!disciplina) {
-      throw new Error("Disciplina não encontrada");
+      throw new NotFoundError("NF_009");
     }
 
     return prisma.avaliacao.create({
@@ -140,7 +141,7 @@ export class AvaliacaoService {
     });
 
     if (!avaliacao) {
-      throw new Error("Avaliação não encontrada");
+      throw new NotFoundError("NF_010");
     }
 
     return prisma.avaliacao.update({
@@ -156,7 +157,7 @@ export class AvaliacaoService {
     });
 
     if (!avaliacao) {
-      throw new Error("Avaliação não encontrada");
+      throw new NotFoundError("NF_010");
     }
 
     // Cascade delete das notas é tratado pelo Prisma (onDelete: Cascade)

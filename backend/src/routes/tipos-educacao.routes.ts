@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { tipoEducacaoService } from "../services/index.js";
 import {
   createTipoEducacaoSchema,
@@ -12,6 +14,14 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
       const tipos = await tipoEducacaoService.findAll();
       return reply.send(tipos);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -39,6 +49,14 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
 
         return reply.send(tipo);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -55,6 +73,14 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
       const tipo = await tipoEducacaoService.create(data);
       return reply.status(201).send(tipo);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -76,6 +102,14 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
         const tipo = await tipoEducacaoService.update(id, data);
         return reply.send(tipo);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -97,6 +131,14 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
         await tipoEducacaoService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message

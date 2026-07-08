@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { NotFoundError } from "../errors/index.js";
 import {
   CreateDisciplinaInput,
   UpdateDisciplinaInput,
@@ -55,7 +56,7 @@ export class DisciplinaService {
     });
 
     if (!etapa) {
-      throw new Error("Etapa de ensino não encontrada");
+      throw new NotFoundError("NF_007");
     }
 
     return prisma.disciplina.create({
@@ -72,7 +73,7 @@ export class DisciplinaService {
     });
 
     if (!disciplina) {
-      throw new Error("Disciplina não encontrada");
+      throw new NotFoundError("NF_009");
     }
 
     // Se está alterando código, verifica duplicidade
@@ -103,7 +104,7 @@ export class DisciplinaService {
     });
 
     if (!disciplina) {
-      throw new Error("Disciplina não encontrada");
+      throw new NotFoundError("NF_009");
     }
 
     if (disciplina._count.avaliacoes > 0) {

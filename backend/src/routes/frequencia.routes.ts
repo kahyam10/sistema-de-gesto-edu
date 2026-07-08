@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { frequenciaService } from "../services/index.js";
 import {
   createFrequenciaSchema,
@@ -163,6 +165,14 @@ Lista registros de frequência com suporte a filtros e paginação.
         const frequencias = await frequenciaService.list(params);
         return reply.send(frequencias);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao listar frequências";
         return reply.status(400).send({ error: message });
@@ -252,6 +262,14 @@ Retorna os detalhes de um registro de frequência específico.
 
         return reply.send(frequencia);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar frequência";
         return reply.status(400).send({ error: message });
@@ -368,6 +386,14 @@ Cria um novo registro de frequência para um aluno.
 
         return reply.status(201).send(frequencia);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao criar frequência";
         return reply.status(400).send({ error: message });
@@ -494,6 +520,14 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
 
         return reply.status(201).send(resultado);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -604,6 +638,14 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
 
         return reply.send(frequencia);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -687,6 +729,14 @@ Considere atualizar o status em vez de deletar para manter histórico.
 
         return reply.send({ message: "Frequência removida com sucesso" });
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao remover frequência";
         return reply.status(400).send({ error: message });
@@ -805,6 +855,14 @@ Sem filtros de data, considera todo o ano letivo.
 
         return reply.send(estatisticas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -923,6 +981,14 @@ Alunos ordenados por percentual de frequência (menor primeiro).
 
         return reply.send(alunos);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -1045,6 +1111,14 @@ Ideal para relatórios gerenciais e acompanhamento da turma como um todo.
 
         return reply.send(resumo);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -1139,6 +1213,14 @@ Permite verificar se a frequência já foi registrada para aquela data.
 
         return reply.send(frequencias);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message

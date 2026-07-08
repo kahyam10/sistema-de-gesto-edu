@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { turmaService } from "../services/index.js";
 import {
   createTurmaSchema,
@@ -36,6 +38,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         const turmas = await turmaService.findAll(filters);
         return reply.send(turmas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao listar turmas";
         return reply.status(500).send({ error: message });
@@ -60,6 +70,14 @@ export async function turmasRoutes(app: FastifyInstance) {
 
         return reply.send(turma);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar turma";
         return reply.status(500).send({ error: message });
@@ -84,6 +102,14 @@ export async function turmasRoutes(app: FastifyInstance) {
 
         return reply.send(estatisticas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -112,6 +138,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         );
         return reply.send(turmas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar turmas";
         return reply.status(500).send({ error: message });
@@ -126,6 +160,14 @@ export async function turmasRoutes(app: FastifyInstance) {
       const turma = await turmaService.create(data);
       return reply.status(201).send(turma);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao criar turma";
       return reply.status(400).send({ error: message });
@@ -145,6 +187,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         const turma = await turmaService.update(id, data);
         return reply.send(turma);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao atualizar turma";
         return reply.status(400).send({ error: message });
@@ -164,6 +214,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         const turma = await turmaService.updateCenso(id, request.body);
         return reply.send(turma);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao salvar censo";
         return reply.status(400).send({ error: message });
@@ -183,6 +241,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         await turmaService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao deletar turma";
         return reply.status(400).send({ error: message });
@@ -203,6 +269,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         const matricula = await turmaService.addAluno(id, data.matriculaId);
         return reply.status(201).send(matricula);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao adicionar aluno";
         return reply.status(400).send({ error: message });
@@ -222,6 +296,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         await turmaService.removeAluno(id, matriculaId);
         return reply.status(204).send();
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao remover aluno";
         return reply.status(400).send({ error: message });
@@ -247,6 +329,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         );
         return reply.status(201).send(professor);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -270,6 +360,14 @@ export async function turmasRoutes(app: FastifyInstance) {
         await turmaService.removeProfessor(id, profissionalId);
         return reply.status(204).send();
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao remover professor";
         return reply.status(400).send({ error: message });

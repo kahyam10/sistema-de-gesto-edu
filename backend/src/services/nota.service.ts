@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { NotFoundError } from "../errors/index.js";
 import { CreateNotaInput, LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
 import { frequenciaService } from "./frequencia.service.js";
 
@@ -167,7 +168,7 @@ export class NotaService {
     });
 
     if (!matricula) {
-      throw new Error("Matrícula não encontrada");
+      throw new NotFoundError("NF_004");
     }
 
     if (matricula.turmaId !== data.turmaId) {
@@ -217,7 +218,7 @@ export class NotaService {
     });
 
     if (!avaliacao) {
-      throw new Error("Avaliação não encontrada");
+      throw new NotFoundError("NF_010");
     }
 
     // Valida que todas as matrículas pertencem à turma
@@ -276,7 +277,7 @@ export class NotaService {
   async update(id: string, data: UpdateNotaInput) {
     const nota = await prisma.nota.findUnique({ where: { id } });
     if (!nota) {
-      throw new Error("Nota não encontrada");
+      throw new NotFoundError("NF_011");
     }
 
     if (data.valor !== undefined && nota.avaliacaoId) {
@@ -309,7 +310,7 @@ export class NotaService {
   async delete(id: string) {
     const nota = await prisma.nota.findUnique({ where: { id } });
     if (!nota) {
-      throw new Error("Nota não encontrada");
+      throw new NotFoundError("NF_011");
     }
     return prisma.nota.delete({ where: { id } });
   }
@@ -423,7 +424,7 @@ export class NotaService {
     });
 
     if (!matricula) {
-      throw new Error("Matrícula não encontrada");
+      throw new NotFoundError("NF_004");
     }
 
     const turmaEfetiva = turmaId || matricula.turmaId;
@@ -445,7 +446,7 @@ export class NotaService {
     });
 
     if (!turma) {
-      throw new Error("Turma não encontrada");
+      throw new NotFoundError("NF_005");
     }
 
     // Busca disciplinas da etapa
@@ -454,25 +455,57 @@ export class NotaService {
       orderBy: [{ ordem: "asc" }, { nome: "asc" }],
     });
 
-    // Para cada disciplina, calcula notas por bimestre
+    // Busca TODAS as avaliações da turma (com a nota do aluno) de uma vez
+    // e agrupa em memória — evita o N+1 de disciplina × bimestre.
+    const todasAvaliacoes = await prisma.avaliacao.findMany({
+      where: { turmaId: turmaEfetiva },
+      include: {
+        notas: { where: { matriculaId } },
+      },
+      orderBy: { data: "asc" },
+    });
+
+    const porDisciplinaBimestre = new Map<string, typeof todasAvaliacoes>();
+    for (const av of todasAvaliacoes) {
+      const chave = `${av.disciplinaId}:${av.bimestre}`;
+      const lista = porDisciplinaBimestre.get(chave);
+      if (lista) lista.push(av);
+      else porDisciplinaBimestre.set(chave, [av]);
+    }
+
+    const mediaDe = (avaliacoes: typeof todasAvaliacoes): number | null => {
+      if (avaliacoes.length === 0) return null;
+      let somaPonderada = 0;
+      let somaPesos = 0;
+      let temNota = false;
+      for (const avaliacao of avaliacoes) {
+        const nota = avaliacao.notas[0];
+        if (nota) {
+          somaPonderada += nota.valor * avaliacao.peso;
+          somaPesos += avaliacao.peso;
+          temNota = true;
+        }
+      }
+      if (!temNota || somaPesos === 0) return null;
+      return Math.round((somaPonderada / somaPesos) * 100) / 100;
+    };
+
+    // Frequência geral (uma única vez, usada em todas as disciplinas)
+    const frequencia = await frequenciaService.calcularEstatisticas(
+      matriculaId,
+      turmaEfetiva
+    );
+
     const boletimDisciplinas: BoletimDisciplina[] = [];
 
     for (const disciplina of disciplinas) {
       const bimestres: BoletimDisciplina["bimestres"] = [];
+      const medias: number[] = [];
       let bimestresComNota = 0;
 
       for (let bim = 1; bim <= 4; bim++) {
-        const avaliacoes = await prisma.avaliacao.findMany({
-          where: {
-            turmaId: turmaEfetiva,
-            disciplinaId: disciplina.id,
-            bimestre: bim,
-          },
-          include: {
-            notas: { where: { matriculaId } },
-          },
-          orderBy: { data: "asc" },
-        });
+        const avaliacoes =
+          porDisciplinaBimestre.get(`${disciplina.id}:${bim}`) ?? [];
 
         const avaliacoesComNotas = avaliacoes.map((av) => ({
           id: av.id,
@@ -483,14 +516,11 @@ export class NotaService {
           nota: av.notas[0]?.valor ?? null,
         }));
 
-        const media = await this.calcularMedia(
-          matriculaId,
-          turmaEfetiva,
-          disciplina.id,
-          bim
-        );
-
-        if (media !== null) bimestresComNota++;
+        const media = mediaDe(avaliacoes);
+        if (media !== null) {
+          bimestresComNota++;
+          medias.push(media);
+        }
 
         bimestres.push({
           bimestre: bim,
@@ -499,22 +529,17 @@ export class NotaService {
         });
       }
 
-      const mediaFinal = await this.calcularMediaFinal(
-        matriculaId,
-        turmaEfetiva,
-        disciplina.id
-      );
-
-      // Busca frequência para determinar situação
-      const freqStats = await frequenciaService.calcularEstatisticas(
-        matriculaId,
-        turmaEfetiva
-      );
+      const mediaFinal =
+        medias.length === 0
+          ? null
+          : Math.round(
+              (medias.reduce((acc, m) => acc + m, 0) / medias.length) * 100
+            ) / 100;
 
       const situacao = this.determinaSituacao(
         mediaFinal,
         bimestresComNota,
-        freqStats.percentualPresenca
+        frequencia.percentualPresenca
       );
 
       boletimDisciplinas.push({
@@ -526,12 +551,6 @@ export class NotaService {
         situacao,
       });
     }
-
-    // Frequência geral
-    const frequencia = await frequenciaService.calcularEstatisticas(
-      matriculaId,
-      turmaEfetiva
-    );
 
     // Situação geral: reprovado se qualquer disciplina reprovada
     let situacaoGeral: Boletim["situacaoGeral"] = "APROVADO";

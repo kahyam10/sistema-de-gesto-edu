@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { notaService } from "../services/index.js";
 import {
   createNotaSchema,
@@ -157,6 +159,14 @@ Lista notas com suporte a filtros e paginação.
         const notas = await notaService.findAll(filters);
         return reply.send(notas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar notas";
         return reply.status(400).send({ error: message });
@@ -247,6 +257,14 @@ Ideal para lançar notas de recuperação ou notas avulsas não vinculadas a uma
         const nota = await notaService.create(body);
         return reply.status(201).send(nota);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao criar nota";
         return reply.status(400).send({ error: message });
@@ -327,6 +345,14 @@ Retorna os detalhes de uma nota específica.
 
         return reply.send(nota);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar nota";
         return reply.status(400).send({ error: message });
@@ -422,6 +448,14 @@ Ideal para lançar notas após correção de provas/trabalhos. Permite registrar
         const resultado = await notaService.lancarNotasTurma(body);
         return reply.status(201).send(resultado);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -511,6 +545,14 @@ Atualiza uma nota existente.
         const nota = await notaService.update(id, body);
         return reply.send(nota);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -582,6 +624,14 @@ Remove permanentemente a nota. Esta ação não pode ser desfeita.
         await notaService.delete(id);
         return reply.send({ message: "Nota removida com sucesso" });
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao remover nota";
         return reply.status(400).send({ error: message });
@@ -692,6 +742,14 @@ Ideal para gerar boletim escolar digital do aluno.
         const boletim = await notaService.getBoletim(matriculaId, turmaId);
         return reply.send(boletim);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -769,6 +827,14 @@ Para verificar situação do aluno em disciplina específica.
         );
         return reply.send({ media });
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -855,6 +921,14 @@ Para verificar se aluno foi aprovado, está em recuperação ou foi reprovado.
         );
         return reply.send(situacao);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message

@@ -1,4 +1,5 @@
 import { PrismaClient, Licenca } from "@prisma/client";
+import { NotFoundError } from "../errors/index.js";
 import {
   CreateLicencaInput,
   UpdateLicencaInput,
@@ -178,7 +179,7 @@ export class LicencaService {
     const licenca = await prisma.licenca.findUnique({ where: { id } });
 
     if (!licenca) {
-      throw new Error("Licença não encontrada");
+      throw new NotFoundError("NF_014");
     }
 
     if (licenca.status !== "PENDENTE") {
@@ -201,7 +202,7 @@ export class LicencaService {
     const licenca = await prisma.licenca.findUnique({ where: { id } });
 
     if (!licenca) {
-      throw new Error("Licença não encontrada");
+      throw new NotFoundError("NF_014");
     }
 
     if (licenca.status === "CANCELADA") {

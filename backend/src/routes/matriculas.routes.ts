@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { matriculaService } from "../services/index.js";
 import {
   createMatriculaSchema,
@@ -41,6 +43,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const matriculas = await matriculaService.findAll(filters);
         return reply.send(matriculas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao listar matrículas";
         return reply.status(500).send({ error: message });
@@ -65,6 +75,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         );
         return reply.send(matriculas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar matrículas";
         return reply.status(500).send({ error: message });
@@ -89,6 +107,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         );
         return reply.send(estatisticas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -115,6 +141,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
 
         return reply.send(matricula);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar matrícula";
         return reply.status(500).send({ error: message });
@@ -139,6 +173,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
 
         return reply.send(matricula);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar matrícula";
         return reply.status(500).send({ error: message });
@@ -153,6 +195,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
       const matricula = await matriculaService.create(data);
       return reply.status(201).send(matricula);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao criar matrícula";
       return reply.status(400).send({ error: message });
@@ -172,6 +222,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const matricula = await matriculaService.update(id, data);
         return reply.send(matricula);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -193,6 +251,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         await matriculaService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao deletar matrícula";
         return reply.status(400).send({ error: message });
@@ -212,6 +278,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const matricula = await matriculaService.cancelar(id);
         return reply.send(matricula);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao cancelar matrícula";
         return reply.status(400).send({ error: message });
@@ -239,6 +313,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         );
         return reply.send(matricula);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -260,6 +342,14 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const transferencias = await matriculaService.getTransferencias(id);
         return reply.send(transferencias);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message

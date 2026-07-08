@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { NotFoundError } from "../errors/index.js";
 import {
   CreateConfiguracaoAvaliacaoInput,
   UpdateConfiguracaoAvaliacaoInput,
@@ -100,7 +101,7 @@ export class ConfiguracaoAvaliacaoService {
     });
 
     if (!config) {
-      throw new Error("Configuração não encontrada");
+      throw new NotFoundError("NF_001");
     }
 
     return prisma.configuracaoAvaliacao.update({
@@ -119,7 +120,7 @@ export class ConfiguracaoAvaliacaoService {
     });
 
     if (!config) {
-      throw new Error("Configuração não encontrada");
+      throw new NotFoundError("NF_001");
     }
 
     return prisma.configuracaoAvaliacao.delete({ where: { id } });

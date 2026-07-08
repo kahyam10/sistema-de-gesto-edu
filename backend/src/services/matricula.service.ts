@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { NotFoundError } from "../errors/index.js";
 import {
   CreateMatriculaInput,
   UpdateMatriculaInput,
@@ -152,7 +153,7 @@ export class MatriculaService {
   ) {
     return prisma.$transaction(async (tx) => {
       const atual = await tx.matricula.findUnique({ where: { id } });
-      if (!atual) throw new Error("Matrícula não encontrada");
+      if (!atual) throw new NotFoundError("NF_004");
 
       await tx.transferenciaMatricula.create({
         data: {

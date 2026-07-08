@@ -1226,5 +1226,6 @@ model Ponto {
   @@index([profissionalId])
   @@index([data])
   @@index([escolaId])
+  @@unique([profissionalId, data]) // Um registro de ponto por profissional por dia
   @@map("pontos")
 }

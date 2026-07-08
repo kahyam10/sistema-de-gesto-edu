@@ -1,4 +1,6 @@
 import { FastifyInstance } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { authService } from "../services/index.js";
 import { registerSchema, loginSchema } from "../schemas/index.js";
 import { adminMiddleware } from "../middleware/auth.js";
@@ -20,6 +22,14 @@ export async function authRoutes(app: FastifyInstance) {
 
       return reply.status(201).send({ user, token });
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao registrar usuário";
       return reply.status(400).send({ error: message });
@@ -41,6 +51,14 @@ export async function authRoutes(app: FastifyInstance) {
 
       return reply.send({ user, token });
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao fazer login";
       return reply.status(401).send({ error: message });
@@ -59,6 +77,14 @@ export async function authRoutes(app: FastifyInstance) {
 
       return reply.send(user);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao buscar usuário";
       return reply.status(500).send({ error: message });

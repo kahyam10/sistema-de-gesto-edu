@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { disciplinaService } from "../services/index.js";
 import {
   createDisciplinaSchema,
@@ -98,6 +100,14 @@ Para listar disciplinas disponíveis para uma etapa específica ou todas as disc
         const disciplinas = await disciplinaService.findAll(filters);
         return reply.send(disciplinas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao listar disciplinas";
         return reply.status(400).send({ error: message });
@@ -183,6 +193,14 @@ Retorna os detalhes de uma disciplina específica.
 
         return reply.send(disciplina);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -259,6 +277,14 @@ Para exibir as disciplinas disponíveis ao criar turmas ou lançar notas de uma 
         const disciplinas = await disciplinaService.findByEtapa(etapaId);
         return reply.send(disciplinas);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -379,6 +405,14 @@ Cria uma nova disciplina no sistema.
         const disciplina = await disciplinaService.create(body);
         return reply.status(201).send(disciplina);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -473,6 +507,14 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
         const disciplina = await disciplinaService.update(id, body);
         return reply.send(disciplina);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message
@@ -558,6 +600,14 @@ Considere desativar (\`ativo: false\`) em vez de deletar para manter histórico.
         await disciplinaService.delete(id);
         return reply.send({ message: "Disciplina removida com sucesso" });
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error
             ? error.message

@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { AppError } from "../errors/index.js";
+import { ZodError } from "zod";
 import { etapaService } from "../services/index.js";
 import { createEtapaSchema, updateEtapaSchema } from "../schemas/index.js";
 
@@ -9,6 +11,14 @@ export async function etapasRoutes(app: FastifyInstance) {
       const etapas = await etapaService.findAll();
       return reply.send(etapas);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao listar etapas";
       return reply.status(500).send({ error: message });
@@ -32,6 +42,14 @@ export async function etapasRoutes(app: FastifyInstance) {
 
         return reply.send(etapa);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar etapa";
         return reply.status(500).send({ error: message });
@@ -46,6 +64,14 @@ export async function etapasRoutes(app: FastifyInstance) {
       const etapa = await etapaService.create(data);
       return reply.status(201).send(etapa);
     } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
       const message =
         error instanceof Error ? error.message : "Erro ao criar etapa";
       return reply.status(400).send({ error: message });
@@ -65,6 +91,14 @@ export async function etapasRoutes(app: FastifyInstance) {
         const etapa = await etapaService.update(id, data);
         return reply.send(etapa);
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao atualizar etapa";
         return reply.status(400).send({ error: message });
@@ -84,6 +118,14 @@ export async function etapasRoutes(app: FastifyInstance) {
         await etapaService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      if (error instanceof ZodError) {
+        return reply
+          .status(400)
+          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+      }
         const message =
           error instanceof Error ? error.message : "Erro ao deletar etapa";
         return reply.status(400).send({ error: message });

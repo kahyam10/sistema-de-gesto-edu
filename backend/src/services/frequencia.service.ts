@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { NotFoundError } from "../errors/index.js";
 
 /**
  * Interface para criar frequência
@@ -181,7 +182,7 @@ export class FrequenciaService {
     });
 
     if (!matricula) {
-      throw new Error("Matrícula não encontrada");
+      throw new NotFoundError("NF_004");
     }
 
     // Verifica se turma existe
@@ -190,7 +191,7 @@ export class FrequenciaService {
     });
 
     if (!turma) {
-      throw new Error("Turma não encontrada");
+      throw new NotFoundError("NF_005");
     }
 
     // Verifica se já existe registro para esta data
@@ -240,7 +241,7 @@ export class FrequenciaService {
     });
 
     if (!turma) {
-      throw new Error("Turma não encontrada");
+      throw new NotFoundError("NF_005");
     }
 
     // Valida se todas as matrículas pertencem à turma
@@ -301,7 +302,7 @@ export class FrequenciaService {
     });
 
     if (!frequencia) {
-      throw new Error("Registro de frequência não encontrado");
+      throw new NotFoundError("NF_012");
     }
 
     return prisma.frequencia.update({
@@ -335,7 +336,7 @@ export class FrequenciaService {
     });
 
     if (!frequencia) {
-      throw new Error("Registro de frequência não encontrado");
+      throw new NotFoundError("NF_012");
     }
 
     return prisma.frequencia.delete({
@@ -451,7 +452,7 @@ export class FrequenciaService {
     });
 
     if (!turma) {
-      throw new Error("Turma não encontrada");
+      throw new NotFoundError("NF_005");
     }
 
     // Buscar TODAS as frequências da turma em UMA query (elimina N+1)
@@ -516,7 +517,7 @@ export class FrequenciaService {
     });
 
     if (!turma) {
-      throw new Error("Turma não encontrada");
+      throw new NotFoundError("NF_005");
     }
 
     // Buscar TODAS as frequências da turma em UMA query (elimina N+1)

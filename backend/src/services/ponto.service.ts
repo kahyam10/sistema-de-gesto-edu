@@ -22,12 +22,15 @@ export class PontoService {
   }
 
   // Registra ponto (entrada/saída) - usado pelo profissional
+  // Atômico: find + update/create em transação, com backstop no
+  // @@unique([profissionalId, data]) contra registros duplicados no dia.
   async registrarPonto(data: RegistrarPontoInput): Promise<Ponto> {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
+    return prisma.$transaction(async (tx) => {
     // Busca se já existe registro para hoje
-    let ponto = await prisma.ponto.findFirst({
+    let ponto = await tx.ponto.findFirst({
       where: {
         profissionalId: data.profissionalId,
         data: hoje,
@@ -50,7 +53,7 @@ export class PontoService {
       const pontoAtualizado = { ...ponto, ...updateData };
       updateData.horasTrabalhadas = this.calcularHoras(pontoAtualizado);
 
-      ponto = await prisma.ponto.update({
+      ponto = await tx.ponto.update({
         where: { id: ponto.id },
         data: updateData,
       });
@@ -71,12 +74,13 @@ export class PontoService {
 
       createData.horasTrabalhadas = this.calcularHoras(createData);
 
-      ponto = await prisma.ponto.create({
+      ponto = await tx.ponto.create({
         data: createData,
       });
     }
 
     return ponto;
+    });
   }
 
   // Busca todos os pontos com filtros
