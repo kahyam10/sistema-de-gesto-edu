@@ -12,6 +12,7 @@ import {
   Star, Eye, Clock, Megaphone, Layers, Tag, Home, KeyRound, Archive, CreditCard,
   GraduationCap, BookOpen, School, ClipboardList, NotebookPen, Backpack, Building2,
   DoorOpen, CalendarDays, Network, Code2, Cpu, LogOut, UserPlus, Printer,
+  Sun, Moon,
   type LucideIcon,
   type LucideProps,
 } from 'lucide-react';
@@ -74,6 +75,8 @@ export const iconMap = {
   creditCard: CreditCard,
   logout: LogOut,
   printer: Printer,
+  sun: Sun,
+  moon: Moon,
   // Domínio educação
   graduation: GraduationCap,
   book: BookOpen,

@@ -66,7 +66,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex font-sans bg-surface text-ink">
+    <div className="force-light min-h-screen flex font-sans bg-surface text-ink">
       {/* ── Esquerda · painel da marca ─────────────────────────── */}
       <div
         className="hidden md:flex flex-[1.1] relative overflow-hidden text-white"

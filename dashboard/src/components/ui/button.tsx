@@ -13,8 +13,8 @@ const buttonVariants = cva(
       variant: {
         default: "bg-brand text-white border-transparent hover:bg-brand-hover",
         destructive: "bg-danger text-white border-transparent hover:opacity-90",
-        outline: "bg-white text-ink-2 border-hairline-strong hover:bg-surface-alt",
-        secondary: "bg-brand-soft text-brand-700 border-transparent hover:bg-brand-100",
+        outline: "bg-surface-card text-ink-2 border-hairline-strong hover:bg-surface-alt",
+        secondary: "bg-brand-soft text-brand-soft-fg border-transparent hover:bg-brand-soft-hover",
         ghost: "bg-transparent text-ink-2 border-transparent hover:bg-surface-alt",
         link: "text-brand border-transparent underline-offset-4 hover:underline",
       },

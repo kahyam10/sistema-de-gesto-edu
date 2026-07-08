@@ -3,10 +3,43 @@
 @tailwind utilities;
 
 /* Variáveis shadcn apontando para os tokens do DESIGN_BASE.md (§5.2).
-   O tema é light-only por decisão de design — a única superfície escura
-   é a sidebar azul-marinho (#062654). */
+   Light = valores exatos do design; dark = derivação nova na família do
+   navy da marca (§5.2 item 2). A sidebar #062654 é idêntica nos dois. */
 @layer base {
-  :root {
+  /* .force-light: escopo que reimpõe os valores light mesmo sob html.dark
+     (vars herdam do ancestral mais próximo) — usado na tela de login. */
+  :root,
+  .force-light {
+    color-scheme: light;
+    /* ==== Tokens do design (light — valores exatos do DESIGN_BASE) ==== */
+    --surface: #ffffff;
+    --surface-muted: #eef1f6;
+    --surface-alt: #fafbfd;
+    --surface-card: #ffffff;
+    --surface-elev: #f8f9fb;
+    --surface-soft: #e8f3ee;
+    --ink: #1a2421;
+    --ink-2: #2f3a35;
+    --ink-3: #3b4a5e;
+    --ink-muted: #6b7872;
+    --ink-soft: #95a1b5;
+    --ink-muted-light: #9aa7b8;
+    --hairline: #e3e7e4;
+    --hairline-strong: #cfd4dc;
+    --brand-soft: #e7eefb;
+    --brand-soft-fg: #072b73;
+    --brand-soft-hover: #d4e5ff;
+    --brand-faint: #f2f6fc;
+    --danger-soft: #fceae4;
+    --danger-soft-fg: #c8391f;
+    --warning-soft: #fceed2;
+    --warning-soft-fg: #8b5a06;
+    --success-soft: #dff1e8;
+    --success-soft-fg: #0a6142;
+    --info-soft: #e2eef8;
+    --info-soft-fg: #1f6fb2;
+    --accent-soft: #fdf3dc;
+    --accent-soft-fg: #8b6a10;
     --background: 0 0% 100%;             /* #FFFFFF (surface) */
     --foreground: 162 16% 12%;           /* #1A2421 (ink) */
     --card: 0 0% 100%;                   /* #FFFFFF (surface-card) */
@@ -36,6 +69,60 @@
     --sidebar-foreground: 219 52% 86%;   /* #C9D6EE */
     --sidebar-primary: 215 76% 35%;      /* #164E9F (item ativo) */
     --sidebar-accent: 214 79% 27%;       /* #0E3C7A (hover) */
+  }
+
+  /* ==== Dark mode — derivação nova (família do navy #062654) ==== */
+  .dark {
+    color-scheme: dark;
+    --surface: #0b1526;
+    --surface-muted: #1b2739;
+    --surface-alt: #101c30;
+    --surface-card: #111d31;
+    --surface-elev: #16233a;
+    --surface-soft: #14291f;
+    --ink: #e7ecf2;
+    --ink-2: #c9d2dc;
+    --ink-3: #aab6c6;
+    --ink-muted: #8b98a8;
+    --ink-soft: #6c7a8c;
+    --ink-muted-light: #5d6b7d;
+    --hairline: #223046;
+    --hairline-strong: #2e3d55;
+    --brand-soft: #14264a;
+    --brand-soft-fg: #b9cdf3;
+    --brand-soft-hover: #1b3159;
+    --brand-faint: #0f1e38;
+    --danger-soft: #3b1710;
+    --danger-soft-fg: #f0917c;
+    --warning-soft: #3a2a0d;
+    --warning-soft-fg: #e8b366;
+    --success-soft: #0e2b20;
+    --success-soft-fg: #6fcfa8;
+    --info-soft: #12283a;
+    --info-soft-fg: #7db6e0;
+    --accent-soft: #3a2e12;
+    --accent-soft-fg: #e5c26a;
+
+    /* shadcn vars (HSL) no dark */
+    --background: 216 55% 10%;           /* #0B1526 */
+    --foreground: 213 28% 93%;           /* #E7ECF2 */
+    --card: 215 49% 13%;                 /* #111D31 */
+    --card-foreground: 213 28% 93%;
+    --popover: 215 49% 13%;
+    --popover-foreground: 213 28% 93%;
+    --primary: 217 88% 62%;              /* azul mais vivo p/ contraste */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 219 58% 19%;            /* #14264A (brand-soft dark) */
+    --secondary-foreground: 219 71% 88%;
+    --muted: 216 36% 17%;                /* #1B2739 */
+    --muted-foreground: 213 15% 60%;     /* #8B98A8 */
+    --accent: 218 50% 13%;               /* #101C30 (hover interno) */
+    --accent-foreground: 213 28% 93%;
+    --destructive: 9 73% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 216 34% 20%;               /* #223046 */
+    --input: 216 34% 20%;
+    --ring: 217 88% 62%;
   }
 }
 
@@ -109,7 +196,7 @@
 
   /* === Inputs === */
   .input {
-    @apply block w-full rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm
+    @apply block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm shadow-sm
       placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
       disabled:opacity-50 disabled:cursor-not-allowed;
   }

@@ -286,7 +286,7 @@ export function FrequenciaManager() {
               {alunosBaixaFreq.map((item) => (
                 <div
                   key={item.matricula.id}
-                  className="flex items-center justify-between p-2 bg-white rounded border border-amber-200"
+                  className="flex items-center justify-between p-2 bg-surface-card rounded border border-amber-200"
                 >
                   <div>
                     <p className="font-medium text-sm">{item.matricula.nomeAluno}</p>

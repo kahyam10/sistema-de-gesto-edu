@@ -323,10 +323,10 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={chartOcupacao} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="2 3" stroke="#E3E7E4" vertical={false} />
+                  <CartesianGrid strokeDasharray="2 3" stroke="var(--hairline)" vertical={false} />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 10.5, fill: "#6B7872" }}
+                    tick={{ fontSize: 10.5, fill: "var(--ink-muted)" }}
                     tickLine={false}
                     axisLine={{ stroke: "#E3E7E4" }}
                     interval={0}
@@ -334,16 +334,18 @@ export default function DashboardPage() {
                     height={44}
                   />
                   <YAxis
-                    tick={{ fontSize: 10.5, fill: "#6B7872", fontFamily: "var(--font-mono)" }}
+                    tick={{ fontSize: 10.5, fill: "var(--ink-muted)", fontFamily: "var(--font-mono)" }}
                     tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
-                    cursor={{ fill: "#FAFBFD" }}
+                    cursor={{ fill: "var(--surface-alt)" }}
                     contentStyle={{
                       borderRadius: 8,
-                      border: "1px solid #E3E7E4",
+                      border: "1px solid var(--hairline)",
+                      background: "var(--surface-card)",
+                      color: "var(--ink)",
                       fontSize: 12,
                       boxShadow: "0 1px 3px rgba(15,23,40,0.06)",
                     }}
@@ -379,7 +381,9 @@ export default function DashboardPage() {
                   <Tooltip
                     contentStyle={{
                       borderRadius: 8,
-                      border: "1px solid #E3E7E4",
+                      border: "1px solid var(--hairline)",
+                      background: "var(--surface-card)",
+                      color: "var(--ink)",
                       fontSize: 12,
                       boxShadow: "0 1px 3px rgba(15,23,40,0.06)",
                     }}

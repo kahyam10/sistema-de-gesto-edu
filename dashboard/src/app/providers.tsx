@@ -22,12 +22,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Tema light-only por decisão de design (DESIGN_BASE §5.2) —
-          a superfície escura do sistema é a sidebar azul-marinho */}
+      {/* Light é o tema canônico do DESIGN_BASE; dark é derivação própria
+          na família do navy da marca (bloco .dark em globals.css). Sem tema
+          do SO — a troca é explícita, pelo toggle da topbar. */}
       <ThemeProvider
         attribute="class"
         defaultTheme="light"
-        forcedTheme="light"
+        enableSystem={false}
         disableTransitionOnChange
       >
         <AuthProvider>

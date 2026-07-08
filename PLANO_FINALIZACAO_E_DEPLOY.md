@@ -112,6 +112,24 @@ Porte manual dos módulos auditados em [docs/AUDITORIA_LINHA_SERVIDOR.md](docs/A
 
 **Descartado conscientemente:** portais wrapper do M3 (órfãos), Cadastros regredidos, Docker/Swagger/paginação deles (já tínhamos melhor), auth-bypass.
 
+## 4c. Dívidas antigas + ajustes do resgate — ✅ APLICADOS em 08/07/2026
+
+Rodada final de qualidade sobre o código resgatado e as pendências acumuladas:
+
+| # | Item | Entrega |
+|---|---|---|
+| F1 | Qualidade dos módulos resgatados | Guard `AppError`/`ZodError` nos 117 blocos catch das 17 rotas (erros de negócio deixam de virar 500); 404 com código de catálogo (NF_004–NF_014) nos services; boletim sem N+1 (1 query por turma); ponto com constraint única `profissionalId+data` + `$transaction` (elimina duplicata por corrida) |
+| F2 | Saúde e emergência na matrícula | 9 campos (tipo sanguíneo, alergias, medicamentos, condições, cartão SUS, plano, contato de emergência) — migration, schema zod, formulário e ficha PDF |
+| F3 | RBAC de propriedade | JWT passa a carregar `escolaId`; vínculo `User↔Profissional` no schema; DIRETOR só escreve na própria escola (validado ao vivo: 200 própria / 403 alheia) |
+| F4 | Testes + CI | Backend 26 testes (auth, matrícula, calendário, pedagógico, RH/comunicação) em banco dedicado; dashboard 10 testes (nav por papel + UI); workflow GitHub Actions com Postgres de serviço |
+| F5 | Dashboard executivo | Gráficos Recharts (barras alunos×capacidade, rosca por etapa) com dados reais; @react-pdf e grade horária em lazy-load (página pedagógico 513 kB → 34 kB) |
+| F6 | **Dark mode completo** | Tokens do design (`surface/ink/hairline/softs`) convertidos para CSS vars com derivação dark na família do navy da marca; toggle sol/lua na topbar (next-themes, sem tema do SO); `color-scheme` para controles nativos; login permanece light por design (escopo `.force-light`); pílulas e botões soft com contraste corrigido nos dois temas; verificação visual Playwright (dashboard, escolas, pedagógico, diálogo, drawer mobile) |
+| F7 | Verificação final | Builds backend+dashboard limpos, 26+10 testes verdes, imagens Docker reconstruídas e stack local no ar (health OK, API 401 sem token, login 200) |
+
+**Adiado conscientemente (não bloqueia lançamento):**
+- **Upload de documentos da matrícula** — hoje `documentosEntregues` é um checklist (booleanos); anexar arquivos de verdade pede storage de objetos (o Supabase self-hosted do deploy já oferece Storage — implementar pós-lançamento junto com LGPD de retenção).
+- Reimplementação dos portais do M3, módulos 6/7/8 e integrações externas (INEP/Educacenso, Sistema Presença) — ver §7.
+
 ## 5. Passo a passo do deploy de lançamento — VPS + Coolify + Supabase self-hosted
 
 ### 5.1 Provisionar a VPS
