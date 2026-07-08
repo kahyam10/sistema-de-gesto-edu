@@ -10,3 +10,10 @@ export { profissionalService } from "./profissional.service.js";
 export { moduleService } from "./module.service.js";
 export { phaseService } from "./phase.service.js";
 export { calendarioService } from "./calendario.service.js";
+// Módulo 2 — Gestão Pedagógica
+export { frequenciaService } from "./frequencia.service.js";
+export { notaService } from "./nota.service.js";
+export { avaliacaoService } from "./avaliacao.service.js";
+export { disciplinaService } from "./disciplina.service.js";
+export { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
+export { gradeHorariaService } from "./grade-horaria.service.js";

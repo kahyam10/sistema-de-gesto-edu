@@ -64,6 +64,8 @@ model EtapaEnsino {
   niveis     NivelEnsino[]
   escolas    EscolaEtapa[]
   matriculas Matricula[]
+  disciplinas   Disciplina[]
+  configuracoes ConfiguracaoAvaliacao[]
 
   @@map("etapas_ensino")
 }
@@ -165,6 +167,7 @@ model Escola {
   users        User[]
   salas        Sala[]
   eventosCalendario EventoCalendario[]
+  configuracoes ConfiguracaoAvaliacao[]
 
   @@map("escolas")
 }
@@ -231,6 +234,10 @@ model Turma {
 
   matriculas    Matricula[]
   professores   TurmaProfessor[]
+  horarios      GradeHoraria[]
+  frequencias   Frequencia[]
+  avaliacoes    Avaliacao[]
+  notas         Nota[]
 
   @@map("turmas")
 }
@@ -290,6 +297,8 @@ model Matricula {
   turma   Turma? @relation(fields: [turmaId], references: [id])
 
   transferencias TransferenciaMatricula[]
+  frequencias    Frequencia[]
+  notas          Nota[]
 
   @@map("matriculas")
 }
@@ -333,6 +342,8 @@ model ProfissionalEducacao {
   turmas    TurmaProfessor[]
   formacoes FormacaoProfissional[]
   escolasDiretor Escola[] @relation("EscolaDiretor")
+  horarios       GradeHoraria[]
+  avaliacoes     Avaliacao[]
 
   @@map("profissionais_educacao")
 }
@@ -499,4 +510,149 @@ model EventoCalendario {
   @@index([anoLetivoId, dataInicio])
   @@index([dataInicio, dataFim])
   @@map("eventos_calendario")
+}
+
+// ==================== MÓDULO 2: GESTÃO PEDAGÓGICA ====================
+
+model GradeHoraria {
+  id            String   @id @default(cuid())
+  diaSemana     String   // SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO
+  horaInicio    String   // Ex: "07:30"
+  horaFim       String   // Ex: "08:20"
+  disciplina    String
+  observacoes   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  turmaId       String
+  turma         Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  profissionalId String?
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  @@index([turmaId])
+  @@index([profissionalId])
+  @@map("grade_horaria")
+}
+model Frequencia {
+  id             String   @id @default(cuid())
+  data           DateTime // Data da aula/frequência
+  status         String   // PRESENTE, FALTA, JUSTIFICADA
+  justificativa  String?  // Justificativa para faltas justificadas
+  observacao     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  matriculaId    String
+  matricula      Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  turmaId        String
+  turma          Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  // Índices para otimização
+  @@index([matriculaId])
+  @@index([turmaId])
+  @@index([data])
+  @@unique([matriculaId, turmaId, data]) // Um registro por aluno por turma por dia
+  @@map("frequencias")
+}
+model Disciplina {
+  id                  String   @id @default(cuid())
+  nome                String   // Ex: "Língua Portuguesa", "Matemática"
+  codigo              String   @unique // Ex: "PORT-EF", "MAT-EF"
+  descricao           String?
+  cargaHorariaSemanal Int?     // Horas por semana
+  obrigatoria         Boolean  @default(true)
+  ativo               Boolean  @default(true)
+  ordem               Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relacionamentos
+  etapaId    String
+  etapa      EtapaEnsino @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  avaliacoes Avaliacao[]
+
+  @@index([etapaId])
+  @@map("disciplinas")
+}
+model ConfiguracaoAvaliacao {
+  id                          String   @id @default(cuid())
+  anoLetivo                   Int
+  sistemaAvaliacao            String   @default("NOTA") // NOTA, CONCEITO
+  numeroPeriodos              Int      @default(4) // Bimestres
+  mediaMinima                 Float    @default(6.0)
+  percentualFrequenciaMinima  Float    @default(75.0)
+  recuperacaoParalela         Boolean  @default(false)
+  recuperacaoFinal            Boolean  @default(true)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Escopo opcional
+  escolaId String?
+  escola   Escola? @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  etapaId  String?
+  etapa    EtapaEnsino? @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  @@index([anoLetivo])
+  @@map("configuracoes_avaliacao")
+}
+model Avaliacao {
+  id           String   @id @default(cuid())
+  nome         String   // Ex: "Prova Bimestral 1", "Trabalho de Português"
+  tipo         String   // PROVA, TRABALHO, ATIVIDADE, PARTICIPACAO, RECUPERACAO
+  peso         Float    @default(1.0)
+  valorMaximo  Float    @default(10.0)
+  data         DateTime
+  bimestre     Int      // 1, 2, 3, 4
+  observacao   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relacionamentos
+  turmaId        String
+  turma          Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  disciplinaId   String
+  disciplina     Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+
+  profissionalId String?
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  notas          Nota[]
+
+  @@index([turmaId])
+  @@index([disciplinaId])
+  @@index([turmaId, disciplinaId, bimestre])
+  @@map("avaliacoes")
+}
+model Nota {
+  id         String   @id @default(cuid())
+  valor      Float    // Valor da nota (0-10 por padrão)
+  observacao String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Campos adicionais para notas de recuperação (quando avaliacaoId é null)
+  turmaId    String
+  turma      Turma  @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  disciplina String
+  bimestre   Int    // 1-4 bimestres regulares, 5 = recuperação final
+
+  // Relacionamentos
+  avaliacaoId String?
+  avaliacao   Avaliacao? @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+  matriculaId String
+  matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@unique([avaliacaoId, matriculaId])
+  @@index([matriculaId])
+  @@index([avaliacaoId])
+  @@index([turmaId])
+  @@index([turmaId, disciplina])
+  @@map("notas")
 }

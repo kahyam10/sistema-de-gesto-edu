@@ -21,6 +21,12 @@ import {
   salasRoutes,
 } from "./routes/index.js";
 import { calendarioRoutes } from "./routes/calendario.routes.js";
+// Módulo 2 — Gestão Pedagógica
+import { frequenciaRoutes } from "./routes/frequencia.routes.js";
+import { notasRoutes } from "./routes/notas.routes.js";
+import { disciplinasRoutes } from "./routes/disciplinas.routes.js";
+import { configuracaoAvaliacaoRoutes } from "./routes/configuracao-avaliacao.routes.js";
+import { gradeHorariaRoutes } from "./routes/grade-horaria.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -37,6 +43,11 @@ async function buildApp() {
 
   const app = Fastify({
     logger: process.env.NODE_ENV === "development",
+    ajv: {
+      customOptions: {
+        strict: false, // Permite keywords de documentação como 'example' nos schemas
+      },
+    },
   });
 
   // Plugins
@@ -118,6 +129,8 @@ async function buildApp() {
   const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
   const GESTAO = ["ADMIN", "SEMEC"];
   const OPERACAO = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
+  // Professores lançam frequência, notas e consultam/gerem sua grade
+  const PEDAGOGICO = [...OPERACAO, "PROFESSOR"];
 
   const REGRAS_ESCRITA: Array<{
     pattern: RegExp;
@@ -139,6 +152,16 @@ async function buildApp() {
     {
       pattern: /^\/api\/(salas|escolas\/[^/]+\/salas)(\/|$)/,
       roles: OPERACAO,
+    },
+    // Pedagógico: professores lançam frequência/notas/avaliações e grade
+    {
+      pattern: /^\/api\/(frequencia|notas|grade-horaria)(\/|$)/,
+      roles: PEDAGOGICO,
+    },
+    // Estrutura pedagógica (disciplinas e regras de avaliação) = gestão
+    {
+      pattern: /^\/api\/(disciplinas|configuracao-avaliacao)(\/|$)/,
+      roles: GESTAO,
     },
     // Estrutura da rede e planejamento do projeto
     {
@@ -198,6 +221,12 @@ async function buildApp() {
   app.register(phaseRoutes, { prefix: "/api/phases" });
   app.register(salasRoutes); // sem prefix: usa dois caminhos-base distintos (ver salas.routes.ts)
   app.register(calendarioRoutes, { prefix: "/api/calendario" });
+  // Módulo 2 — Gestão Pedagógica
+  app.register(frequenciaRoutes, { prefix: "/api/frequencia" });
+  app.register(notasRoutes, { prefix: "/api/notas" });
+  app.register(disciplinasRoutes, { prefix: "/api/disciplinas" });
+  app.register(configuracaoAvaliacaoRoutes, { prefix: "/api/configuracao-avaliacao" });
+  app.register(gradeHorariaRoutes, { prefix: "/api/grade-horaria" });
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);

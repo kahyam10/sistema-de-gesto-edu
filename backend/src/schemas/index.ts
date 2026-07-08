@@ -356,3 +356,172 @@ export type CreateEventoInput = z.infer<typeof createEventoSchema>;
 export type UpdateEventoInput = z.infer<typeof updateEventoSchema>;
 export type CreatePhaseInput = z.infer<typeof createPhaseSchema>;
 export type UpdatePhaseInput = z.infer<typeof updatePhaseSchema>;
+
+// ==================== MÓDULO 2: PEDAGÓGICO (schemas) ====================
+// ==================== GRADE HORÁRIA ====================
+
+export const createGradeHorarioSchema = z.object({
+  turmaId: z.string().min(1, "Turma é obrigatória"),
+  diaSemana: z.enum([
+    "SEGUNDA",
+    "TERCA",
+    "QUARTA",
+    "QUINTA",
+    "SEXTA",
+    "SABADO",
+  ]),
+  horaInicio: z.string().min(1, "Hora inicial é obrigatória"),
+  horaFim: z.string().min(1, "Hora final é obrigatória"),
+  disciplina: z.string().min(1, "Disciplina é obrigatória"),
+  profissionalId: z.string().optional(),
+  observacoes: z.string().optional(),
+});
+
+export const updateGradeHorarioSchema = createGradeHorarioSchema.partial();
+
+// ==================== FREQUÊNCIA ====================
+
+export const createFrequenciaSchema = z.object({
+  matriculaId: z.string().min(1, "Matrícula é obrigatória"),
+  turmaId: z.string().min(1, "Turma é obrigatória"),
+  data: z.string().transform((val) => new Date(val)),
+  status: z.enum(["PRESENTE", "FALTA", "JUSTIFICADA"]),
+  justificativa: z.string().optional(),
+  observacao: z.string().optional(),
+});
+
+export const updateFrequenciaSchema = z.object({
+  status: z.enum(["PRESENTE", "FALTA", "JUSTIFICADA"]).optional(),
+  justificativa: z.string().optional(),
+  observacao: z.string().optional(),
+});
+
+export const registrarFrequenciaTurmaSchema = z.object({
+  turmaId: z.string().min(1, "Turma é obrigatória"),
+  data: z.string().transform((val) => new Date(val)),
+  presencas: z.array(
+    z.object({
+      matriculaId: z.string().min(1, "Matrícula é obrigatória"),
+      status: z.enum(["PRESENTE", "FALTA", "JUSTIFICADA"]),
+      justificativa: z.string().optional(),
+      observacao: z.string().optional(),
+    })
+  ),
+});
+
+// ==================== DISCIPLINA ====================
+
+export const createDisciplinaSchema = z.object({
+  nome: z.string().min(1, "Nome é obrigatório"),
+  codigo: z.string().min(1, "Código é obrigatório").max(20),
+  descricao: z.string().optional(),
+  cargaHorariaSemanal: z.number().int().min(0).optional(),
+  obrigatoria: z.boolean().default(true),
+  ativo: z.boolean().default(true),
+  ordem: z.number().int().min(0).default(0),
+  etapaId: z.string().min(1, "Etapa é obrigatória"),
+});
+
+export const updateDisciplinaSchema = createDisciplinaSchema.partial();
+
+// ==================== CONFIGURAÇÃO DE AVALIAÇÃO ====================
+
+export const createConfiguracaoAvaliacaoSchema = z.object({
+  anoLetivo: z.number().int().min(2020).max(2100),
+  sistemaAvaliacao: z.enum(["NOTA", "CONCEITO"]).default("NOTA"),
+  numeroPeriodos: z.number().int().min(1).max(6).default(4),
+  mediaMinima: z.number().min(0).max(10).default(6.0),
+  percentualFrequenciaMinima: z.number().min(0).max(100).default(75),
+  recuperacaoParalela: z.boolean().default(false),
+  recuperacaoFinal: z.boolean().default(true),
+  escolaId: z.string().optional(),
+  etapaId: z.string().optional(),
+});
+
+export const updateConfiguracaoAvaliacaoSchema =
+  createConfiguracaoAvaliacaoSchema.partial();
+
+// ==================== AVALIAÇÃO ====================
+
+export const createAvaliacaoSchema = z.object({
+  nome: z.string().min(1, "Nome é obrigatório"),
+  tipo: z.enum([
+    "PROVA",
+    "TRABALHO",
+    "ATIVIDADE",
+    "PARTICIPACAO",
+    "RECUPERACAO",
+  ]),
+  peso: z.number().min(0).default(1.0),
+  valorMaximo: z.number().min(0).default(10.0),
+  data: z.string().transform((val) => new Date(val)),
+  bimestre: z.number().int().min(1).max(4),
+  observacao: z.string().optional(),
+  turmaId: z.string().min(1, "Turma é obrigatória"),
+  disciplinaId: z.string().min(1, "Disciplina é obrigatória"),
+  profissionalId: z.string().optional(),
+});
+
+export const updateAvaliacaoSchema = z.object({
+  nome: z.string().min(1).optional(),
+  tipo: z
+    .enum(["PROVA", "TRABALHO", "ATIVIDADE", "PARTICIPACAO", "RECUPERACAO"])
+    .optional(),
+  peso: z.number().min(0).optional(),
+  valorMaximo: z.number().min(0).optional(),
+  data: z
+    .string()
+    .transform((val) => new Date(val))
+    .optional(),
+  bimestre: z.number().int().min(1).max(4).optional(),
+  observacao: z.string().optional(),
+  profissionalId: z.string().optional(),
+});
+
+// ==================== NOTA ====================
+
+export const createNotaSchema = z.object({
+  valor: z.number().min(0),
+  observacao: z.string().optional(),
+  avaliacaoId: z.string().nullable().optional(),
+  matriculaId: z.string().min(1, "Matrícula é obrigatória"),
+  turmaId: z.string().min(1, "Turma é obrigatória"),
+  disciplina: z.string().min(1, "Disciplina é obrigatória"),
+  bimestre: z.number().int().min(1).max(5), // 1-4 bimestres regulares, 5 = recuperação final
+});
+
+export const updateNotaSchema = z.object({
+  valor: z.number().min(0).optional(),
+  observacao: z.string().optional(),
+});
+
+export const lancarNotasTurmaSchema = z.object({
+  avaliacaoId: z.string().min(1, "Avaliação é obrigatória"),
+  notas: z.array(
+    z.object({
+      matriculaId: z.string().min(1, "Matrícula é obrigatória"),
+      valor: z.number().min(0),
+      observacao: z.string().optional(),
+    })
+  ),
+});
+
+// Tipos exportados do Módulo 2
+export type CreateGradeHorarioInput = z.infer<typeof createGradeHorarioSchema>;
+export type UpdateGradeHorarioInput = z.infer<typeof updateGradeHorarioSchema>;
+export type CreateFrequenciaInput = z.infer<typeof createFrequenciaSchema>;
+export type UpdateFrequenciaInput = z.infer<typeof updateFrequenciaSchema>;
+export type RegistrarFrequenciaTurmaInput = z.infer<typeof registrarFrequenciaTurmaSchema>;
+export type CreateDisciplinaInput = z.infer<typeof createDisciplinaSchema>;
+export type UpdateDisciplinaInput = z.infer<typeof updateDisciplinaSchema>;
+export type CreateNotaInput = z.infer<typeof createNotaSchema>;
+export type UpdateNotaInput = z.infer<typeof updateNotaSchema>;
+export type LancarNotasTurmaInput = z.infer<typeof lancarNotasTurmaSchema>;
+export type CreateConfiguracaoAvaliacaoInput = z.infer<
+  typeof createConfiguracaoAvaliacaoSchema
+>;
+export type UpdateConfiguracaoAvaliacaoInput = z.infer<
+  typeof updateConfiguracaoAvaliacaoSchema
+>;
+export type CreateAvaliacaoInput = z.infer<typeof createAvaliacaoSchema>;
+export type UpdateAvaliacaoInput = z.infer<typeof updateAvaliacaoSchema>;
