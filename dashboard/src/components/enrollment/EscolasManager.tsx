@@ -158,13 +158,9 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-2xl font-bold">Gestão de Escolas</h3>
-          <p className="text-muted-foreground mt-1">Selecione uma escola para ver detalhes e gerenciar turmas</p>
-        </div>
-        <Button onClick={() => setIsFormOpen(true)} size="lg" className="gap-2">
-          <Plus size={20} weight="bold" />Nova Escola
+      <div className="flex items-center justify-end">
+        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+          <Plus size={14} weight="bold" />Nova Escola
         </Button>
       </div>
 
@@ -325,7 +321,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                         </div>
                       )}
                     </div>
-                    <div className="hidden sm:flex items-center gap-6 text-center">
+                    <div className="hidden lg:flex items-center gap-6 text-center">
                       <div className="px-3">
                         <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1"><GraduationCap size={16} /></div>
                         <p className="text-xl font-bold">{escola.stats.totalTurmas}</p>

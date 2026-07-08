@@ -304,20 +304,13 @@ export function MatriculasManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-2xl font-bold">Sistema de Matrículas</h3>
-          <p className="text-muted-foreground mt-1">
-            Realize matrículas de alunos nas escolas
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button
           onClick={() => setIsFormOpen(true)}
-          size="lg"
           className="gap-2"
           disabled={escolasAtivas.length === 0}
         >
-          <UserPlus size={20} weight="bold" />
+          <UserPlus size={14} weight="bold" />
           Nova Matrícula
         </Button>
       </div>

@@ -1,17 +1,16 @@
 "use client";
 
+import { PageWrap } from "@/components/ui/page-wrap";
 import { HierarquiaEnsinoManager } from "@/components/enrollment/HierarquiaEnsinoManager";
 
-export default function HierarquiaPage() {
+export default function Page() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Hierarquia de Ensino</h1>
-        <p className="text-muted-foreground mt-1">
-          Gerencie tipos de educação, etapas, níveis e séries
-        </p>
-      </div>
+    <PageWrap
+      title="Hierarquia de Ensino"
+      subtitle="Tipos de educação, etapas, níveis e séries da rede"
+      breadcrumb={[{ label: 'Estrutura' }, { label: 'Hierarquia de Ensino' }]}
+    >
       <HierarquiaEnsinoManager />
-    </div>
+    </PageWrap>
   );
 }

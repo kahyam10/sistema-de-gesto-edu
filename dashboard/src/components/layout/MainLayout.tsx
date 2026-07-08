@@ -1,29 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { cn } from "@/lib/utils";
+import { Sidebar } from "@/components/shell/sidebar";
+import { Topbar } from "@/components/shell/topbar";
+import { filterNavForRole } from "@/components/shell/nav";
+import { useAuth } from "@/lib/auth";
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useAuth();
+  const sections = filterNavForRole(user?.role);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar isCollapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
-      <main
-        className={cn(
-          "min-h-screen transition-all duration-300",
-          isCollapsed ? "ml-16" : "ml-64"
-        )}
-      >
-        <div className="container mx-auto p-6">
-          {children}
-        </div>
-      </main>
+    <div className="flex min-h-screen bg-surface text-ink">
+      <Sidebar sections={sections} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar />
+        <main className="flex-1 overflow-x-hidden">{children}</main>
+      </div>
     </div>
   );
 }

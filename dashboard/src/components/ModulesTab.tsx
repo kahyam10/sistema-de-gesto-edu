@@ -211,11 +211,7 @@ export function ModulesTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Modulos do Sistema</h2>
-          <p className="text-muted-foreground">Gerencie os modulos e submodulos do sistema educacional</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => handleOpenModuleDialog()}>
           <Plus className="w-4 h-4 mr-2" />Novo Modulo
         </Button>

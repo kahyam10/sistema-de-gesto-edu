@@ -87,8 +87,7 @@ export function TimelineTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h2 className="text-2xl font-bold">Cronograma de Implementacao</h2><p className="text-muted-foreground">Gerencie as fases do projeto e seus modulos associados</p></div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => handleOpenPhaseDialog()}><Plus className="w-4 h-4 mr-2" />Nova Fase</Button>
       </div>
 

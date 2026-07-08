@@ -1,17 +1,16 @@
 "use client";
 
+import { PageWrap } from "@/components/ui/page-wrap";
 import { KPITab } from "@/components/KPITab";
 
-export default function KPIsPage() {
+export default function Page() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Indicadores de Desempenho</h1>
-        <p className="text-muted-foreground mt-1">
-          Acompanhe os KPIs e métricas do sistema educacional
-        </p>
-      </div>
+    <PageWrap
+      title="Indicadores de Sucesso"
+      subtitle="Metas do projeto e linha de base do diagnóstico municipal"
+      breadcrumb={[{ label: 'Projeto' }, { label: 'KPIs' }]}
+    >
       <KPITab />
-    </div>
+    </PageWrap>
   );
 }

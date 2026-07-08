@@ -21,13 +21,6 @@ const iconMap: Record<string, any> = {
 export function TechStackTab({ techStack = defaultTechStack }: TechStackTabProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Especificações Técnicas</h2>
-        <p className="text-muted-foreground">
-          Stack tecnológico recomendado para o desenvolvimento
-        </p>
-      </div>
-
       <div className="space-y-6">
         {techStack.map((category) => (
           <Card key={category.category} className="p-6">

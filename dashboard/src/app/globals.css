@@ -2,68 +2,115 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Variáveis shadcn apontando para os tokens do DESIGN_BASE.md (§5.2).
+   O tema é light-only por decisão de design — a única superfície escura
+   é a sidebar azul-marinho (#062654). */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%;             /* #FFFFFF (surface) */
+    --foreground: 162 16% 12%;           /* #1A2421 (ink) */
+    --card: 0 0% 100%;                   /* #FFFFFF (surface-card) */
+    --card-foreground: 162 16% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
-    --chart-1: 221.2 83.2% 53.3%;
-    --chart-2: 142.1 76.2% 36.3%;
-    --chart-3: 47.9 95.8% 53.1%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --chart-1: 217.2 91.2% 59.8%;
-    --chart-2: 142.1 70.6% 45.3%;
-    --chart-3: 47.9 95.8% 53.1%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --popover-foreground: 162 16% 12%;
+    --primary: 219 86% 34%;              /* #0C3FA0 (brand) */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 219 71% 95%;            /* #E7EEFB (brand-soft) */
+    --secondary-foreground: 220 89% 24%; /* #072B73 (brand-700) */
+    --muted: 218 31% 95%;                /* #EEF1F6 (surface-muted) */
+    --muted-foreground: 152 6% 45%;      /* #6B7872 (ink-muted) */
+    --accent: 220 43% 99%;               /* #FAFBFD (surface-alt — hover interno shadcn) */
+    --accent-foreground: 162 16% 12%;
+    --destructive: 9 73% 45%;            /* #C8391F (danger) */
+    --destructive-foreground: 0 0% 100%;
+    --border: 135 8% 90%;                /* #E3E7E4 (hairline) */
+    --input: 135 8% 90%;
+    --ring: 219 86% 34%;                 /* #0C3FA0 */
+    --radius: 0.5rem;                    /* 8px — componentes shadcn que leiam a var */
+    --chart-1: 217 81% 39%;              /* #1351B4 */
+    --chart-2: 207 70% 41%;              /* #1F6FB2 */
+    --chart-3: 319 39% 48%;              /* #A94B8C */
+    --chart-4: 32 95% 44%;               /* #D97706 */
+    --chart-5: 199 48% 45%;              /* #3B86A8 */
+    --sidebar-background: 215 87% 18%;   /* #062654 (brand-deep) */
+    --sidebar-foreground: 219 52% 86%;   /* #C9D6EE */
+    --sidebar-primary: 215 76% 35%;      /* #164E9F (item ativo) */
+    --sidebar-accent: 214 79% 27%;       /* #0E3C7A (hover) */
   }
 }
 
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-surface text-ink font-sans;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  /* Numeric/code text */
+  code,
+  kbd,
+  samp {
+    @apply font-mono;
+    font-variant-numeric: tabular-nums;
+  }
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Display headings */
+  .text-display {
+    @apply font-display;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  /* Scrollbar discreta para a sidebar escura. */
+  .scrollbar-dark::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-dark::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+  }
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .scrollbar-dark { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+}
+
+@layer utilities {
+  /* === Surfaces === */
+  .card {
+    @apply bg-surface-card border border-border rounded-lg shadow-sm;
+  }
+  .panel {
+    @apply bg-surface-card border border-hairline rounded-lg shadow-sm;
+  }
+  .hairline {
+    @apply border-hairline;
+  }
+  .hairline-strong {
+    @apply border-hairline-strong;
+  }
+
+  /* === Labels === */
+  .uppercase-label {
+    @apply text-[11.5px] font-semibold text-ink-muted uppercase tracking-label;
+  }
+
+  /* === Rows === */
+  .row-hover {
+    @apply hover:bg-surface-alt transition-colors duration-180;
+  }
+
+  /* === Inputs === */
+  .input {
+    @apply block w-full rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm
+      placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
+      disabled:opacity-50 disabled:cursor-not-allowed;
   }
 }

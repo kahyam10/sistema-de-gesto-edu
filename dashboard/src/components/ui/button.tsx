@@ -4,28 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+// Variantes com as classes exatas do DESIGN_BASE (§3.2), mantendo a API shadcn.
+// default = primary (azul cheio) · secondary = soft · destructive = danger
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm border font-semibold leading-tight tracking-[0.05px] transition-colors duration-180 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0 shrink-0 outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-1",
   {
     variants: {
       variant: {
-        default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "bg-brand text-white border-transparent hover:bg-brand-hover",
+        destructive: "bg-danger text-white border-transparent hover:opacity-90",
+        outline: "bg-white text-ink-2 border-hairline-strong hover:bg-surface-alt",
+        secondary: "bg-brand-soft text-brand-700 border-transparent hover:bg-brand-100",
+        ghost: "bg-transparent text-ink-2 border-transparent hover:bg-surface-alt",
+        link: "text-brand border-transparent underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
+        default: "px-3.5 py-1.5 text-[13px] [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "px-2.5 py-1 text-xs [&_svg:not([class*='size-'])]:size-3",
+        lg: "px-[18px] py-[11px] text-sm [&_svg:not([class*='size-'])]:size-4",
+        icon: "h-[30px] w-[30px] p-0 [&_svg:not([class*='size-'])]:size-4",
       },
     },
     defaultVariants: {

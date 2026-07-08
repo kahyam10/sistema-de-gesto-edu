@@ -57,15 +57,7 @@ export function KPITab({ kpis = defaultKpis }: KPITabProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Indicadores de Sucesso (KPIs)</h2>
-        <p className="text-muted-foreground">
-          Metas do projeto e linha de base do diagnóstico municipal — a medição
-          automática depende dos módulos de frequência e notas (ainda não implantados)
-        </p>
-      </div>
-
-      <Card className="p-6 bg-gradient-to-br from-accent/10 to-secondary/10 border-2">
+      <Card className="p-6 bg-gradient-to-br from-brand-faint to-brand-soft/50 border-2">
         <div className="flex items-start gap-4">
           <TrendUp className="text-accent flex-shrink-0" size={40} weight="bold" />
           <div>

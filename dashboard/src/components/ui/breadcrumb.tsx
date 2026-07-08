@@ -1,110 +1,39 @@
-import { ComponentProps } from "react"
-import { Slot } from "@radix-ui/react-slot"
-import ChevronRightIcon from "lucide-react/dist/esm/icons/chevron-right"
-import MoreHorizontalIcon from "lucide-react/dist/esm/icons/more-horizontal"
+import Link from 'next/link';
+import { Fragment } from 'react';
+import { cn } from '@/lib/utils';
 
-import { cn } from "@/lib/utils"
-
-function Breadcrumb({ ...props }: ComponentProps<"nav">) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
 }
 
-function BreadcrumbList({ className, ...props }: ComponentProps<"ol">) {
-  return (
-    <ol
-      data-slot="breadcrumb-list"
-      className={cn(
-        "text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5",
-        className
-      )}
-      {...props}
-    />
-  )
+export interface BreadcrumbProps {
+  items: BreadcrumbItem[];
+  className?: string;
 }
 
-function BreadcrumbItem({ className, ...props }: ComponentProps<"li">) {
+/** Breadcrumb discreto com separador ponto médio (·). */
+export function Breadcrumb({ items, className }: BreadcrumbProps) {
   return (
-    <li
-      data-slot="breadcrumb-item"
-      className={cn("inline-flex items-center gap-1.5", className)}
-      {...props}
-    />
-  )
-}
-
-function BreadcrumbLink({
-  asChild,
-  className,
-  ...props
-}: ComponentProps<"a"> & {
-  asChild?: boolean
-}) {
-  const Comp = asChild ? Slot : "a"
-
-  return (
-    <Comp
-      data-slot="breadcrumb-link"
-      className={cn("hover:text-foreground transition-colors", className)}
-      {...props}
-    />
-  )
-}
-
-function BreadcrumbPage({ className, ...props }: ComponentProps<"span">) {
-  return (
-    <span
-      data-slot="breadcrumb-page"
-      role="link"
-      aria-disabled="true"
-      aria-current="page"
-      className={cn("text-foreground font-normal", className)}
-      {...props}
-    />
-  )
-}
-
-function BreadcrumbSeparator({
-  children,
-  className,
-  ...props
-}: ComponentProps<"li">) {
-  return (
-    <li
-      data-slot="breadcrumb-separator"
-      role="presentation"
-      aria-hidden="true"
-      className={cn("[&>svg]:size-3.5", className)}
-      {...props}
+    <nav
+      aria-label="Breadcrumb"
+      className={cn('flex items-center gap-1 text-[11.5px] text-ink-muted', className)}
     >
-      {children ?? <ChevronRightIcon />}
-    </li>
-  )
-}
-
-function BreadcrumbEllipsis({
-  className,
-  ...props
-}: ComponentProps<"span">) {
-  return (
-    <span
-      data-slot="breadcrumb-ellipsis"
-      role="presentation"
-      aria-hidden="true"
-      className={cn("flex size-9 items-center justify-center", className)}
-      {...props}
-    >
-      <MoreHorizontalIcon className="size-4" />
-      <span className="sr-only">More</span>
-    </span>
-  )
-}
-
-export {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
+      {items.map((item, i) => {
+        const isLast = i === items.length - 1;
+        return (
+          <Fragment key={`${item.label}-${i}`}>
+            {item.href && !isLast ? (
+              <Link href={item.href} className="hover:text-ink transition-colors">
+                {item.label}
+              </Link>
+            ) : (
+              <span className={isLast ? 'text-ink-2 font-medium' : ''}>{item.label}</span>
+            )}
+            {!isLast && <span className="text-ink-soft">·</span>}
+          </Fragment>
+        );
+      })}
+    </nav>
+  );
 }

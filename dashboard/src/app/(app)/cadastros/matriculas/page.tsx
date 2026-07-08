@@ -1,17 +1,16 @@
 "use client";
 
+import { PageWrap } from "@/components/ui/page-wrap";
 import { MatriculasManager } from "@/components/enrollment/MatriculasManager";
 
-export default function MatriculasPage() {
+export default function Page() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Matrículas</h1>
-        <p className="text-muted-foreground mt-1">
-          Realize e gerencie matrículas de alunos
-        </p>
-      </div>
+    <PageWrap
+      title="Matrículas"
+      subtitle="Gerencie as matrículas dos alunos da rede municipal"
+      breadcrumb={[{ label: 'Cadastros' }, { label: 'Matrículas' }]}
+    >
       <MatriculasManager />
-    </div>
+    </PageWrap>
   );
 }

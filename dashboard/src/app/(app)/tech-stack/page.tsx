@@ -1,17 +1,16 @@
 "use client";
 
+import { PageWrap } from "@/components/ui/page-wrap";
 import { TechStackTab } from "@/components/TechStackTab";
 
-export default function TechStackPage() {
+export default function Page() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Tech Stack</h1>
-        <p className="text-muted-foreground mt-1">
-          Tecnologias e ferramentas utilizadas no projeto
-        </p>
-      </div>
+    <PageWrap
+      title="Tech Stack"
+      subtitle="Tecnologias que sustentam o sistema"
+      breadcrumb={[{ label: 'Projeto' }, { label: 'Tech Stack' }]}
+    >
       <TechStackTab />
-    </div>
+    </PageWrap>
   );
 }

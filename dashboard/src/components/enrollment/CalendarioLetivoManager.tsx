@@ -554,20 +554,20 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
 
   return (
     <div className="space-y-6">
-      {/* Header com seleção de ano */}
+      {/* Header com seleção de ano — o título da página vem do PageWrap;
+          mantém título interno apenas no contexto de escola (EscolaDetails) */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h3 className="text-2xl font-bold">
-            {escolaId ? "Calendário da Escola" : "Calendário Letivo"}
-          </h3>
-          <p className="text-muted-foreground">
-            {escolaId 
-              ? "Eventos específicos desta escola" 
-              : "Gerencie o calendário escolar, feriados e eventos globais"
-            }
-          </p>
-        </div>
-        
+        {escolaId ? (
+          <div>
+            <h3 className="text-[13.5px] font-semibold text-ink tracking-[-0.1px]">
+              Calendário da Escola
+            </h3>
+            <p className="text-[12.5px] text-ink-muted">Eventos específicos desta escola</p>
+          </div>
+        ) : (
+          <div />
+        )}
+
         <div className="flex items-center gap-2">
           <Select
             value={anoLetivoSelecionado?.id || ""}
