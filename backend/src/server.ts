@@ -27,6 +27,10 @@ import { notasRoutes } from "./routes/notas.routes.js";
 import { disciplinasRoutes } from "./routes/disciplinas.routes.js";
 import { configuracaoAvaliacaoRoutes } from "./routes/configuracao-avaliacao.routes.js";
 import { gradeHorariaRoutes } from "./routes/grade-horaria.routes.js";
+// Módulo 5 — Programas Especiais
+import { buscaAtivaRoutes } from "./routes/busca-ativa.routes.js";
+import { aeeRoutes } from "./routes/aee.routes.js";
+import { acompanhamentoRoutes } from "./routes/acompanhamento.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -158,6 +162,11 @@ async function buildApp() {
       pattern: /^\/api\/(frequencia|notas|grade-horaria)(\/|$)/,
       roles: PEDAGOGICO,
     },
+    // Programas especiais: busca ativa, AEE e acompanhamento (equipe + professores AEE)
+    {
+      pattern: /^\/api\/(busca-ativa|aee|acompanhamento)(\/|$)/,
+      roles: PEDAGOGICO,
+    },
     // Estrutura pedagógica (disciplinas e regras de avaliação) = gestão
     {
       pattern: /^\/api\/(disciplinas|configuracao-avaliacao)(\/|$)/,
@@ -227,6 +236,10 @@ async function buildApp() {
   app.register(disciplinasRoutes, { prefix: "/api/disciplinas" });
   app.register(configuracaoAvaliacaoRoutes, { prefix: "/api/configuracao-avaliacao" });
   app.register(gradeHorariaRoutes, { prefix: "/api/grade-horaria" });
+  // Módulo 5 — Programas Especiais
+  app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
+  app.register(aeeRoutes, { prefix: "/api/aee" });
+  app.register(acompanhamentoRoutes, { prefix: "/api/acompanhamento" });
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);
