@@ -313,7 +313,7 @@ export class AcompanhamentoService {
     }
 
     if (acompanhamento.status !== "EM_ANDAMENTO") {
-      throw new BusinessError("BIZ_015", {
+      throw new BusinessError("BIZ_034", {
         acompanhamentoId: id,
         status: acompanhamento.status,
       }); // Acompanhamento não está em andamento

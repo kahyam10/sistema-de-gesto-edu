@@ -583,6 +583,12 @@
       "message": "Reunião cancelada não pode ser alterada",
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_034": {
+      "code": "BIZ_034",
+      "message": "Acompanhamento não está em andamento - não é possível registrar evolução",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
     }
   },
   "DATABASE": {
