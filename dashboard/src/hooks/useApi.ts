@@ -9,6 +9,7 @@ import {
   escolasApi,
   turmasApi,
   matriculasApi,
+  documentosMatriculaApi,
   profissionaisApi,
   modulesApi,
   phasesApi,
@@ -50,6 +51,7 @@ import {
   Escola,
   Turma,
   Matricula,
+  TipoDocumentoMatricula,
   ProfissionalEducacao,
   Module,
   SubModule,
@@ -760,6 +762,82 @@ export function useDeleteMatricula() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao remover matrícula");
+    },
+  });
+}
+
+// ==================== DOCUMENTOS DA MATRÍCULA ====================
+
+export function useDocumentosMatricula(matriculaId: string) {
+  return useQuery({
+    queryKey: ["documentos-matricula", matriculaId],
+    queryFn: () => documentosMatriculaApi.list(matriculaId),
+    enabled: !!matriculaId,
+  });
+}
+
+export function useUploadDocumentoMatricula() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      matriculaId,
+      tipo,
+      arquivo,
+    }: {
+      matriculaId: string;
+      tipo: TipoDocumentoMatricula;
+      arquivo: File;
+    }) => documentosMatriculaApi.upload(matriculaId, tipo, arquivo),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["documentos-matricula", variables.matriculaId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["matriculas", variables.matriculaId] });
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      toast.success("Documento anexado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao anexar documento");
+    },
+  });
+}
+
+export function useDeleteDocumentoMatricula() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      matriculaId,
+      documentoId,
+    }: {
+      matriculaId: string;
+      documentoId: string;
+    }) => documentosMatriculaApi.delete(matriculaId, documentoId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["documentos-matricula", variables.matriculaId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["matriculas", variables.matriculaId] });
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      toast.success("Documento excluído com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao excluir documento");
+    },
+  });
+}
+
+export function useExpurgarDocumentosMatricula() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (matriculaId: string) => documentosMatriculaApi.expurgar(matriculaId),
+    onSuccess: (_, matriculaId) => {
+      queryClient.invalidateQueries({ queryKey: ["documentos-matricula", matriculaId] });
+      queryClient.invalidateQueries({ queryKey: ["matriculas", matriculaId] });
+      queryClient.invalidateQueries({ queryKey: ["matriculas"] });
+      toast.success("Documentos expurgados com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao expurgar documentos");
     },
   });
 }

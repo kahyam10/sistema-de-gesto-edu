@@ -599,6 +599,30 @@ export const aprovarLicencaSchema = z.object({
   justificativaRejeicao: z.string().optional().nullable(),
 });
 
+// ==================== DOCUMENTOS DA MATRÍCULA ====================
+
+export const tipoDocumentoMatriculaEnum = z.enum([
+  "CERTIDAO_NASCIMENTO",
+  "RG_ALUNO",
+  "CPF_ALUNO",
+  "FOTO_3X4",
+  "CARTAO_SUS",
+  "CADERNETA_VACINACAO",
+  "COMPROVANTE_RESIDENCIA",
+  "RG_RESPONSAVEL",
+  "CPF_RESPONSAVEL",
+  "HISTORICO_ESCOLAR",
+  "DECLARACAO_TRANSFERENCIA",
+  "LAUDO_MEDICO",
+  "OUTRO",
+]);
+
+export const uploadDocumentoMatriculaQuerySchema = z.object({
+  tipo: tipoDocumentoMatriculaEnum,
+});
+
+export type TipoDocumentoMatricula = z.infer<typeof tipoDocumentoMatriculaEnum>;
+
 // ==================== PAGINAÇÃO ====================
 
 export const paginationSchema = z.object({

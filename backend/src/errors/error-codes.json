@@ -269,6 +269,12 @@
       "message": "Notificação não encontrada",
       "statusCode": 404,
       "category": "NAO_ENCONTRADO"
+    },
+    "NF_029": {
+      "code": "NF_029",
+      "message": "Documento da matrícula não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
     }
   },
   "BUSINESS": {
@@ -460,6 +466,12 @@
       "code": "FILE_005",
       "message": "Arquivo corrompido ou inválido",
       "statusCode": 400,
+      "category": "ARQUIVO"
+    },
+    "FILE_006": {
+      "code": "FILE_006",
+      "message": "Arquivo excede o tamanho máximo permitido (10MB)",
+      "statusCode": 413,
       "category": "ARQUIVO"
     }
   },

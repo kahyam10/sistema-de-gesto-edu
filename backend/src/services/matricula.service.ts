@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
+import { documentoMatriculaService } from "./documento-matricula.service.js";
 import {
   CreateMatriculaInput,
   UpdateMatriculaInput,
@@ -130,6 +131,8 @@ export class MatriculaService {
   }
 
   async delete(id: string) {
+    // LGPD: remove os arquivos físicos antes do cascade apagar os registros
+    await documentoMatriculaService.expurgarArquivos(id);
     return prisma.matricula.delete({
       where: { id },
     });

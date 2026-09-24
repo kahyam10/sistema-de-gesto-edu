@@ -31,6 +31,7 @@ model User {
   profissionalId String? @unique
   profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id])
 
+  documentosMatriculaEnviados DocumentoMatricula[]
   @@map("users")
 }
 
@@ -323,6 +324,7 @@ model Matricula {
   turma   Turma? @relation(fields: [turmaId], references: [id])
 
   transferencias TransferenciaMatricula[]
+  documentos     DocumentoMatricula[]
   frequencias    Frequencia[]
   notas          Nota[]
   buscasAtivas   BuscaAtiva[]
@@ -1246,3 +1248,27 @@ model Ponto {
   @@unique([profissionalId, data]) // Um registro de ponto por profissional por dia
   @@map("pontos")
 }
+
+// ==================== DOCUMENTOS DA MATRÍCULA ====================
+
+model DocumentoMatricula {
+  id           String   @id @default(cuid())
+  tipo         String   // CERTIDAO_NASCIMENTO, RG_ALUNO, CPF_ALUNO, FOTO_3X4, CARTAO_SUS, CADERNETA_VACINACAO, COMPROVANTE_RESIDENCIA, RG_RESPONSAVEL, CPF_RESPONSAVEL, HISTORICO_ESCOLAR, DECLARACAO_TRANSFERENCIA, LAUDO_MEDICO, OUTRO — validado por tipoDocumentoMatriculaEnum em src/schemas/index.ts
+  nomeOriginal String
+  mimeType     String   // application/pdf, image/jpeg, image/png
+  tamanho      Int      // bytes
+  storageKey   String   @unique // caminho relativo no storage: matriculas/<matriculaId>/<uuid>.<ext>
+  createdAt    DateTime @default(now())
+
+  matriculaId String
+  matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  uploadedById   String?
+  uploadedBy     User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedByNome String // snapshot do nome de quem enviou (sobrevive à exclusão do usuário)
+
+  @@index([matriculaId])
+  @@index([matriculaId, tipo])
+  @@map("documentos_matricula")
+}
+

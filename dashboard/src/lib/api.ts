@@ -84,6 +84,32 @@ async function request<T>(
   return response.json();
 }
 
+// Upload multipart: sem Content-Type manual (o browser define o boundary)
+async function requestUpload<T>(endpoint: string, formData: FormData): Promise<T> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    const error = await response
+      .json()
+      .catch(() => ({ error: "Erro desconhecido" }));
+    throw new ApiError(response.status, error.error || "Erro na requisição");
+  }
+  return response.json();
+}
+
 // ==================== AUTH ====================
 
 export interface User {
@@ -765,6 +791,65 @@ export const matriculasApi = {
       method: "PATCH",
       body: { escolaId, turmaId },
     }),
+};
+
+// ==================== DOCUMENTOS DA MATRÍCULA ====================
+
+export type TipoDocumentoMatricula =
+  | "CERTIDAO_NASCIMENTO" | "RG_ALUNO" | "CPF_ALUNO" | "FOTO_3X4"
+  | "CARTAO_SUS" | "CADERNETA_VACINACAO" | "COMPROVANTE_RESIDENCIA"
+  | "RG_RESPONSAVEL" | "CPF_RESPONSAVEL" | "HISTORICO_ESCOLAR"
+  | "DECLARACAO_TRANSFERENCIA" | "LAUDO_MEDICO" | "OUTRO";
+
+export interface DocumentoMatricula {
+  id: string;
+  tipo: TipoDocumentoMatricula;
+  nomeOriginal: string;
+  mimeType: string;
+  tamanho: number;
+  storageKey: string;
+  matriculaId: string;
+  uploadedById?: string | null;
+  uploadedByNome: string;
+  createdAt: string;
+}
+
+export const documentosMatriculaApi = {
+  list: (matriculaId: string) =>
+    request<DocumentoMatricula[]>(`/api/matriculas/${matriculaId}/documentos`),
+  upload: (matriculaId: string, tipo: TipoDocumentoMatricula, arquivo: File) => {
+    const formData = new FormData();
+    formData.append("arquivo", arquivo);
+    return requestUpload<DocumentoMatricula>(
+      `/api/matriculas/${matriculaId}/documentos?tipo=${tipo}`,
+      formData
+    );
+  },
+  download: async (matriculaId: string, documentoId: string): Promise<Blob> => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    const response = await fetch(
+      `${API_BASE_URL}/api/matriculas/${matriculaId}/documentos/${documentoId}/download`,
+      { headers: { ...(token && { Authorization: `Bearer ${token}` }) } }
+    );
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ error: "Erro ao baixar documento" }));
+      throw new ApiError(response.status, error.error || "Erro ao baixar documento");
+    }
+    return response.blob();
+  },
+  delete: (matriculaId: string, documentoId: string) =>
+    request<{ message: string }>(
+      `/api/matriculas/${matriculaId}/documentos/${documentoId}`,
+      { method: "DELETE" }
+    ),
+  expurgar: (matriculaId: string) =>
+    request<{ message: string; arquivosRemovidos: number }>(
+      `/api/matriculas/${matriculaId}/documentos`,
+      { method: "DELETE" }
+    ),
 };
 
 // ==================== PROFISSIONAIS ====================

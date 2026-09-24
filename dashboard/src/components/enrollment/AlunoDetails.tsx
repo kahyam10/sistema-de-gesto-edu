@@ -56,6 +56,7 @@ import {
   useTurmas,
 } from "@/hooks/useApi";
 import { toast } from "sonner";
+import { DocumentosMatricula } from "./DocumentosMatricula";
 
 interface AlunoDetailsProps {
   matriculaId: string;
@@ -535,6 +536,9 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Documentos digitalizados da matrícula (checklist + upload + arquivos) */}
+      <DocumentosMatricula matricula={matricula} />
 
       {/* Dialog de Edição */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

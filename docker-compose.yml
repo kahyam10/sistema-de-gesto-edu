@@ -33,8 +33,13 @@ services:
       HOST: 0.0.0.0
       ADMIN_EMAIL: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
+      # Storage de documentos da matrícula (volume nomeado abaixo)
+      UPLOADS_DIR: /app/uploads
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
     ports:
       - "3103:3103"
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,3 +65,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

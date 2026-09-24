@@ -43,6 +43,10 @@ dashboard/.env
 *.db
 *.db-journal
 
+# Uploads de documentos da matrícula (storage local — fora do git)
+backend/uploads/
+backend/.uploads-test/
+
 # Misc
 **/agent-eval-report*
 packages

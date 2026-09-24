@@ -1,6 +1,7 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
+import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -44,6 +45,8 @@ import { reuniaoPaisRoutes } from "./routes/reuniao-pais.routes.js";
 // Módulo 4 — RH
 import { pontosRoutes } from "./routes/pontos.routes.js";
 import { licencasRoutes } from "./routes/licencas.routes.js";
+// Documentos da matrícula (upload de arquivos)
+import { documentosMatriculaRoutes } from "./routes/documentos-matricula.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -75,12 +78,19 @@ async function buildApp() {
   await app.register(cors, {
     origin: isProd ? corsOrigins! : corsOrigins ?? true,
     credentials: true,
+    // Nome de arquivo dos downloads (exportadores/documentos) visível cross-origin
+    exposedHeaders: ["Content-Disposition"],
   });
 
   // Rate limiting global (proteção básica contra abuso/brute-force)
   await app.register(rateLimit, {
     max: 300,
     timeWindow: "1 minute",
+  });
+
+  // Upload multipart (documentos da matrícula): 10MB, 1 arquivo por request
+  await app.register(multipart, {
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
   });
 
   await app.register(jwt, {
@@ -285,6 +295,8 @@ async function buildApp() {
   app.register(escolasRoutes, { prefix: "/api/escolas" });
   app.register(turmasRoutes, { prefix: "/api/turmas" });
   app.register(matriculasRoutes, { prefix: "/api/matriculas" });
+  // Documentos da matrícula (upload) — mesmo prefixo de matrículas
+  app.register(documentosMatriculaRoutes, { prefix: "/api/matriculas" });
   app.register(profissionaisRoutes, { prefix: "/api/profissionais" });
   app.register(modulesRoutes, { prefix: "/api/modules" });
   app.register(phaseRoutes, { prefix: "/api/phases" });
