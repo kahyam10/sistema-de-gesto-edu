@@ -1,0 +1,14 @@
+# Imagem de DESENVOLVIMENTO (docker-compose.dev.yml). Não é a de produção
+# (essa é backend/Dockerfile). O código entra por bind mount, não por COPY.
+FROM node:20-bookworm-slim
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates wget \
+ && rm -rf /var/lib/apt/lists/*
+# Pontos de montagem dos volumes já com dono "node" (uid 1000) — volumes
+# nomeados herdam esse dono na criação
+RUN mkdir -p /repo/node_modules /repo/backend/node_modules /data/uploads \
+ && chown -R node:node /repo /data
+USER node
+WORKDIR /repo/backend
+ENV NODE_ENV=development
+CMD ["sh", "/repo/backend/docker/dev-entrypoint.sh"]

@@ -1,0 +1,94 @@
+# ==========================================
+# Gestão Educacional — ambiente de DESENVOLVIMENTO local (backend + Postgres)
+# ==========================================
+# O código do backend é montado no container: salvar um arquivo em backend/src
+# reinicia a API sozinho (tsx watch). A cada reinício o boot aplica as migrations
+# pendentes (prisma migrate deploy) e regenera o Prisma Client se o schema mudou.
+# Mudou package-lock.json? O container se reinicia e reinstala as dependências.
+#
+# O dashboard roda FORA do Docker: cd dashboard && npm run dev  (http://localhost:3100)
+#
+# Uso (na raiz do repo):
+#   npm run dev:docker            # sobe (build na 1ª vez)
+#   npm run dev:docker:logs       # acompanha a API
+#   npm run test:docker           # suíte do backend contra gestao_edu_test
+#   npm run db:seed:docker        # base de demonstração (APAGA os dados do dev)
+#
+# Segredos: POSTGRES_PASSWORD e JWT_SECRET vêm do .env da raiz (fora do git);
+# SEED_ADMIN_* do backend/.env. Nada de senha neste arquivo.
+#
+# Isolado do docker-compose.yml (produção local): projeto, containers e volumes
+# próprios — não toca no volume sistema-de-gesto-edu_pgdata.
+name: gestao-edu-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gestao-edu-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env da raiz}
+      POSTGRES_DB: gestao_edu
+    ports:
+      # Só na interface local da máquina
+      - "127.0.0.1:3104:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gestao_edu"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: gestao-edu-dev-backend
+    restart: unless-stopped
+    # tini como PID 1: repassa sinais e permite o auto-restart quando as deps mudam
+    init: true
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      NODE_ENV: development
+      PRISMA_HIDE_UPDATE_MESSAGE: "1"
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/gestao_edu?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/gestao_edu_test?schema=public
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env da raiz}
+      CORS_ORIGIN: http://localhost:3100
+      PORT: "3103"
+      HOST: 0.0.0.0
+      UPLOADS_DIR: /data/uploads
+      STORAGE_DRIVER: local
+    ports:
+      - "127.0.0.1:3103:3103"
+    volumes:
+      # Repo inteiro SOMENTE LEITURA (nada no container consegue apagar arquivos seus)...
+      - .:/repo:ro
+      # ...exceto o backend (tsx watch, prisma migrate dev --create-only)
+      - ./backend:/repo/backend
+      # node_modules do container (Linux/Debian) — nunca os da sua máquina
+      - node_modules_dev:/repo/node_modules
+      - backend_node_modules_dev:/repo/backend/node_modules
+      - /repo/dashboard/node_modules
+      - /repo/mcp_server/node_modules
+      - uploads_dev:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3103/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # 1º boot instala dependências
+      start_period: 180s
+
+volumes:
+  pgdata_dev:
+  node_modules_dev:
+  backend_node_modules_dev:
+  uploads_dev:
