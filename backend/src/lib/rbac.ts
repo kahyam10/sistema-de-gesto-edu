@@ -3,7 +3,14 @@
 // PRIMEIRA regra que casar vence. A checagem de propriedade do DIRETOR
 // (consulta o banco) permanece inline no hook do server.
 
-export const PUBLIC_API = new Set(["/api/auth/login"]);
+// Rotas sem access token: login e as rotas de sessão, que se autenticam pelo
+// cookie de refresh (path restrito a /api/auth) — logout precisa funcionar
+// mesmo com o access token já expirado.
+export const PUBLIC_API = new Set([
+  "/api/auth/login",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+]);
 export const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export const GESTAO = ["ADMIN", "SEMEC"];
@@ -127,6 +134,8 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/portal\/semec(\/|$)/, roles: GESTAO },
   // Exportadores oficiais (Educacenso/Sistema Presença): CPF/NIS — equipe operacional
   { pattern: /^\/api\/exportacao(\/|$)/, roles: OPERACAO },
+  // Trilha de auditoria (quem acessou dados pessoais) — só gestão da rede
+  { pattern: /^\/api\/auditoria(\/|$)/, roles: GESTAO },
 ];
 
 // Módulo 3 — RESPONSAVEL lê APENAS o próprio portal (allowlist; tudo fora dela = 403)

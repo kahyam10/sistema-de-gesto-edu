@@ -36,7 +36,61 @@ model User {
   // Módulo 3 — matrículas (alunos) que este usuário pode acompanhar no portal
   vinculosMatricula MatriculaUsuario[]
 
+  // Sessões (refresh tokens) e trilha de auditoria
+  sessoes       SessaoRefresh[]
+  eventosAuditoria AuditLog[]
+
   @@map("users")
+}
+
+// Sessão do usuário: refresh token OPACO com rotação a cada uso.
+// - Só o hash SHA-256 do token é guardado (vazamento do banco não entrega sessões).
+// - "familia" agrupa as rotações de um mesmo login: reuso de um token já
+//   rotacionado (fora da janela de tolerância) indica roubo → a família toda é revogada.
+// - csrfToken acompanha a família (estável entre rotações) e vai no claim do access token.
+model SessaoRefresh {
+  id              String    @id @default(cuid())
+  familia         String
+  tokenHash       String    @unique
+  csrfToken       String
+  expiraEm        DateTime  // expiração deste token (deslizante)
+  familiaExpiraEm DateTime  // limite absoluto da sessão, não renova
+  rotacionadoEm   DateTime? // preenchido quando este token é trocado por um novo
+  revogadoEm      DateTime?
+  motivoRevogacao String?   // LOGOUT, REUSO_DETECTADO, USUARIO_INATIVO
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familia])
+  @@map("refresh_tokens")
+}
+
+// Trilha de auditoria (LGPD art. 37 — registro das operações de tratamento).
+// Somente inserção: não há rota de edição nem exclusão.
+// NUNCA gravar CPF, NIS ou dado de saúde em "detalhes".
+model AuditLog {
+  id        String   @id @default(cuid())
+  acao      String   // LOGIN_SUCESSO, LOGIN_FALHA, LOGOUT, SESSAO_REUSO_DETECTADO, DOCUMENTO_DOWNLOAD, DOCUMENTO_EXCLUSAO, DOCUMENTOS_EXPURGO, EXPORTACAO_EDUCACENSO, EXPORTACAO_PRESENCA
+  recurso   String?  // ex.: "matricula", "documento_matricula", "exportacao"
+  recursoId String?
+  detalhes  Json?
+  ip        String?
+  userAgent String?
+  userRole  String?  // snapshot do papel no momento da ação
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([acao, createdAt])
+  @@index([recurso, recursoId])
+  @@map("audit_logs")
 }
 
 // ==================== ESTRUTURA ACADÊMICA ====================

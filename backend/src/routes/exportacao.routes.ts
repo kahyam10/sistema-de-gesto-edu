@@ -8,6 +8,7 @@ import {
   exportacaoEducacensoQuerySchema,
   exportacaoPresencaQuerySchema,
 } from "../schemas/exportacao.schemas.js";
+import { auditar } from "../lib/auditoria.js";
 
 export async function exportacaoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -72,6 +73,16 @@ oficial. Valide no sistema oficial do Educacenso antes de submeter.
         const query = exportacaoEducacensoQuerySchema.parse(request.query);
         const resultado =
           await exportacaoEducacensoService.gerarEducacenso(query);
+        // Arquivo com CPF de alunos e profissionais: toda geração é auditada
+        await auditar(request, {
+          acao: "EXPORTACAO_EDUCACENSO",
+          recurso: "exportacao",
+          detalhes: {
+            anoLetivoId: query.anoLetivoId,
+            escolaId: query.escolaId ?? null,
+            formato: query.formato ?? "txt",
+          },
+        });
 
         if (query.formato === "json") {
           return reply.status(200).send(resultado);
@@ -169,6 +180,17 @@ Faltas justificadas NÃO contam como presença, mas saem em coluna própria
         const query = exportacaoPresencaQuerySchema.parse(request.query);
         const resultado =
           await exportacaoPresencaService.gerarSistemaPresenca(query);
+        // Arquivo com NIS de alunos: toda geração é auditada
+        await auditar(request, {
+          acao: "EXPORTACAO_PRESENCA",
+          recurso: "exportacao",
+          detalhes: {
+            anoLetivoId: query.anoLetivoId,
+            mes: query.mes,
+            escolaId: query.escolaId ?? null,
+            formato: query.formato ?? "csv",
+          },
+        });
 
         if (query.formato === "json") {
           return reply.status(200).send({

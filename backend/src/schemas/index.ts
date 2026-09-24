@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const registerSchema = z.object({
   email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  password: z.string().min(10, "Senha deve ter pelo menos 10 caracteres"),
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   role: z
     .enum(["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA", "PROFESSOR", "RESPONSAVEL", "USER"])
@@ -649,7 +649,7 @@ export const criarAcessoMatriculaSchema = z.object({
   email: z.string().email("Email inválido"),
   // Obrigatórios apenas quando o usuário ainda não existe (validado no service — BIZ_024)
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").optional(),
-  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+  senha: z.string().min(10, "Senha deve ter pelo menos 10 caracteres").optional(),
   tipoVinculo: z.enum(["RESPONSAVEL", "ALUNO"]).default("RESPONSAVEL"),
   parentesco: z.string().optional(),
 });

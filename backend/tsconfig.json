@@ -16,7 +16,11 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      // fastify 4 fica aninhado em backend/node_modules (o lock do monorepo não o
+      // eleva à raiz); plugins elevados (@fastify/cookie, rate-limit) precisam
+      // enxergar os MESMOS tipos para a augmentation (request.cookies etc.) valer
+      "fastify": ["node_modules/fastify"]
     }
   },
   "include": ["src/**/*"],

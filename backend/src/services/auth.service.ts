@@ -1,6 +1,21 @@
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { RegisterInput, LoginInput } from "../schemas/index.js";
+
+// Hash de uma senha aleatória: quando o e-mail não existe o login ainda faz um
+// bcrypt.compare, para o tempo de resposta não revelar quais e-mails existem.
+const HASH_FICTICIO = bcrypt.hashSync(randomBytes(16).toString("hex"), 10);
+
+export class LoginInvalidoError extends Error {
+  constructor(
+    public motivo: "CREDENCIAIS" | "INATIVO",
+    public userId: string | null
+  ) {
+    super(motivo === "INATIVO" ? "Usuário inativo" : "Credenciais inválidas");
+    this.name = "LoginInvalidoError";
+  }
+}
 
 export class AuthService {
   async register(data: RegisterInput) {
@@ -41,18 +56,16 @@ export class AuthService {
       include: { escola: true },
     });
 
-    if (!user) {
-      throw new Error("Credenciais inválidas");
+    // Sempre compara (mesmo sem usuário) — tempo constante entre os casos
+    const senhaOk = await bcrypt.compare(data.password, user?.password ?? HASH_FICTICIO);
+
+    if (!user || !senhaOk) {
+      throw new LoginInvalidoError("CREDENCIAIS", user?.id ?? null);
     }
 
+    // Só revela "inativo" para quem acertou a senha
     if (!user.ativo) {
-      throw new Error("Usuário inativo");
-    }
-
-    const validPassword = await bcrypt.compare(data.password, user.password);
-
-    if (!validPassword) {
-      throw new Error("Credenciais inválidas");
+      throw new LoginInvalidoError("INATIVO", user.id);
     }
 
     const { password: _, ...userWithoutPassword } = user;

@@ -26,7 +26,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/gestao_edu?schema=public
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      ACCESS_TOKEN_MINUTOS: ${ACCESS_TOKEN_MINUTOS:-15}
+      TRUST_PROXY: ${TRUST_PROXY:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3100}
       NODE_ENV: production
       PORT: "3103"

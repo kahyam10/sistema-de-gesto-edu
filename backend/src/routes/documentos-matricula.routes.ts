@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
 import { authMiddleware } from "../middleware/auth.js";
+import { auditar } from "../lib/auditoria.js";
 import { AppError, FileError, formatarErroZod } from "../errors/index.js";
 import { documentoMatriculaService } from "../services/documento-matricula.service.js";
 import { uploadDocumentoMatriculaQuerySchema } from "../schemas/index.js";
@@ -142,6 +143,12 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
           matriculaId,
           documentoId
         );
+        await auditar(request, {
+          acao: "DOCUMENTO_DOWNLOAD",
+          recurso: "documento_matricula",
+          recursoId: documentoId,
+          detalhes: { matriculaId, tipo: documento.tipo },
+        });
         const nomeAscii = documento.nomeOriginal.replace(/[^\w.\- ]/g, "_");
         return reply
           .status(200)
@@ -191,6 +198,12 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
           request.params.matriculaId,
           request.params.documentoId
         );
+        await auditar(request, {
+          acao: "DOCUMENTO_EXCLUSAO",
+          recurso: "documento_matricula",
+          recursoId: request.params.documentoId,
+          detalhes: { matriculaId: request.params.matriculaId },
+        });
         return reply.status(200).send(resultado);
       } catch (error: unknown) {
         if (error instanceof AppError) {
@@ -226,6 +239,12 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
     ) => {
       try {
         const resultado = await documentoMatriculaService.expurgar(request.params.matriculaId);
+        await auditar(request, {
+          acao: "DOCUMENTOS_EXPURGO",
+          recurso: "matricula",
+          recursoId: request.params.matriculaId,
+          detalhes: { arquivosRemovidos: resultado.arquivosRemovidos ?? null },
+        });
         return reply.status(200).send(resultado);
       } catch (error: unknown) {
         if (error instanceof AppError) {
