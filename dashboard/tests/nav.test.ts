@@ -10,26 +10,56 @@ describe("filterNavForRole", () => {
     expect(total).toBe(totalGeral);
   });
 
-  it("PROFESSOR não vê a seção Projeto nem RH", () => {
+  it("PROFESSOR não vê a seção Projeto, RH nem Exportações", () => {
     const sections = filterNavForRole("PROFESSOR");
     expect(sections.map((s) => s.label)).not.toContain("Projeto");
     const hrefs = sections.flatMap((s) => s.items.map((i) => i.href));
     expect(hrefs).not.toContain("/rh");
+    expect(hrefs).not.toContain("/exportacoes");
     expect(hrefs).toContain("/pedagogico");
     expect(hrefs).toContain("/");
+    expect(hrefs).toContain("/portal");
+    expect(hrefs).toContain("/gestao-democratica");
   });
 
-  it("papel desconhecido/undefined vê apenas itens 'all'", () => {
+  it("SECRETARIA vê RH e Exportações (equipe operacional)", () => {
+    const hrefs = filterNavForRole("SECRETARIA").flatMap((s) =>
+      s.items.map((i) => i.href)
+    );
+    expect(hrefs).toContain("/rh");
+    expect(hrefs).toContain("/exportacoes");
+    expect(hrefs).toContain("/alimentacao");
+    expect(hrefs).toContain("/transporte");
+  });
+
+  it("RESPONSAVEL vê apenas o próprio portal", () => {
+    const sections = filterNavForRole("RESPONSAVEL");
+    const hrefs = sections.flatMap((s) => s.items.map((i) => i.href));
+    expect(hrefs).toEqual(["/portal"]);
+    expect(sections.map((s) => s.label)).not.toContain("Projeto");
+    expect(sections.map((s) => s.label)).not.toContain("Estrutura");
+  });
+
+  it("USER (sem função) vê apenas o próprio portal", () => {
+    const hrefs = filterNavForRole("USER").flatMap((s) =>
+      s.items.map((i) => i.href)
+    );
+    expect(hrefs).toEqual(["/portal"]);
+  });
+
+  it("papel desconhecido/undefined vê apenas itens 'all' (portal)", () => {
     const sections = filterNavForRole(undefined);
     const hrefs = sections.flatMap((s) => s.items.map((i) => i.href));
-    expect(hrefs).toContain("/");
+    expect(hrefs).toContain("/portal");
+    expect(hrefs).not.toContain("/");
     expect(hrefs).not.toContain("/modulos");
   });
 
   it("remove seções que ficarem vazias", () => {
-    const sections = filterNavForRole("USER");
-    for (const s of sections) {
-      expect(s.items.length).toBeGreaterThan(0);
+    for (const role of ["USER", "RESPONSAVEL", "PROFESSOR"]) {
+      for (const s of filterNavForRole(role)) {
+        expect(s.items.length).toBeGreaterThan(0);
+      }
     }
   });
 });

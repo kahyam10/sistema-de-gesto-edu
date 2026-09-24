@@ -12,7 +12,7 @@ import {
   Star, Eye, Clock, Megaphone, Layers, Tag, Home, KeyRound, Archive, CreditCard,
   GraduationCap, BookOpen, School, ClipboardList, NotebookPen, Backpack, Building2,
   DoorOpen, CalendarDays, Network, Code2, Cpu, LogOut, UserPlus, Printer,
-  Sun, Moon,
+  Sun, Moon, Utensils, Bus, Scale, FileOutput,
   type LucideIcon,
   type LucideProps,
 } from 'lucide-react';
@@ -89,6 +89,10 @@ export const iconMap = {
   hierarchy: Network,
   code: Code2,
   cpu: Cpu,
+  utensils: Utensils,
+  bus: Bus,
+  scale: Scale,
+  fileExport: FileOutput,
 } as const;
 
 export type IconName = keyof typeof iconMap;

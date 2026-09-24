@@ -17,7 +17,7 @@ model User {
   email     String   @unique
   password  String
   nome      String
-  role      String   @default("USER") // ADMIN, DIRETOR, PROFESSOR, SECRETARIA, SEMEC
+  role      String   @default("USER") // ADMIN, SEMEC, DIRETOR, COORDENADOR, SECRETARIA, PROFESSOR, RESPONSAVEL, USER
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,6 +32,10 @@ model User {
   profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id])
 
   documentosMatriculaEnviados DocumentoMatricula[]
+
+  // Módulo 3 — matrículas (alunos) que este usuário pode acompanhar no portal
+  vinculosMatricula MatriculaUsuario[]
+
   @@map("users")
 }
 
@@ -181,6 +185,13 @@ model Escola {
   plantoesPedagogicos PlantaoPedagogico[] @relation("PlantaoEscola")
   reunioesPais        ReuniaoPais[] @relation("ReuniaoEscola")
   comunicados         Comunicado[] @relation("ComunicadoEscola")
+  cardapios            Cardapio[]
+  itensEstoque         ItemEstoque[]
+  registrosRefeicao    RegistroRefeicao[]
+  rotasTransporte      RotaEscola[]
+  colegiados           ColegiadoEscolar[]
+  gremios              GremioEstudantil[]
+  reunioesDemocraticas ReuniaoDemocratica[]
 
   @@map("escolas")
 }
@@ -254,6 +265,7 @@ model Turma {
   plantoesPedagogicos PlantaoPedagogico[]
   reunioesPais        ReuniaoPais[]
   comunicados         Comunicado[]
+  lideresTurma        LiderTurma[]
 
   @@map("turmas")
 }
@@ -309,6 +321,8 @@ model Matricula {
   contatoEmergenciaNome       String?
   contatoEmergenciaTelefone   String?
   contatoEmergenciaParentesco String?
+
+  nisAluno String? // NIS (PIS/PASEP) do aluno — exportação Sistema Presença (Bolsa Família)
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -331,6 +345,11 @@ model Matricula {
   pei            PlanoEducacionalIndividualizado?
   acompanhamentos AcompanhamentoIndividualizado[]
   presencasReunioes PresencaReuniao[]
+  rotasTransporte   RotaAluno[]
+  liderancasTurma   LiderTurma[]
+  membroColegiado   MembroColegiado[]
+  // Módulo 3 — usuários (responsáveis/aluno) com acesso ao portal desta matrícula
+  acessos           MatriculaUsuario[]
 
   @@map("matriculas")
 }
@@ -400,6 +419,7 @@ model ProfissionalEducacao {
   afastamentos   Afastamento[]
   pontos         Ponto[]
   licencas       Licenca[]
+  membroColegiado MembroColegiado[]
 
   @@map("profissionais_educacao")
 }
@@ -1272,3 +1292,403 @@ model DocumentoMatricula {
   @@map("documentos_matricula")
 }
 
+// ==================== MÓDULO 3: PORTAIS ====================
+
+// Vínculo de acesso User ↔ Matricula (não existe model Aluno; o aluno é a Matricula).
+// Habilita o Portal do Aluno/Responsável: o usuário só enxerga boletim/frequência
+// das matrículas às quais está vinculado. Criado pela Secretaria (OPERACAO).
+model MatriculaUsuario {
+  id          String  @id @default(cuid())
+  tipoVinculo String  @default("RESPONSAVEL") // RESPONSAVEL, ALUNO (aluno maior de idade)
+  parentesco  String? // Mãe, Pai, Avó/Avô, Tutor legal, Próprio aluno...
+  ativo       Boolean @default(true) // false = acesso suspenso sem apagar histórico
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matriculaId String
+  matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([matriculaId, userId])
+  @@index([userId])
+  @@map("matriculas_usuarios")
+}
+
+// ==================== MÓDULO 6 — ALIMENTAÇÃO ESCOLAR ====================
+
+// Cardápio planejado (escolaId null = cardápio da rede, publicado pela SEMEC — mesmo padrão de Comunicado)
+model Cardapio {
+  id          String   @id @default(cuid())
+  data        DateTime
+  turno       String   // MATUTINO, VESPERTINO, NOTURNO, INTEGRAL
+  tipoRefeicao String  // CAFE_MANHA, LANCHE_MANHA, ALMOCO, LANCHE_TARDE, JANTAR, CEIA
+  descricao   String   // Descrição do prato/refeição
+  itens       Json?    // [{ alimento, quantidadePorAluno, unidade }]
+  observacoesNutricionais String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  escolaId String?
+  escola   Escola? @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  registrosRefeicao RegistroRefeicao[]
+
+  @@index([escolaId])
+  @@index([data])
+  @@map("cardapios")
+}
+
+// Item da despensa/estoque de uma escola. Saldo NÃO é armazenado — é derivado das movimentações.
+model ItemEstoque {
+  id            String   @id @default(cuid())
+  nome          String
+  categoria     String   // PERECIVEL, NAO_PERECIVEL, HORTIFRUTI, PROTEINA, GRAO, LATICINIO, OUTRO
+  unidadeMedida String   // KG, G, L, ML, UN, PCT, CX
+  estoqueMinimo Float    @default(0) // Alerta quando saldo <= estoqueMinimo
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  movimentacoes MovimentacaoEstoque[]
+
+  @@unique([escolaId, nome])
+  @@index([escolaId])
+  @@map("itens_estoque")
+}
+
+// Trilha imutável de entradas/saídas (quantidade SEMPRE positiva; o tipo dá o sinal)
+model MovimentacaoEstoque {
+  id            String   @id @default(cuid())
+  tipo          String   // ENTRADA, SAIDA, PERDA, AJUSTE_ENTRADA, AJUSTE_SAIDA
+  quantidade    Float    // sempre > 0
+  data          DateTime @default(now())
+  custoUnitario Float?   // preenchido em ENTRADA (prestação de contas PNAE)
+  fornecedor    String?
+  notaFiscal    String?
+  motivo        String?  // obrigatório na app para PERDA e AJUSTE_*
+  registradoPor String?  // nome de quem registrou (sem FK, padrão Licenca.aprovadaPor)
+  createdAt     DateTime @default(now())
+
+  itemId String
+  item   ItemEstoque @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([data])
+  @@map("movimentacoes_estoque")
+}
+
+// Refeições efetivamente servidas — base do relatório FNDE/PNAE
+model RegistroRefeicao {
+  id                  String   @id @default(cuid())
+  data                DateTime
+  turno               String   // MATUTINO, VESPERTINO, NOTURNO, INTEGRAL
+  tipoRefeicao        String   // CAFE_MANHA, LANCHE_MANHA, ALMOCO, LANCHE_TARDE, JANTAR, CEIA
+  quantidadeServida   Int
+  quantidadePlanejada Int?
+  observacoes         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  cardapioId String?
+  cardapio   Cardapio? @relation(fields: [cardapioId], references: [id], onDelete: SetNull)
+
+  @@unique([escolaId, data, turno, tipoRefeicao]) // Um registro por escola/dia/turno/tipo
+  @@index([escolaId])
+  @@index([data])
+  @@map("registros_refeicao")
+}
+
+// ==================== MÓDULO 7 — TRANSPORTE ESCOLAR ====================
+
+model Veiculo {
+  id              String    @id @default(cuid())
+  placa           String    @unique
+  tipo            String    // ONIBUS, MICRO_ONIBUS, VAN, KOMBI, LANCHA, OUTRO
+  marca           String?
+  modelo          String?
+  anoFabricacao   Int?
+  capacidade      Int       // lugares
+  renavam         String?
+  chassi          String?
+  tipoPropriedade String    @default("PROPRIO") // PROPRIO, TERCEIRIZADO, CEDIDO
+  adaptadoPCD     Boolean   @default(false)
+  // Documentação com vencimentos (alertas)
+  vencimentoLicenciamento DateTime?
+  vencimentoSeguro        DateTime?
+  vencimentoVistoria      DateTime?
+  ativo           Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  rotas       RotaTransporte[]
+  manutencoes ManutencaoVeiculo[]
+
+  @@map("veiculos")
+}
+
+// Motorista standalone (NÃO é ProfissionalEducacao — tipos incompatíveis)
+model Motorista {
+  id                        String    @id @default(cuid())
+  nome                      String
+  cpf                       String    @unique
+  telefone                  String?
+  cnhNumero                 String
+  cnhCategoria              String    // D, E (mínimo D para transporte escolar)
+  cnhValidade               DateTime
+  cursoTransporteEscolar    Boolean   @default(false) // obrigatório (CTB art. 138)
+  vencimentoCursoTransporte DateTime?
+  vinculo                   String    @default("EFETIVO") // EFETIVO, CONTRATADO, TERCEIRIZADO
+  ativo                     Boolean   @default(true)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  rotas RotaTransporte[]
+
+  @@map("motoristas")
+}
+
+// Vínculo veículo/motorista fica NA ROTA (um veículo/motorista atende várias rotas em turnos diferentes)
+model RotaTransporte {
+  id            String   @id @default(cuid())
+  nome          String
+  codigo        String   @unique // ex: "ROTA-01"
+  turno         String   // MATUTINO, VESPERTINO, NOTURNO, INTEGRAL
+  tipo          String   @default("RURAL") // RURAL, URBANA, FLUVIAL (PNATE)
+  itinerario    String   // descrição do trajeto
+  kmDiario      Float?
+  horarioSaida  String?  // "05:30"
+  horarioRetorno String? // "12:30"
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  veiculoId String?
+  veiculo   Veiculo? @relation(fields: [veiculoId], references: [id], onDelete: SetNull)
+
+  motoristaId String?
+  motorista   Motorista? @relation(fields: [motoristaId], references: [id], onDelete: SetNull)
+
+  escolas RotaEscola[]
+  alunos  RotaAluno[]
+
+  @@map("rotas_transporte")
+}
+
+model RotaEscola {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  rotaId   String
+  rota     RotaTransporte @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  @@unique([rotaId, escolaId])
+  @@map("rotas_escolas")
+}
+
+model RotaAluno {
+  id            String   @id @default(cuid())
+  pontoEmbarque String?
+  createdAt     DateTime @default(now())
+
+  rotaId      String
+  rota        RotaTransporte @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  matriculaId String
+  matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@unique([rotaId, matriculaId])
+  @@map("rotas_alunos")
+}
+
+model ManutencaoVeiculo {
+  id            String    @id @default(cuid())
+  tipo          String    // PREVENTIVA, CORRETIVA, REVISAO, TROCA_OLEO, PNEUS, FREIOS, OUTRA
+  descricao     String
+  dataAgendada  DateTime
+  dataRealizada DateTime?
+  custo         Float?
+  kmRegistrado  Int?
+  oficina       String?
+  status        String    @default("AGENDADA") // AGENDADA, EM_ANDAMENTO, CONCLUIDA, CANCELADA
+  observacoes   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  veiculoId String
+  veiculo   Veiculo @relation(fields: [veiculoId], references: [id], onDelete: Cascade)
+
+  @@index([veiculoId])
+  @@index([dataAgendada])
+  @@map("manutencoes_veiculos")
+}
+
+// ==================== MÓDULO 8 — GESTÃO DEMOCRÁTICA ====================
+
+model ColegiadoEscolar {
+  id                String   @id @default(cuid())
+  nome              String   @default("Colegiado Escolar")
+  dataInicioMandato DateTime
+  dataFimMandato    DateTime
+  ativo             Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  membros  MembroColegiado[]
+  reunioes ReuniaoDemocratica[]
+
+  @@index([escolaId])
+  @@map("colegiados_escolares")
+}
+
+model MembroColegiado {
+  id       String  @id @default(cuid())
+  nome     String
+  segmento String  // PROFESSOR, PAI_RESPONSAVEL, ALUNO, FUNCIONARIO, COMUNIDADE, DIRECAO
+  cargo    String  @default("TITULAR") // PRESIDENTE, VICE_PRESIDENTE, SECRETARIO, TESOUREIRO, TITULAR, SUPLENTE
+  ativo    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  colegiadoId String
+  colegiado   ColegiadoEscolar @relation(fields: [colegiadoId], references: [id], onDelete: Cascade)
+
+  // Vínculos opcionais quando o membro existe no sistema
+  profissionalId String?
+  profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+  matriculaId    String?
+  matricula      Matricula? @relation(fields: [matriculaId], references: [id], onDelete: SetNull)
+
+  @@index([colegiadoId])
+  @@map("membros_colegiado")
+}
+
+model GremioEstudantil {
+  id           String    @id @default(cuid())
+  nome         String
+  anoLetivo    Int
+  status       String    @default("EM_ELEICAO") // EM_ELEICAO, ATIVO, INATIVO
+  dataFundacao DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  chapas     ChapaGremio[]
+  atividades AtividadeGremio[]
+
+  @@unique([escolaId, anoLetivo]) // Um grêmio por escola por ano letivo
+  @@map("gremios_estudantis")
+}
+
+model ChapaGremio {
+  id             String  @id @default(cuid())
+  nome           String
+  numero         Int
+  membros        Json?   // [{ nome, matriculaId?, cargo }] — cargo: PRESIDENTE, VICE, SECRETARIO, TESOUREIRO, MEMBRO
+  votosRecebidos Int?
+  eleita         Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  gremioId String
+  gremio   GremioEstudantil @relation(fields: [gremioId], references: [id], onDelete: Cascade)
+
+  @@unique([gremioId, numero])
+  @@map("chapas_gremio")
+}
+
+model AtividadeGremio {
+  id         String    @id @default(cuid())
+  titulo     String
+  tipo       String    // PROJETO, EVENTO, CAMPANHA, REUNIAO, OUTRA
+  descricao  String?
+  dataInicio DateTime
+  dataFim    DateTime?
+  status     String    @default("PLANEJADA") // PLANEJADA, EM_ANDAMENTO, CONCLUIDA, CANCELADA
+  resultado  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  gremioId String
+  gremio   GremioEstudantil @relation(fields: [gremioId], references: [id], onDelete: Cascade)
+
+  @@index([gremioId])
+  @@map("atividades_gremio")
+}
+
+model LiderTurma {
+  id           String    @id @default(cuid())
+  anoLetivo    Int
+  tipo         String    // LIDER, VICE_LIDER
+  formaEscolha String    @default("ELEICAO") // ELEICAO, INDICACAO, VOLUNTARIO
+  dataEscolha  DateTime?
+  ativo        Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  turmaId     String
+  turma       Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  matriculaId String
+  matricula   Matricula @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@unique([turmaId, anoLetivo, tipo]) // Um líder e um vice por turma por ano
+  @@index([turmaId])
+  @@map("lideres_turma")
+}
+
+// Reuniões e assembleias da gestão democrática — espelha o padrão de ReuniaoPais,
+// mas com presenças de participantes livres (não vinculados a Matricula)
+model ReuniaoDemocratica {
+  id       String   @id @default(cuid())
+  titulo   String
+  orgao    String   // COLEGIADO, GREMIO, ASSEMBLEIA_GERAL, OUTRO
+  data     DateTime
+  horario  String   // "19:00"
+  local    String?
+  pauta    Json?    // [{ item, descricao? }]
+  ata      String?
+  decisoes Json?    // [{ descricao, votosFavor?, votosContra?, abstencoes? }]
+  status   String   @default("AGENDADA") // AGENDADA, REALIZADA, CANCELADA
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  escolaId String
+  escola   Escola @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  colegiadoId String?
+  colegiado   ColegiadoEscolar? @relation(fields: [colegiadoId], references: [id], onDelete: SetNull)
+
+  presencas PresencaReuniaoDemocratica[]
+
+  @@index([escolaId])
+  @@index([data])
+  @@map("reunioes_democraticas")
+}
+
+model PresencaReuniaoDemocratica {
+  id       String  @id @default(cuid())
+  nome     String
+  segmento String? // PROFESSOR, PAI_RESPONSAVEL, ALUNO, FUNCIONARIO, COMUNIDADE, DIRECAO
+  presente Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  reuniaoId String
+  reuniao   ReuniaoDemocratica @relation(fields: [reuniaoId], references: [id], onDelete: Cascade)
+
+  @@index([reuniaoId])
+  @@map("presencas_reunioes_democraticas")
+}

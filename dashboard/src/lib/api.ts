@@ -21,7 +21,8 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+// Exportado para módulos com camada de API própria (api-*.ts)
+export async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
@@ -679,6 +680,7 @@ export interface Matricula {
   contatoEmergenciaNome?: string;
   contatoEmergenciaTelefone?: string;
   contatoEmergenciaParentesco?: string;
+  nisAluno?: string;
   escolaId: string;
   escola?: Escola;
   etapaId: string;
@@ -731,6 +733,7 @@ export interface CreateMatriculaData {
   contatoEmergenciaNome?: string;
   contatoEmergenciaTelefone?: string;
   contatoEmergenciaParentesco?: string;
+  nisAluno?: string;
   escolaId: string;
   etapaId: string;
   turmaId?: string;
@@ -790,6 +793,27 @@ export const matriculasApi = {
     request<Matricula>(`/api/matriculas/${id}/transferir`, {
       method: "PATCH",
       body: { escolaId, turmaId },
+    }),
+  // Módulo 3 — acessos do portal (responsáveis)
+  listAcessos: (id: string) =>
+    request<AcessoMatricula[]>(`/api/matriculas/${id}/acessos`),
+  criarAcesso: (
+    id: string,
+    data: {
+      email: string;
+      nome?: string;
+      senha?: string;
+      tipoVinculo?: "RESPONSAVEL" | "ALUNO";
+      parentesco?: string;
+    }
+  ) =>
+    request<AcessoMatricula>(`/api/matriculas/${id}/acessos`, {
+      method: "POST",
+      body: data,
+    }),
+  revogarAcesso: (id: string, vinculoId: string) =>
+    request<{ message: string }>(`/api/matriculas/${id}/acessos/${vinculoId}`, {
+      method: "DELETE",
     }),
 };
 
@@ -3133,3 +3157,162 @@ export const licencasApi = {
   },
 };
 
+
+// ==================== MÓDULO 3: PORTAIS ====================
+
+export interface AlunoVinculado {
+  vinculoId: string;
+  tipoVinculo: "RESPONSAVEL" | "ALUNO";
+  parentesco?: string | null;
+  matricula: {
+    id: string;
+    numeroMatricula: string;
+    nomeAluno: string;
+    anoLetivo: number;
+    status: string;
+    escola: { id: string; nome: string };
+    etapa: { id: string; nome: string };
+    turma: {
+      id: string;
+      nome: string;
+      turno: string;
+      serie: { id: string; nome: string };
+    } | null;
+  };
+}
+
+export interface PortalProfessorResumo {
+  profissional: { id: string; nome: string };
+  turmas: Array<{
+    id: string;
+    nome: string;
+    turno: string;
+    anoLetivo: number;
+    escola: { id: string; nome: string };
+    serie: { id: string; nome: string };
+    disciplina?: string | null;
+    tipoVinculo: string;
+    totalAlunosAtivos: number;
+  }>;
+  aulasHoje: Array<{
+    turmaId: string;
+    turmaNome: string;
+    disciplina: string;
+    horaInicio: string;
+    horaFim: string;
+  }>;
+  frequenciasPendentesHoje: Array<{ turmaId: string; turmaNome: string }>;
+}
+
+export interface PortalFrequenciaAluno {
+  matricula: { id: string; nomeAluno: string; turmaId: string | null };
+  estatisticas: EstatisticasFrequencia | null;
+  registros: Frequencia[];
+}
+
+export interface PortalTurmaResumo {
+  turmaId: string;
+  nome: string;
+  turno: string;
+  serie: string;
+  totalAlunosAtivos: number;
+  percentualFrequencia: number | null;
+}
+
+export interface PortalResumoEscola {
+  escola: { id: string; nome: string; codigo: string };
+  anoLetivo: number;
+  totais: {
+    turmas: number;
+    matriculasAtivas: number;
+    matriculasSemTurma: number;
+    profissionais: number;
+    buscasAtivasAbertas: number;
+    acompanhamentosEmAndamento: number;
+  };
+  frequencia: {
+    percentualPresenca: number | null;
+    totalRegistros: number;
+    turmasAbaixoDe75: number;
+  };
+  turmas: PortalTurmaResumo[];
+}
+
+export interface PortalEscolaSemec {
+  escolaId: string;
+  nome: string;
+  codigo: string;
+  turmas: number;
+  matriculasAtivas: number;
+  matriculasSemTurma: number;
+  percentualFrequencia: number | null;
+  buscasAtivasAbertas: number;
+}
+
+export interface PortalResumoSemec {
+  anoLetivo: number;
+  escolas: PortalEscolaSemec[];
+  totais: {
+    escolas: number;
+    turmas: number;
+    matriculasAtivas: number;
+    matriculasSemTurma: number;
+    buscasAtivasAbertas: number;
+    percentualFrequencia: number | null;
+  };
+}
+
+export interface AcessoMatricula {
+  id: string;
+  tipoVinculo: string;
+  parentesco?: string | null;
+  ativo: boolean;
+  createdAt: string;
+  user: { id: string; nome: string; email: string; role: string; ativo?: boolean };
+}
+
+export const portalApi = {
+  professorResumo: () =>
+    request<PortalProfessorResumo>("/api/portal/professor/resumo"),
+  meusAlunos: () => request<AlunoVinculado[]>("/api/portal/meu/alunos"),
+  boletimAluno: (matriculaId: string) =>
+    request<Boletim>(`/api/portal/meu/alunos/${matriculaId}/boletim`),
+  frequenciaAluno: (
+    matriculaId: string,
+    filters?: { dataInicio?: string; dataFim?: string }
+  ) => {
+    const params = new URLSearchParams();
+    if (filters?.dataInicio) params.append("dataInicio", filters.dataInicio);
+    if (filters?.dataFim) params.append("dataFim", filters.dataFim);
+    const query = params.toString();
+    return request<PortalFrequenciaAluno>(
+      `/api/portal/meu/alunos/${matriculaId}/frequencia${query ? `?${query}` : ""}`
+    );
+  },
+  diretorResumo: (filters?: { anoLetivo?: number; escolaId?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.anoLetivo) params.append("anoLetivo", filters.anoLetivo.toString());
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    const query = params.toString();
+    return request<PortalResumoEscola>(
+      `/api/portal/diretor/resumo${query ? `?${query}` : ""}`
+    );
+  },
+  coordenacaoResumo: (filters?: { anoLetivo?: number; escolaId?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.anoLetivo) params.append("anoLetivo", filters.anoLetivo.toString());
+    if (filters?.escolaId) params.append("escolaId", filters.escolaId);
+    const query = params.toString();
+    return request<PortalResumoEscola>(
+      `/api/portal/coordenacao/resumo${query ? `?${query}` : ""}`
+    );
+  },
+  semecResumo: (anoLetivo?: number) => {
+    const params = new URLSearchParams();
+    if (anoLetivo) params.append("anoLetivo", anoLetivo.toString());
+    const query = params.toString();
+    return request<PortalResumoSemec>(
+      `/api/portal/semec/resumo${query ? `?${query}` : ""}`
+    );
+  },
+};

@@ -8,6 +8,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import { errorHandler } from "./middleware/error-handler.js";
 import { prisma } from "./lib/prisma.js";
 import { configurarZodPtBr } from "./lib/zod-pt-br.js";
+import { PUBLIC_API, WRITE_METHODS, autorizar } from "./lib/rbac.js";
 
 // Mensagens de validação zod em PT-BR (antes de qualquer parse)
 configurarZodPtBr();
@@ -47,6 +48,24 @@ import { pontosRoutes } from "./routes/pontos.routes.js";
 import { licencasRoutes } from "./routes/licencas.routes.js";
 // Documentos da matrícula (upload de arquivos)
 import { documentosMatriculaRoutes } from "./routes/documentos-matricula.routes.js";
+// Módulo 3 — Portais por papel
+import { portalRoutes } from "./routes/portal.routes.js";
+// Módulo 6 — Alimentação Escolar
+import { cardapioRoutes } from "./routes/cardapio.routes.js";
+import { estoqueRoutes } from "./routes/estoque.routes.js";
+import { refeicaoRoutes } from "./routes/refeicao.routes.js";
+// Módulo 7 — Transporte Escolar
+import { veiculoRoutes } from "./routes/veiculo.routes.js";
+import { motoristaRoutes } from "./routes/motorista.routes.js";
+import { rotaTransporteRoutes } from "./routes/rota-transporte.routes.js";
+import { manutencaoRoutes } from "./routes/manutencao.routes.js";
+// Módulo 8 — Gestão Democrática
+import { colegiadoRoutes } from "./routes/colegiado.routes.js";
+import { gremioRoutes } from "./routes/gremio.routes.js";
+import { liderTurmaRoutes } from "./routes/lider-turma.routes.js";
+import { reuniaoDemocraticaRoutes } from "./routes/reuniao-democratica.routes.js";
+// Exportadores oficiais (Educacenso / Sistema Presença)
+import { exportacaoRoutes } from "./routes/exportacao.routes.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -150,85 +169,8 @@ async function buildApp() {
   );
 
   // Guard global: toda rota /api exige JWT, exceto login.
-  // Leituras (GET) são liberadas a qualquer usuário autenticado;
-  // escritas seguem a tabela de regras abaixo (primeira que casar vence).
-  const PUBLIC_API = new Set(["/api/auth/login"]);
-  const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-  const GESTAO = ["ADMIN", "SEMEC"];
-  const OPERACAO = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
-  // Professores lançam frequência, notas e consultam/gerem sua grade
-  const PEDAGOGICO = [...OPERACAO, "PROFESSOR"];
-  // Ações pessoais (recibos de leitura) valem para qualquer autenticado
-  const TODOS = [...PEDAGOGICO, "USER"];
-
-  const REGRAS_ESCRITA: Array<{
-    pattern: RegExp;
-    methods?: string[];
-    roles: string[];
-  }> = [
-    // Vínculos operacionais: aluno/professor em turma, escolas/formações de profissional
-    {
-      pattern:
-        /^\/api\/(turmas\/[^/]+\/(alunos|professores)|profissionais\/[^/]+\/(escolas|formacoes))(\/|$)/,
-      roles: OPERACAO,
-    },
-    // Questionários do censo
-    {
-      pattern: /^\/api\/(escolas|turmas|profissionais)\/[^/]+\/censo$/,
-      roles: OPERACAO,
-    },
-    // Salas (infraestrutura gerida pela própria escola)
-    {
-      pattern: /^\/api\/(salas|escolas\/[^/]+\/salas)(\/|$)/,
-      roles: OPERACAO,
-    },
-    // Pedagógico: professores lançam frequência/notas/avaliações e grade
-    {
-      pattern: /^\/api\/(frequencia|notas|grade-horaria)(\/|$)/,
-      roles: PEDAGOGICO,
-    },
-    // Programas especiais: busca ativa, AEE e acompanhamento (equipe + professores AEE)
-    {
-      pattern: /^\/api\/(busca-ativa|aee|acompanhamento)(\/|$)/,
-      roles: PEDAGOGICO,
-    },
-    // Recibos de leitura/confirmação: qualquer usuário autenticado
-    {
-      pattern:
-        /^\/api\/(notificacoes\/([^/]+\/marcar-lida|usuario\/[^/]+\/marcar-todas-lidas)|comunicados\/[^/]+\/confirmar)$/,
-      roles: TODOS,
-    },
-    // Comunicação e eventos: escrita pela equipe pedagógica
-    {
-      pattern:
-        /^\/api\/(comunicados|notificacoes|plantoes-pedagogicos|reunioes-pais)(\/|$)/,
-      roles: PEDAGOGICO,
-    },
-    // Estrutura pedagógica (disciplinas e regras de avaliação) = gestão
-    {
-      pattern: /^\/api\/(disciplinas|configuracao-avaliacao)(\/|$)/,
-      roles: GESTAO,
-    },
-    // Estrutura da rede e planejamento do projeto
-    {
-      pattern:
-        /^\/api\/(tipos-educacao|etapas|niveis-ensino|series|modules|phases|calendario)(\/|$)/,
-      roles: GESTAO,
-    },
-    // Criação/exclusão de escolas
-    { pattern: /^\/api\/escolas(\/|$)/, methods: ["POST", "DELETE"], roles: GESTAO },
-    // Exclusão de qualquer outro recurso
-    { pattern: /^\/api\//, methods: ["DELETE"], roles: GESTAO },
-    // Demais escritas (matrículas, turmas, profissionais, update de escola)
-    { pattern: /^\/api\//, roles: OPERACAO },
-  ];
-
-  // Leituras restritas: dados sensíveis de RH (licenças médicas, ponto,
-  // dados bancários) só para a equipe operacional — não PROFESSOR/USER.
-  const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
-    { pattern: /^\/api\/(licencas|pontos)(\/|$)/, roles: OPERACAO },
-  ];
-
+  // Tabelas e decisão de autorização em lib/rbac.ts (função pura testável);
+  // apenas a checagem de propriedade do DIRETOR (consulta o banco) fica aqui.
   app.addHook("onRequest", async (request, reply) => {
     const url = request.raw.url?.split("?")[0] ?? "";
     if (!url.startsWith("/api") || PUBLIC_API.has(url)) return;
@@ -239,21 +181,11 @@ async function buildApp() {
       return reply.status(401).send({ error: "Não autorizado" });
     }
 
-    if (!WRITE_METHODS.has(request.method)) {
-      const restrita = LEITURA_RESTRITA.find((r) => r.pattern.test(url));
-      if (restrita) {
-        const user = request.user as { role: string };
-        if (!restrita.roles.includes(user.role)) {
-          return reply.status(403).send({ error: "Acesso negado" });
-        }
-      }
-      return;
-    }
+    const userToken = request.user as { id: string; role: string };
 
     // Propriedade: DIRETOR só escreve na PRÓPRIA escola
     // (cobre /api/escolas/:id, /api/escolas/:id/censo e /api/escolas/:id/salas*)
-    const userToken = request.user as { id: string; role: string };
-    if (userToken.role === "DIRETOR") {
+    if (WRITE_METHODS.has(request.method) && userToken.role === "DIRETOR") {
       const escolaMatch = url.match(/^\/api\/escolas\/([^/]+)/);
       if (escolaMatch) {
         const usuario = await prisma.user.findUnique({
@@ -268,16 +200,8 @@ async function buildApp() {
       }
     }
 
-    const regra = REGRAS_ESCRITA.find(
-      (r) =>
-        r.pattern.test(url) &&
-        (r.methods === undefined || r.methods.includes(request.method))
-    );
-    if (regra) {
-      const user = request.user as { role: string };
-      if (!regra.roles.includes(user.role)) {
-        return reply.status(403).send({ error: "Acesso negado" });
-      }
+    if (autorizar(url, request.method, userToken) === "NEGADO") {
+      return reply.status(403).send({ error: "Acesso negado" });
     }
   });
 
@@ -320,6 +244,24 @@ async function buildApp() {
   // Módulo 4 — RH
   app.register(pontosRoutes, { prefix: "/api/pontos" });
   app.register(licencasRoutes, { prefix: "/api/licencas" });
+  // Módulo 3 — Portais por papel
+  app.register(portalRoutes, { prefix: "/api/portal" });
+  // Módulo 6 — Alimentação Escolar
+  app.register(cardapioRoutes, { prefix: "/api/cardapios" });
+  app.register(estoqueRoutes, { prefix: "/api/estoque" });
+  app.register(refeicaoRoutes, { prefix: "/api/refeicoes" });
+  // Módulo 7 — Transporte Escolar
+  app.register(veiculoRoutes, { prefix: "/api/veiculos" });
+  app.register(motoristaRoutes, { prefix: "/api/motoristas" });
+  app.register(rotaTransporteRoutes, { prefix: "/api/rotas-transporte" });
+  app.register(manutencaoRoutes, { prefix: "/api/manutencoes" });
+  // Módulo 8 — Gestão Democrática
+  app.register(colegiadoRoutes, { prefix: "/api/colegiados" });
+  app.register(gremioRoutes, { prefix: "/api/gremios" });
+  app.register(liderTurmaRoutes, { prefix: "/api/lideres-turma" });
+  app.register(reuniaoDemocraticaRoutes, { prefix: "/api/reunioes-democraticas" });
+  // Exportadores oficiais (Educacenso / Sistema Presença)
+  app.register(exportacaoRoutes, { prefix: "/api/exportacao" });
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);

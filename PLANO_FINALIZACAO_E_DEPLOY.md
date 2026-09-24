@@ -85,11 +85,11 @@ Tudo abaixo foi implementado, compilado e testado (curl + builds):
 
 | # | Item | Como ficou |
 |---|------|------------|
-| 1 | **Prisma → PostgreSQL** | `provider = "postgresql"` no schema; **rebaseline feito** — migrations SQLite antigas removidas (preservadas no histórico git) e baseline única `init` gerada contra Postgres 16. Dev usa o Postgres do docker compose (porta **5435** do host); testes usam banco separado `gestao_edu_test` no mesmo Postgres (17/17 passando). Campos JSON continuam como `String` serializado — conversão para `Json` nativo fica como refinamento futuro (exige mudanças coordenadas no frontend) |
+| 1 | **Prisma → PostgreSQL** | `provider = "postgresql"` no schema; **rebaseline feito** — migrations SQLite antigas removidas (preservadas no histórico git) e baseline única `init` gerada contra Postgres 16. Dev usa o Postgres do docker compose (porta **3104** do host, antes 5435); testes usam banco separado `gestao_edu_test` no mesmo Postgres (17/17 passando). Campos JSON continuam como `String` serializado — conversão para `Json` nativo fica como refinamento futuro (exige mudanças coordenadas no frontend) |
 | 2 | **Seed de produção** | `backend/prisma/seed-prod.cjs` — idempotente, roda a cada boot: cria admin de `ADMIN_EMAIL`/`ADMIN_PASSWORD` (não sobrescreve senha se já existir; exige ≥8 caracteres) e a hierarquia de ensino padrão só se a tabela estiver vazia. **Zero `deleteMany`** |
 | 3 | **Dockerfiles** | `backend/Dockerfile` multi-stage (build tsc + deps de produção com prisma CLI; boot = `migrate deploy` → `seed-prod` → `node dist/server.js`); `dashboard/Dockerfile` com `ARG NEXT_PUBLIC_API_URL` e runtime da saída `standalone`; `.dockerignore` em ambos; `prisma` CLI movido para `dependencies` (necessário no runtime) |
 | 4 | **Swagger em produção** | `/docs` registrado apenas quando `NODE_ENV !== "production"` |
-| 5 | **Compose local** | `docker-compose.yml` na raiz: postgres 16 (host 5435, volume `pgdata`, healthcheck) + backend (host 3333, healthcheck `/health`) + dashboard (host **3001** — 3000 estava ocupada na máquina). Segredos via `.env` na raiz (gitignored; template em `.env.docker.example`) |
+| 5 | **Compose local** | `docker-compose.yml` na raiz: postgres 16 (host 3104, volume `pgdata`, healthcheck) + backend (host 3103, healthcheck `/health`) + dashboard (host **3100**). Faixa 31xx adotada em 07/2026 (3101/3102 ocupadas por outros serviços da máquina). Segredos via `.env` na raiz (gitignored; template em `.env.docker.example`) |
 
 Pendência P2 restante: CI no GitHub Actions (build + testes em PRs) — opcional para o launch.
 
@@ -126,9 +126,30 @@ Rodada final de qualidade sobre o código resgatado e as pendências acumuladas:
 | F6 | **Dark mode completo** | Tokens do design (`surface/ink/hairline/softs`) convertidos para CSS vars com derivação dark na família do navy da marca; toggle sol/lua na topbar (next-themes, sem tema do SO); `color-scheme` para controles nativos; login permanece light por design (escopo `.force-light`); pílulas e botões soft com contraste corrigido nos dois temas; verificação visual Playwright (dashboard, escolas, pedagógico, diálogo, drawer mobile) |
 | F7 | Verificação final | Builds backend+dashboard limpos, 26+10 testes verdes, imagens Docker reconstruídas e stack local no ar (health OK, API 401 sem token, login 200) |
 
-**Adiado conscientemente (não bloqueia lançamento):**
-- **Upload de documentos da matrícula** — hoje `documentosEntregues` é um checklist (booleanos); anexar arquivos de verdade pede storage de objetos (o Supabase self-hosted do deploy já oferece Storage — implementar pós-lançamento junto com LGPD de retenção).
-- Reimplementação dos portais do M3, módulos 6/7/8 e integrações externas (INEP/Educacenso, Sistema Presença) — ver §7.
+**Adiado conscientemente (não bloqueia lançamento):** — ✅ **TUDO IMPLEMENTADO em 12–15/07/2026, ver §4d.**
+- ~~Upload de documentos da matrícula~~ → feito (§4d.3)
+- ~~Reimplementação dos portais do M3, módulos 6/7/8 e integrações externas~~ → feito (§4d.4–4d.7)
+
+## 4d. Itens adiados — ✅ APLICADOS em 12–15/07/2026
+
+Implementação integral da lista "adiado conscientemente", em duas ondas (fundações centrais + 6 frentes paralelas):
+
+| # | Entrega | Conteúdo |
+|---|---|---|
+| 1 | **Erros zod amigáveis** | errorMap PT-BR global (`lib/zod-pt-br.ts`) + formatador central (`errors/zod-format.ts`): resposta `{ statusCode: 400, error: "VALIDATION", message, issues: [{campo, mensagem}] }`; 133 blocos catch unificados em 18 arquivos de rota; `api.ts` do dashboard lê os 3 formatos coexistentes |
+| 2 | **JSON nativo (jsonb)** | 7 campos String-serializados convertidos (`dadosCenso` ×3, `documentosEntregues`, `moduleIds`, `evolucoes`, `canais`) com migration de fallback seguro (`to_jsonb_seguro` — nada é perdido); fim de todo `JSON.parse/stringify` nos services; 3 campos mantidos como String por decisão documentada (texto livre) |
+| 3 | **Upload de documentos da matrícula + LGPD** | Abstração `StorageDriver` (disco local via `UPLOADS_DIR`; ponto de extensão S3/Supabase documentado); `@fastify/multipart` 10MB com whitelist de MIME + magic bytes + chaves anti-traversal; model `DocumentoMatricula` com checklist automático em `documentosEntregues` (Record<tipo, boolean> jsonb); download com stream; exclusão individual (OPERACAO) e expurgo LGPD (GESTAO); leitura restrita (LGPD art. 14); política em `docs/LGPD_RETENCAO.md`; volume `uploads` no compose; UI no detalhe do aluno |
+| 4 | **Módulo 6 — Alimentação Escolar (85%)** | Cardápios (escola/rede), estoque com movimentações imutáveis e saldo derivado + alerta de mínimo, registro de refeições (único por escola/dia/turno/tipo), relatório FNDE/PNAE com custos — `/alimentacao` com 4 abas |
+| 5 | **Módulo 7 — Transporte Escolar (85%)** | Rotas (escolas + alunos com validação de capacidade), frota com vencimentos (licenciamento/seguro/vistoria) e alertas, motoristas com CNH/curso (CTB art. 138) e bloqueio de CNH vencida, manutenções com custos por veículo — `/transporte` com 4 abas |
+| 6 | **Módulo 8 — Gestão Democrática (85%)** | Colegiado (membros por segmento/cargo, mandato), grêmio por ano letivo (chapas, apuração de eleição em transação, atividades), líderes de turma (líder+vice por turma/ano), reuniões/assembleias (pauta, ata, decisões, presenças) — `/gestao-democratica` com 4 abas |
+| 7 | **Módulo 3 — Portais (85%)** | Rota única `/portal` com dispatch por papel: Professor (turmas, aulas do dia, pendências de frequência), Aluno/Responsável (boletim, frequência, comunicados — novo papel `RESPONSAVEL` + vínculo `MatriculaUsuario` criado pela secretaria), Diretor/Coordenação (indicadores da escola), Secretaria (estatísticas + gestão de acessos), SEMEC (consolidado municipal). Defesa em 3 camadas para dados de aluno (allowlist no guard + identidade do JWT + `PERM_005` no vínculo) |
+| 8 | **Integrações como exportadores** | Educacenso/INEP: arquivo de migração TXT pipe-delimited (registros 00/20/30/40/50/60/99, ISO-8859-1) + relatório de pendências por campo; Sistema Presença (Bolsa Família): CSV de baixa frequência com limiares oficiais (60% pré-escola / 75% 6–17 anos, Lei 14.601/2023) e campo `nisAluno` novo na matrícula — `/exportacoes` (leitura restrita a OPERACAO: CPF/NIS) |
+| 9 | **RBAC testável** | Tabelas extraídas do server.ts para `lib/rbac.ts` (função pura `autorizar()`), allowlist do papel RESPONSAVEL, regras dos módulos novos — 15 testes unitários |
+| 10 | **Nav por papel v2** | `EQUIPE` vs papéis externos: RESPONSAVEL/USER veem só "Meu Portal"; Exportações/RH só p/ equipe operacional; 5 itens novos na sidebar |
+
+**Verificação:** backend 96 testes (14 arquivos) verdes + build tsc limpo + lint 0 erros; dashboard typecheck limpo, testes e build de produção verdes. Migrations novas: `json_nativo_campos_serializados`, `documento_matricula`, `onda2_modulos_e_portais`. Tracker (seed + banco) sincronizado: M3/M6/M7/M8 in-progress 85%, Fases 3–4 in-progress.
+
+**Follow-ups conhecidos (menores):** harmonizar erros ajv (módulo 9) com o formato novo; trilha de auditoria de downloads de documentos; lint com ~170 warnings `no-explicit-any` herdados do padrão dos services; matrícula online pelo responsável (M1) e notificações push/SMS/email (M9) continuam pendentes.
 
 ## 5. Passo a passo do deploy de lançamento — VPS + Coolify + Supabase self-hosted
 

@@ -6,6 +6,7 @@ import {
   createMatriculaSchema,
   updateMatriculaSchema,
   transferirMatriculaSchema,
+  criarAcessoMatriculaSchema,
 } from "../schemas/index.js";
 
 interface MatriculaFilters {
@@ -333,6 +334,91 @@ export async function matriculasRoutes(app: FastifyInstance) {
             ? error.message
             : "Erro ao buscar transferências";
         return reply.status(500).send({ error: message });
+      }
+    }
+  );
+
+  // ==================== MÓDULO 3: ACESSOS DO PORTAL (responsáveis) ====================
+
+  // GET /api/matriculas/:id/acessos — vínculos de portal (responsáveis) da matrícula
+  app.get(
+    "/:id/acessos",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        return reply
+          .status(200)
+          .send(await matriculaService.listarAcessos(request.params.id));
+      } catch (error: unknown) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message });
+        }
+        if (error instanceof ZodError) {
+          return reply.status(400).send(formatarErroZod(error));
+        }
+        const message =
+          error instanceof Error ? error.message : "Erro ao listar acessos";
+        return reply.status(500).send({ error: message });
+      }
+    }
+  );
+
+  // POST /api/matriculas/:id/acessos — cria usuário RESPONSAVEL (se preciso) e vincula
+  app.post(
+    "/:id/acessos",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const data = criarAcessoMatriculaSchema.parse(request.body);
+        const vinculo = await matriculaService.criarAcesso(
+          request.params.id,
+          data
+        );
+        return reply.status(201).send(vinculo);
+      } catch (error: unknown) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message });
+        }
+        if (error instanceof ZodError) {
+          return reply.status(400).send(formatarErroZod(error));
+        }
+        const message =
+          error instanceof Error ? error.message : "Erro ao criar acesso";
+        return reply.status(400).send({ error: message });
+      }
+    }
+  );
+
+  // DELETE /api/matriculas/:id/acessos/:vinculoId — revoga acesso
+  app.delete(
+    "/:id/acessos/:vinculoId",
+    async (
+      request: FastifyRequest<{ Params: { id: string; vinculoId: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        return reply
+          .status(200)
+          .send(
+            await matriculaService.revogarAcesso(
+              request.params.id,
+              request.params.vinculoId
+            )
+          );
+      } catch (error: unknown) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message });
+        }
+        if (error instanceof ZodError) {
+          return reply.status(400).send(formatarErroZod(error));
+        }
+        const message =
+          error instanceof Error ? error.message : "Erro ao revogar acesso";
+        return reply.status(400).send({ error: message });
       }
     }
   );

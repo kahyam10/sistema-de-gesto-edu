@@ -99,6 +99,7 @@ export function MatriculasManager() {
     contatoEmergenciaNome: "",
     contatoEmergenciaTelefone: "",
     contatoEmergenciaParentesco: "",
+    nisAluno: "",
   });
 
   const escolasAtivas = (escolas || []).filter((e) => e.ativo);
@@ -205,6 +206,7 @@ export function MatriculasManager() {
       contatoEmergenciaNome: formData.contatoEmergenciaNome || undefined,
       contatoEmergenciaTelefone: formData.contatoEmergenciaTelefone || undefined,
       contatoEmergenciaParentesco: formData.contatoEmergenciaParentesco || undefined,
+      nisAluno: formData.nisAluno || undefined,
       escolaId: formData.escolaId,
       etapaId: formData.etapaId,
     };
@@ -244,6 +246,7 @@ export function MatriculasManager() {
       contatoEmergenciaNome: "",
       contatoEmergenciaTelefone: "",
       contatoEmergenciaParentesco: "",
+      nisAluno: "",
     });
     setEditingMatricula(null);
     setIsFormOpen(false);
@@ -273,6 +276,7 @@ export function MatriculasManager() {
       contatoEmergenciaNome: matricula.contatoEmergenciaNome || "",
       contatoEmergenciaTelefone: matricula.contatoEmergenciaTelefone || "",
       contatoEmergenciaParentesco: matricula.contatoEmergenciaParentesco || "",
+      nisAluno: matricula.nisAluno ?? "",
     });
     setIsFormOpen(true);
   };
@@ -496,6 +500,23 @@ export function MatriculasManager() {
                         }))
                       }
                       placeholder="000.000.000-00"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="nisAluno">NIS do aluno (Bolsa Família)</Label>
+                    <Input
+                      id="nisAluno"
+                      value={formData.nisAluno}
+                      maxLength={11}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          nisAluno: e.target.value,
+                        }))
+                      }
+                      placeholder="Somente números"
                     />
                   </div>
                 </div>

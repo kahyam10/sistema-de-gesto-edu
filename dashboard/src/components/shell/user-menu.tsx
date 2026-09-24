@@ -13,6 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
   COORDENADOR: 'Coordenador(a)',
   PROFESSOR: 'Professor(a)',
   SECRETARIA: 'Secretaria escolar',
+  RESPONSAVEL: 'Responsável',
   USER: 'Usuário',
 };
 

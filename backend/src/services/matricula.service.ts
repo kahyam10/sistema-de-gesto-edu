@@ -1,8 +1,10 @@
+import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError } from "../errors/index.js";
+import { BusinessError, NotFoundError } from "../errors/index.js";
 import { documentoMatriculaService } from "./documento-matricula.service.js";
 import {
   CreateMatriculaInput,
+  CriarAcessoMatriculaInput,
   UpdateMatriculaInput,
 } from "../schemas/index.js";
 
@@ -209,6 +211,73 @@ export class MatriculaService {
       semTurma,
       percentualPCD: total > 0 ? Math.round((pcd / total) * 100) : 0,
     };
+  }
+
+  // ==================== MÓDULO 3: ACESSOS DO PORTAL (responsáveis) ====================
+
+  async listarAcessos(matriculaId: string) {
+    const matricula = await prisma.matricula.findUnique({ where: { id: matriculaId } });
+    if (!matricula) throw new NotFoundError("NF_004");
+    return prisma.matriculaUsuario.findMany({
+      where: { matriculaId },
+      include: { user: { select: { id: true, nome: true, email: true, role: true, ativo: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  /**
+   * Cria (ou reaproveita) o usuário RESPONSAVEL e o vincula à matrícula.
+   * - email já existe → reutiliza o usuário (senha NÃO é alterada), apenas vincula.
+   * - email não existe → exige nome+senha (BIZ_024) e cria User role RESPONSAVEL.
+   * - vínculo já existe ativo → BIZ_022; existe inativo → reativa.
+   */
+  async criarAcesso(matriculaId: string, data: CriarAcessoMatriculaInput) {
+    const matricula = await prisma.matricula.findUnique({ where: { id: matriculaId } });
+    if (!matricula) throw new NotFoundError("NF_004");
+
+    return prisma.$transaction(async (tx) => {
+      let user = await tx.user.findUnique({ where: { email: data.email } });
+      if (!user) {
+        if (!data.nome || !data.senha) throw new BusinessError("BIZ_024");
+        user = await tx.user.create({
+          data: {
+            email: data.email,
+            nome: data.nome,
+            password: await bcrypt.hash(data.senha, 10),
+            role: "RESPONSAVEL",
+          },
+        });
+      }
+      const existente = await tx.matriculaUsuario.findUnique({
+        where: { matriculaId_userId: { matriculaId, userId: user.id } },
+      });
+      if (existente?.ativo) throw new BusinessError("BIZ_022");
+      if (existente) {
+        return tx.matriculaUsuario.update({
+          where: { id: existente.id },
+          data: { ativo: true, tipoVinculo: data.tipoVinculo, parentesco: data.parentesco ?? null },
+          include: { user: { select: { id: true, nome: true, email: true, role: true } } },
+        });
+      }
+      return tx.matriculaUsuario.create({
+        data: {
+          matriculaId,
+          userId: user.id,
+          tipoVinculo: data.tipoVinculo,
+          parentesco: data.parentesco ?? null,
+        },
+        include: { user: { select: { id: true, nome: true, email: true, role: true } } },
+      });
+    });
+  }
+
+  async revogarAcesso(matriculaId: string, vinculoId: string) {
+    const vinculo = await prisma.matriculaUsuario.findFirst({
+      where: { id: vinculoId, matriculaId },
+    });
+    if (!vinculo) throw new NotFoundError("NF_030");
+    await prisma.matriculaUsuario.delete({ where: { id: vinculoId } });
+    return { message: "Acesso revogado com sucesso" };
   }
 }
 

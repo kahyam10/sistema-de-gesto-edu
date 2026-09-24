@@ -658,7 +658,7 @@ async function main() {
             "Registro de presença com integração ao Sistema Presença (Gov. Federal)",
           status: "completed",
           observacao:
-            "Registro diário por turma implementado; integração Sistema Presença pendente",
+            "Registro diário por turma implementado; exportador de baixa frequência p/ Sistema Presença disponível",
           ordem: 1,
         },
         {
@@ -689,46 +689,58 @@ async function main() {
         "Interfaces personalizadas para Professor, Aluno, Diretor, Secretaria, Coordenação e SEMEC",
       icon: "Layout",
       phase: 2,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 85,
       ordem: 2,
       subModules: [
         {
           name: "Portal do Professor",
           description:
             "Dashboard, frequência, notas, ocorrências e planejamento",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Resumo com turmas, aulas do dia e pendências de frequência implementado",
           ordem: 0,
         },
         {
           name: "Portal do Aluno/Responsável",
           description: "Consulta de notas, frequência, tarefas e comunicação",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Vínculo responsável↔matrícula, boletim, frequência e comunicados; papel RESPONSAVEL com allowlist",
           ordem: 1,
         },
         {
           name: "Portal do Diretor",
           description: "Visão geral, indicadores e gestão da escola",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Indicadores da escola: matrículas, frequência por turma, busca ativa",
           ordem: 2,
         },
         {
           name: "Portal da Secretaria Escolar",
           description:
             "Documentação, declarações, transferências e arquivo digital",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Estatísticas, enturmação pendente e gestão de acessos de responsáveis",
           ordem: 3,
         },
         {
           name: "Portal da Coordenação",
           description: "Acompanhamento pedagógico e gestão de projetos",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Acompanhamentos, busca ativa e frequência por turma",
           ordem: 4,
         },
         {
           name: "Portal da SEMEC",
           description: "Dashboard municipal e indicadores consolidados",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Consolidado municipal por escola com % de frequência da rede",
           ordem: 5,
         },
       ],
@@ -812,32 +824,40 @@ async function main() {
       description: "Cardápios, estoque, fornecedores e relatórios PNAE",
       icon: "Utensils",
       phase: 4,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 85,
       ordem: 5,
       subModules: [
         {
           name: "Gestão de Cardápios",
           description: "Planejamento nutricional de refeições escolares",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "CRUD de cardápios por escola/rede com itens e turnos",
           ordem: 0,
         },
         {
           name: "Controle de Estoque",
           description: "Gestão de insumos e despensa",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Itens + movimentações imutáveis; saldo derivado e alerta de mínimo",
           ordem: 1,
         },
         {
           name: "Registro de Refeições",
           description: "Controle de refeições servidas por escola",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Registro único por escola/dia/turno/tipo com vínculo ao cardápio",
           ordem: 2,
         },
         {
           name: "Relatórios FNDE/PNAE",
           description: "Prestação de contas para programas federais",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Consolidado por período/escola com custos de insumos",
           ordem: 3,
         },
       ],
@@ -847,32 +867,40 @@ async function main() {
       description: "Rotas, veículos, motoristas, manutenção e relatórios PNATE",
       icon: "Bus",
       phase: 4,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 85,
       ordem: 6,
       subModules: [
         {
           name: "Gestão de Rotas",
           description: "Planejamento e otimização de itinerários",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Rotas com itinerário, turno, escolas e alunos vinculados (capacidade validada)",
           ordem: 0,
         },
         {
           name: "Cadastro de Veículos",
           description: "Frota escolar e documentação",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Frota com documentação e alertas de vencimento",
           ordem: 1,
         },
         {
           name: "Controle de Motoristas",
           description: "Gestão de condutores e habilitações",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "CNH com validade/categoria e curso de transporte escolar",
           ordem: 2,
         },
         {
           name: "Manutenção Preventiva",
           description: "Agenda de revisões e reparos",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Agenda de manutenções com custos por veículo",
           ordem: 3,
         },
       ],
@@ -882,32 +910,40 @@ async function main() {
       description: "Colegiado, Grêmio, Líderes de Turma e assembleias",
       icon: "Scale",
       phase: 3,
-      status: "planning",
-      progress: 0,
+      status: "in-progress",
+      progress: 85,
       ordem: 7,
       subModules: [
         {
           name: "Colegiado Escolar",
           description: "Gestão de membros, atas e decisões",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Colegiado com membros por segmento/cargo e mandato",
           ordem: 0,
         },
         {
           name: "Grêmio Estudantil",
           description: "Eleições, projetos e atividades estudantis",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Grêmio por ano letivo com chapas, apuração de eleição e atividades",
           ordem: 1,
         },
         {
           name: "Líderes de Turma",
           description: "Cadastro, atribuições e comunicação",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Líder e vice por turma/ano com validação de matrícula",
           ordem: 2,
         },
         {
           name: "Reuniões e Assembleias",
           description: "Agendamento e registro de encontros",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Agendamento, pauta, ata, decisões e presenças",
           ordem: 3,
         },
       ],
@@ -1008,7 +1044,7 @@ async function main() {
       monthRange: "Meses 7-9",
       duration: "3 meses",
       ordem: 2,
-      status: "planning",
+      status: "in-progress",
       moduleNames: ["Gestão Democrática"],
     },
     {
@@ -1017,7 +1053,7 @@ async function main() {
       monthRange: "Meses 10-12",
       duration: "3 meses",
       ordem: 3,
-      status: "planning",
+      status: "in-progress",
       moduleNames: [
         "Programas Especiais",
         "Alimentação Escolar",

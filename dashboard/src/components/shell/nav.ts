@@ -16,20 +16,29 @@ export interface NavSection {
 }
 
 const GESTAO = ['ADMIN', 'SEMEC'] as const;
+const OPERACAO = ['ADMIN', 'SEMEC', 'DIRETOR', 'COORDENADOR', 'SECRETARIA'] as const;
+// Equipe interna da rede — os papéis externos (RESPONSAVEL e USER sem função)
+// enxergam apenas o próprio portal.
+const EQUIPE = [...OPERACAO, 'PROFESSOR'] as const;
 
 export const NAV_SECTIONS: readonly NavSection[] = [
   {
     label: 'Operação',
     items: [
-      { href: '/', label: 'Dashboard', icon: 'dashboard', roles: 'all' },
-      { href: '/pedagogico', label: 'Pedagógico', icon: 'book', roles: 'all' },
-      { href: '/cadastros/matriculas', label: 'Matrículas', icon: 'userPlus', roles: 'all' },
-      { href: '/cadastros/escolas', label: 'Escolas', icon: 'building', roles: 'all' },
-      { href: '/cadastros/profissionais', label: 'Profissionais', icon: 'users', roles: 'all' },
-      { href: '/rh', label: 'RH', icon: 'clock', roles: ['ADMIN', 'SEMEC', 'DIRETOR', 'COORDENADOR', 'SECRETARIA'] },
-      { href: '/cadastros/calendario', label: 'Calendário Letivo', icon: 'calendarDays', roles: 'all' },
-      { href: '/programas', label: 'Programas Especiais', icon: 'clipboard', roles: 'all' },
-      { href: '/comunicacao', label: 'Comunicação', icon: 'speaker', roles: 'all' },
+      { href: '/portal', label: 'Meu Portal', icon: 'home', roles: 'all' },
+      { href: '/', label: 'Dashboard', icon: 'dashboard', roles: EQUIPE },
+      { href: '/pedagogico', label: 'Pedagógico', icon: 'book', roles: EQUIPE },
+      { href: '/cadastros/matriculas', label: 'Matrículas', icon: 'userPlus', roles: EQUIPE },
+      { href: '/cadastros/escolas', label: 'Escolas', icon: 'building', roles: EQUIPE },
+      { href: '/cadastros/profissionais', label: 'Profissionais', icon: 'users', roles: EQUIPE },
+      { href: '/rh', label: 'RH', icon: 'clock', roles: OPERACAO },
+      { href: '/cadastros/calendario', label: 'Calendário Letivo', icon: 'calendarDays', roles: EQUIPE },
+      { href: '/alimentacao', label: 'Alimentação', icon: 'utensils', roles: EQUIPE },
+      { href: '/transporte', label: 'Transporte', icon: 'bus', roles: EQUIPE },
+      { href: '/gestao-democratica', label: 'Gestão Democrática', icon: 'scale', roles: EQUIPE },
+      { href: '/programas', label: 'Programas Especiais', icon: 'clipboard', roles: EQUIPE },
+      { href: '/comunicacao', label: 'Comunicação', icon: 'speaker', roles: EQUIPE },
+      { href: '/exportacoes', label: 'Exportações', icon: 'fileExport', roles: OPERACAO },
     ],
   },
   {

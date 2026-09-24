@@ -30,6 +30,7 @@ import {
   notificacaoApi,
   pontosApi,
   licencasApi,
+  portalApi,
   Ponto,
   Licenca,
   BuscaAtiva,
@@ -3438,3 +3439,120 @@ export function useRelatorioLicencas(
   });
 }
 
+
+// ==================== MÓDULO 3: PORTAIS ====================
+
+export function usePortalProfessorResumo() {
+  return useQuery({
+    queryKey: ["portal", "professor", "resumo"],
+    queryFn: () => portalApi.professorResumo(),
+  });
+}
+
+export function usePortalMeusAlunos() {
+  return useQuery({
+    queryKey: ["portal", "meu", "alunos"],
+    queryFn: () => portalApi.meusAlunos(),
+  });
+}
+
+export function usePortalBoletimAluno(matriculaId: string) {
+  return useQuery({
+    queryKey: ["portal", "meu", "boletim", matriculaId],
+    queryFn: () => portalApi.boletimAluno(matriculaId),
+    enabled: !!matriculaId,
+  });
+}
+
+export function usePortalFrequenciaAluno(
+  matriculaId: string,
+  filters?: { dataInicio?: string; dataFim?: string },
+) {
+  return useQuery({
+    queryKey: ["portal", "meu", "frequencia", matriculaId, filters],
+    queryFn: () => portalApi.frequenciaAluno(matriculaId, filters),
+    enabled: !!matriculaId,
+  });
+}
+
+export function usePortalResumoEscola(
+  portal: "diretor" | "coordenacao",
+  filters?: { anoLetivo?: number; escolaId?: string },
+) {
+  return useQuery({
+    queryKey: ["portal", portal, "resumo", filters],
+    queryFn: () =>
+      portal === "diretor"
+        ? portalApi.diretorResumo(filters)
+        : portalApi.coordenacaoResumo(filters),
+  });
+}
+
+export function usePortalResumoSemec(anoLetivo?: number) {
+  return useQuery({
+    queryKey: ["portal", "semec", "resumo", anoLetivo],
+    queryFn: () => portalApi.semecResumo(anoLetivo),
+  });
+}
+
+// Estatísticas de matrículas (usado pelo Portal da Secretaria)
+export function useMatriculasEstatisticas(anoLetivo: number, escolaId?: string) {
+  return useQuery({
+    queryKey: ["matriculas", "estatisticas", anoLetivo, escolaId],
+    queryFn: () => matriculasApi.getEstatisticas(anoLetivo, escolaId),
+  });
+}
+
+export function useAcessosMatricula(matriculaId: string) {
+  return useQuery({
+    queryKey: ["matriculas", matriculaId, "acessos"],
+    queryFn: () => matriculasApi.listAcessos(matriculaId),
+    enabled: !!matriculaId,
+  });
+}
+
+export function useCriarAcessoMatricula() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      matriculaId,
+      data,
+    }: {
+      matriculaId: string;
+      data: Parameters<typeof matriculasApi.criarAcesso>[1];
+    }) => matriculasApi.criarAcesso(matriculaId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["matriculas", variables.matriculaId, "acessos"],
+      });
+      toast.success("Acesso do responsável criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar acesso do responsável");
+    },
+  });
+}
+
+export function useRevogarAcessoMatricula() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      matriculaId,
+      vinculoId,
+    }: {
+      matriculaId: string;
+      vinculoId: string;
+    }) => matriculasApi.revogarAcesso(matriculaId, vinculoId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["matriculas", variables.matriculaId, "acessos"],
+      });
+      toast.success("Acesso revogado com sucesso!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao revogar acesso");
+    },
+  });
+}

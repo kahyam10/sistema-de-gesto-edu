@@ -21,3 +21,22 @@ export { gradeHorariaService } from "./grade-horaria.service.js";
 // Módulo 4 — RH
 export { pontoService } from "./ponto.service.js";
 export { licencaService } from "./licenca.service.js";
+// Módulo 3 — Portais por papel
+export { portalService } from "./portal.service.js";
+// Módulo 6 — Alimentação Escolar
+export { cardapioService } from "./cardapio.service.js";
+export { estoqueService } from "./estoque.service.js";
+export { refeicaoService } from "./refeicao.service.js";
+// Módulo 7 — Transporte Escolar
+export { veiculoService } from "./veiculo.service.js";
+export { motoristaService } from "./motorista.service.js";
+export { rotaTransporteService } from "./rota-transporte.service.js";
+export { manutencaoService } from "./manutencao.service.js";
+// Módulo 8 — Gestão Democrática
+export { colegiadoService } from "./colegiado.service.js";
+export { gremioService } from "./gremio.service.js";
+export { liderTurmaService } from "./lider-turma.service.js";
+export { reuniaoDemocraticaService } from "./reuniao-democratica.service.js";
+// Exportadores oficiais
+export { exportacaoEducacensoService } from "./exportacao-educacenso.service.js";
+export { exportacaoPresencaService } from "./exportacao-presenca.service.js";

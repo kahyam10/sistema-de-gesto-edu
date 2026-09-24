@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 import { PageWrap } from "@/components/ui/page-wrap";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Panel } from "@/components/ui/panel";
@@ -42,6 +45,21 @@ const COLORS = {
 };
 
 export default function DashboardPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  // Módulo 3 — papéis externos não têm dashboard de gestão: vão para /portal
+  // antes de montar os hooks de dados (evita rajada de GETs 403).
+  const semDashboard = user?.role === "RESPONSAVEL" || user?.role === "USER";
+
+  useEffect(() => {
+    if (!isLoading && semDashboard) router.replace("/portal");
+  }, [isLoading, semDashboard, router]);
+
+  if (isLoading || semDashboard) return null;
+  return <DashboardGestao />;
+}
+
+function DashboardGestao() {
   const { data: etapas = [] } = useEtapas();
   const { data: escolas = [] } = useEscolas();
   const { data: turmas = [] } = useTurmas();

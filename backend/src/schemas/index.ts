@@ -7,7 +7,7 @@ export const registerSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   role: z
-    .enum(["ADMIN", "DIRETOR", "PROFESSOR", "SECRETARIA", "SEMEC", "USER"])
+    .enum(["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA", "PROFESSOR", "RESPONSAVEL", "USER"])
     .default("USER"),
   escolaId: z.string().optional(),
 });
@@ -202,6 +202,9 @@ export const createMatriculaSchema = z.object({
   contatoEmergenciaNome: z.string().optional(),
   contatoEmergenciaTelefone: z.string().optional(),
   contatoEmergenciaParentesco: z.string().optional(),
+
+  // NIS (PIS/PASEP) do aluno — exportação Sistema Presença (Bolsa Família)
+  nisAluno: z.string().optional(),
 
   // Relacionamentos
   escolaId: z.string().min(1, "Escola é obrigatória"),
@@ -639,3 +642,28 @@ export type RegistrarPontoInput = z.infer<typeof registrarPontoSchema>;
 export type CreateLicencaInput = z.infer<typeof createLicencaSchema>;
 export type UpdateLicencaInput = z.infer<typeof updateLicencaSchema>;
 export type AprovarLicencaInput = z.infer<typeof aprovarLicencaSchema>;
+
+// ==================== MÓDULO 3: PORTAIS ====================
+
+export const criarAcessoMatriculaSchema = z.object({
+  email: z.string().email("Email inválido"),
+  // Obrigatórios apenas quando o usuário ainda não existe (validado no service — BIZ_024)
+  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").optional(),
+  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+  tipoVinculo: z.enum(["RESPONSAVEL", "ALUNO"]).default("RESPONSAVEL"),
+  parentesco: z.string().optional(),
+});
+
+export const periodoPortalSchema = z.object({
+  dataInicio: z.coerce.date().optional(),
+  dataFim: z.coerce.date().optional(),
+});
+
+export const resumoPortalQuerySchema = z.object({
+  anoLetivo: z.coerce.number().int().min(2020).max(2100).optional(),
+  escolaId: z.string().optional(),
+});
+
+export type CriarAcessoMatriculaInput = z.infer<typeof criarAcessoMatriculaSchema>;
+export type PeriodoPortalInput = z.infer<typeof periodoPortalSchema>;
+export type ResumoPortalQueryInput = z.infer<typeof resumoPortalQuerySchema>;

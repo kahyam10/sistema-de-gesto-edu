@@ -55,6 +55,12 @@
       "message": "Acesso negado - Você não é o proprietário deste recurso",
       "statusCode": 403,
       "category": "PERMISSAO"
+    },
+    "PERM_005": {
+      "code": "PERM_005",
+      "message": "Acesso permitido apenas às matrículas vinculadas ao usuário",
+      "statusCode": 403,
+      "category": "PERMISSAO"
     }
   },
   "VALIDATION": {
@@ -275,6 +281,108 @@
       "message": "Documento da matrícula não encontrado",
       "statusCode": 404,
       "category": "NAO_ENCONTRADO"
+    },
+    "NF_030": {
+      "code": "NF_030",
+      "message": "Vínculo de acesso não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_031": {
+      "code": "NF_031",
+      "message": "Ano letivo não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_032": {
+      "code": "NF_032",
+      "message": "Cardápio não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_033": {
+      "code": "NF_033",
+      "message": "Item de estoque não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_034": {
+      "code": "NF_034",
+      "message": "Movimentação de estoque não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_035": {
+      "code": "NF_035",
+      "message": "Registro de refeição não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_036": {
+      "code": "NF_036",
+      "message": "Veículo não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_037": {
+      "code": "NF_037",
+      "message": "Motorista não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_038": {
+      "code": "NF_038",
+      "message": "Rota de transporte não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_039": {
+      "code": "NF_039",
+      "message": "Manutenção não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_040": {
+      "code": "NF_040",
+      "message": "Colegiado escolar não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_041": {
+      "code": "NF_041",
+      "message": "Membro do colegiado não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_042": {
+      "code": "NF_042",
+      "message": "Grêmio estudantil não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_043": {
+      "code": "NF_043",
+      "message": "Chapa não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_044": {
+      "code": "NF_044",
+      "message": "Atividade do grêmio não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_045": {
+      "code": "NF_045",
+      "message": "Líder de turma não encontrado",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
+    },
+    "NF_046": {
+      "code": "NF_046",
+      "message": "Reunião não encontrada",
+      "statusCode": 404,
+      "category": "NAO_ENCONTRADO"
     }
   },
   "BUSINESS": {
@@ -364,7 +472,7 @@
     },
     "BIZ_015": {
       "code": "BIZ_015",
-      "message": "Acompanhamento não está em andamento - não é possível registrar evolução",
+      "message": "Calendário letivo não possui 200 dias letivos mínimos",
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
     },
@@ -398,9 +506,81 @@
       "statusCode": 400,
       "category": "REGRA_NEGOCIO"
     },
-    "BIZ_015": {
-      "code": "BIZ_015",
-      "message": "Calendário letivo não possui 200 dias letivos mínimos",
+    "BIZ_021": {
+      "code": "BIZ_021",
+      "message": "Usuário não possui profissional vinculado",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_022": {
+      "code": "BIZ_022",
+      "message": "Vínculo de acesso já existe para este usuário e matrícula",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_023": {
+      "code": "BIZ_023",
+      "message": "Usuário não possui escola vinculada",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_024": {
+      "code": "BIZ_024",
+      "message": "Senha é obrigatória para criar novo usuário responsável",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_025": {
+      "code": "BIZ_025",
+      "message": "Saldo insuficiente em estoque para esta saída",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_026": {
+      "code": "BIZ_026",
+      "message": "Já existe cardápio para esta escola, data, turno e tipo de refeição",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_027": {
+      "code": "BIZ_027",
+      "message": "Aluno já vinculado a esta rota",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_028": {
+      "code": "BIZ_028",
+      "message": "Capacidade do veículo excedida para esta rota",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_029": {
+      "code": "BIZ_029",
+      "message": "Motorista com CNH vencida não pode ser vinculado a rota",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_030": {
+      "code": "BIZ_030",
+      "message": "Turma já possui líder ou vice-líder para este ano letivo",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_031": {
+      "code": "BIZ_031",
+      "message": "Matrícula não pertence à turma informada",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_032": {
+      "code": "BIZ_032",
+      "message": "Grêmio já possui chapa eleita",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_033": {
+      "code": "BIZ_033",
+      "message": "Reunião cancelada não pode ser alterada",
       "statusCode": 409,
       "category": "REGRA_NEGOCIO"
     }
