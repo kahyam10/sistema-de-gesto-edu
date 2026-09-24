@@ -13,8 +13,8 @@ Sistema completo de gestão educacional municipal, construído como monorepo com
 
 ```
 sistema-de-gesto-edu/
-├── backend/              # API Fastify + Prisma (porta 3333)
-├── dashboard/            # Frontend Next.js 15 (porta 3000)
+├── backend/              # API Fastify + Prisma (porta 3103)
+├── dashboard/            # Frontend Next.js 15 (porta 3100)
 ├── mcp_server/           # Servidor MCP para scaffolding
 ├── PRD.md                # Documento de Requisitos do Produto
 ├── ANALISE_PROJETO.md    # Análise completa do projeto
@@ -246,8 +246,8 @@ TipoEducacao (Educação Regular, EJA, ...)
 ```bash
 npm install              # Instala dependências de todos os workspaces
 npm run dev              # Roda backend e frontend em paralelo
-npm run dev:backend      # Apenas backend (porta 3333)
-npm run dev:dashboard    # Apenas frontend (porta 3000)
+npm run dev:backend      # Apenas backend (porta 3103)
+npm run dev:dashboard    # Apenas frontend (porta 3100)
 npm run build            # Build de produção
 npm run db:push          # Sincroniza schema Prisma
 npm run db:seed          # Popula banco com dados iniciais
@@ -364,4 +364,4 @@ npm run test             # Roda testes com Vitest
 - [PRD.md](../PRD.md) - Requisitos detalhados do produto
 - [ANALISE_PROJETO.md](../ANALISE_PROJETO.md) - Análise completa do projeto
 - [Prisma Schema](../backend/prisma/schema.prisma) - Modelo de dados
-- [Swagger Docs](http://localhost:3333/docs) - Documentação da API
+- [Swagger Docs](http://localhost:3103/docs) - Documentação da API

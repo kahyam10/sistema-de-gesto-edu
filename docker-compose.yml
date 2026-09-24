@@ -1,5 +1,6 @@
 # Deploy local/self-hosted do Sistema de Gestão Educacional
-# Portas do host: dashboard 3001, API 3333, Postgres 5435
+# Portas do host: dashboard 3100, API 3103, Postgres 3104
+# (3101 e 3102 já estão em uso por outros serviços locais — supabase-kong e kssoft-mcp)
 # Variáveis vêm do arquivo .env na raiz (ver .env.docker.example)
 services:
   postgres:
@@ -10,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
       POSTGRES_DB: gestao_edu
     ports:
-      - "5435:5432"
+      - "3104:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -26,19 +27,19 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/gestao_edu?schema=public
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3100}
       NODE_ENV: production
-      PORT: "3333"
+      PORT: "3103"
       HOST: 0.0.0.0
       ADMIN_EMAIL: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
     ports:
-      - "3333:3333"
+      - "3103:3103"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3333/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3103/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -49,10 +50,10 @@ services:
       context: ./dashboard
       args:
         # Inlined no build do Next — URL pela qual o NAVEGADOR acessa a API
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3103}
     container_name: gestao-edu-dashboard
     ports:
-      - "3001:3000"
+      - "3100:3000"
     depends_on:
       backend:
         condition: service_healthy

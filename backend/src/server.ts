@@ -98,7 +98,7 @@ async function buildApp() {
         },
         servers: [
           {
-            url: `http://localhost:${process.env.PORT || 3333}`,
+            url: `http://localhost:${process.env.PORT || 3103}`,
             description: "Servidor de desenvolvimento",
           },
         ],
@@ -315,7 +315,7 @@ async function buildApp() {
 async function start() {
   try {
     const app = await buildApp();
-    const port = parseInt(process.env.PORT || "3333");
+    const port = parseInt(process.env.PORT || "3103");
     const host = process.env.HOST || "0.0.0.0";
 
     await app.listen({ port, host });

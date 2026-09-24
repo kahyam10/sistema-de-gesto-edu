@@ -18,7 +18,7 @@ jobs:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: gestao_edu_test
         ports:
-          - 5435:5432
+          - 3104:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
@@ -28,8 +28,8 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: postgresql://postgres:ci@localhost:5435/gestao_edu_test?schema=public
-      TEST_DATABASE_URL: postgresql://postgres:ci@localhost:5435/gestao_edu_test?schema=public
+      DATABASE_URL: postgresql://postgres:ci@localhost:3104/gestao_edu_test?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:ci@localhost:3104/gestao_edu_test?schema=public
       JWT_SECRET: ci-secret
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
       run:
         working-directory: dashboard
     env:
-      NEXT_PUBLIC_API_URL: http://localhost:3333
+      NEXT_PUBLIC_API_URL: http://localhost:3103
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4

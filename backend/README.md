@@ -46,7 +46,7 @@ npm run db:seed
 npm run dev
 ```
 
-O servidor estará disponível em `http://localhost:3333`
+O servidor estará disponível em `http://localhost:3103`
 
 ## Scripts
 
@@ -149,7 +149,7 @@ O servidor estará disponível em `http://localhost:3333`
 
 ## Documentação
 
-Acesse `http://localhost:3333/docs` para visualizar a documentação Swagger da API.
+Acesse `http://localhost:3103/docs` para visualizar a documentação Swagger da API.
 
 ## Credenciais de Teste
 
