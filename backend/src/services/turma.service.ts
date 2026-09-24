@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "@prisma/client";
 import { CreateTurmaInput, UpdateTurmaInput } from "../schemas/index.js";
 
 export class TurmaService {
@@ -120,7 +121,12 @@ export class TurmaService {
   async updateCenso(id: string, dados: unknown) {
     return prisma.turma.update({
       where: { id },
-      data: { dadosCenso: JSON.stringify(dados) },
+      data: {
+        dadosCenso:
+          dados === null || dados === undefined
+            ? Prisma.DbNull
+            : (dados as Prisma.InputJsonValue),
+      },
     });
   }
 

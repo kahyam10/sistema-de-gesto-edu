@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError } from "../errors/index.js";
+import { AppError, formatarErroZod } from "../errors/index.js";
 import { ZodError } from "zod";
 import { gradeHorariaService } from "../services/grade-horaria.service.js";
 import {
@@ -105,9 +105,7 @@ Gera um relatório consolidado da carga horária dos profissionais.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -179,9 +177,7 @@ Gera um relatório consolidado da carga horária organizado por escola.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -264,9 +260,7 @@ Gera um relatório consolidado da carga horária organizado por turma.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -372,9 +366,7 @@ Lista todos os horários da grade com filtros opcionais.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -479,9 +471,7 @@ Retorna os detalhes completos de um horário específico da grade.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -622,9 +612,7 @@ Cria um novo horário na grade horária de uma turma.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -775,9 +763,7 @@ Atualiza um horário existente na grade horária.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -858,9 +844,7 @@ Remove um horário da grade horária.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error

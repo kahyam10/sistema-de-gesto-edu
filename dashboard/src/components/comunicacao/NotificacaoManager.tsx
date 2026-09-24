@@ -60,7 +60,7 @@ interface Notificacao {
   mensagem: string;
   tipo: string;
   prioridade: string;
-  canais: string;
+  canais: string[];
   lida: boolean;
   enviadaEmail: boolean;
   enviadaSMS: boolean;
@@ -171,7 +171,7 @@ export function NotificacaoManager() {
     try {
       await createNotificacao.mutateAsync({
         ...formData,
-        canais: JSON.stringify(formData.canais),
+        canais: formData.canais,
       });
       handleCloseForm();
     } catch (error) {

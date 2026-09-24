@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError } from "../errors/index.js";
+import { AppError, formatarErroZod } from "../errors/index.js";
 import { ZodError } from "zod";
 import { disciplinaService } from "../services/index.js";
 import {
@@ -104,9 +104,7 @@ Para listar disciplinas disponíveis para uma etapa específica ou todas as disc
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao listar disciplinas";
@@ -197,9 +195,7 @@ Retorna os detalhes de uma disciplina específica.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -281,9 +277,7 @@ Para exibir as disciplinas disponíveis ao criar turmas ou lançar notas de uma 
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -409,9 +403,7 @@ Cria uma nova disciplina no sistema.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -511,9 +503,7 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -604,9 +594,7 @@ Considere desativar (\`ativo: false\`) em vez de deletar para manter histórico.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error

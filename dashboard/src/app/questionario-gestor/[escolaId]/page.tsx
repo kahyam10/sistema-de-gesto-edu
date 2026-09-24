@@ -202,13 +202,17 @@ export default function QuestionarioGestorEscolaPage() {
   // Preencher censo salvo + dados básicos quando diretor carregar
   useEffect(() => {
     if (diretor && escola && !formData.nomeCompleto) {
+      // dadosCenso agora chega como objeto (Json nativo); aceita string legada
+      const brutoCenso: unknown = diretor.dadosCenso;
       let censoSalvo: Partial<QuestionarioGestorFormData> = {};
-      if (diretor.dadosCenso) {
+      if (typeof brutoCenso === "string") {
         try {
-          censoSalvo = JSON.parse(diretor.dadosCenso);
+          censoSalvo = JSON.parse(brutoCenso);
         } catch {
           censoSalvo = {};
         }
+      } else if (brutoCenso && typeof brutoCenso === "object") {
+        censoSalvo = brutoCenso as Partial<QuestionarioGestorFormData>;
       }
       setFormData((prev) => ({
         ...prev,

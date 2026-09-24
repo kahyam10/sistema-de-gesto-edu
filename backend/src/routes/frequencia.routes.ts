@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError } from "../errors/index.js";
+import { AppError, formatarErroZod } from "../errors/index.js";
 import { ZodError } from "zod";
 import { frequenciaService } from "../services/index.js";
 import {
@@ -169,9 +169,7 @@ Lista registros de frequência com suporte a filtros e paginação.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao listar frequências";
@@ -266,9 +264,7 @@ Retorna os detalhes de um registro de frequência específico.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar frequência";
@@ -390,9 +386,7 @@ Cria um novo registro de frequência para um aluno.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao criar frequência";
@@ -524,9 +518,7 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -642,9 +634,7 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -733,9 +723,7 @@ Considere atualizar o status em vez de deletar para manter histórico.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao remover frequência";
@@ -859,9 +847,7 @@ Sem filtros de data, considera todo o ano letivo.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -985,9 +971,7 @@ Alunos ordenados por percentual de frequência (menor primeiro).
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -1115,9 +1099,7 @@ Ideal para relatórios gerenciais e acompanhamento da turma como um todo.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -1217,9 +1199,7 @@ Permite verificar se a frequência já foi registrada para aquela data.
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error

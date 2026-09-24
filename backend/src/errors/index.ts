@@ -12,5 +12,8 @@ export {
   ErrorContext,
 } from "./AppError.js";
 
+export { formatarErroZod } from "./zod-format.js";
+export type { RespostaErroValidacao, IssueValidacao } from "./zod-format.js";
+
 // Exporta os códigos de erro para uso direto
 export { default as ErrorCodes } from "./error-codes.json";

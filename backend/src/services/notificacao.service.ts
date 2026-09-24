@@ -13,7 +13,7 @@ export class NotificacaoService {
     mensagem: string;
     tipo: string;
     prioridade?: string;
-    canais: string;
+    canais: string[];
     link?: string;
     acaoTipo?: string;
     acaoId?: string;
@@ -44,7 +44,7 @@ export class NotificacaoService {
     mensagem: string;
     tipo: string;
     prioridade?: string;
-    canais: string;
+    canais: string[];
     link?: string;
     acaoTipo?: string;
     acaoId?: string;

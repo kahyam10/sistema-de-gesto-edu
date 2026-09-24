@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError } from "../errors/index.js";
+import { AppError, formatarErroZod } from "../errors/index.js";
 import { ZodError } from "zod";
 import { profissionalService } from "../services/index.js";
 import {
@@ -37,9 +37,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -73,9 +71,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -102,9 +98,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -126,9 +120,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
       const message =
         error instanceof Error ? error.message : "Erro ao criar profissional";
@@ -153,9 +145,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -185,9 +175,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao salvar censo";
@@ -212,9 +200,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -249,9 +235,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -278,9 +262,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -309,9 +291,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao listar formações";
@@ -337,9 +317,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao adicionar formação";
@@ -370,9 +348,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao atualizar formação";
@@ -397,9 +373,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao remover formação";

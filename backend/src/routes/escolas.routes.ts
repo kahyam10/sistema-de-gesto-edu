@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError } from "../errors/index.js";
+import { AppError, formatarErroZod } from "../errors/index.js";
 import { ZodError } from "zod";
 import { escolaService } from "../services/index.js";
 import { createEscolaSchema, updateEscolaSchema } from "../schemas/index.js";
@@ -15,9 +15,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
       const message =
         error instanceof Error ? error.message : "Erro ao listar escolas";
@@ -46,9 +44,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao buscar escola";
@@ -78,9 +74,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error
@@ -111,9 +105,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
       const message =
         error instanceof Error ? error.message : "Erro ao criar escola";
@@ -138,9 +130,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao atualizar escola";
@@ -165,9 +155,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao salvar censo";
@@ -192,9 +180,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
         const message =
           error instanceof Error ? error.message : "Erro ao deletar escola";

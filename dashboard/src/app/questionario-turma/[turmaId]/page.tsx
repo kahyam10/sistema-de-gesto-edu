@@ -221,13 +221,17 @@ export default function QuestionarioTurmaIdPage() {
         sabado: { ativo: false, horaInicial: "", horaFinal: "" },
       };
 
+      // dadosCenso agora chega como objeto (Json nativo); aceita string legada
+      const brutoCenso: unknown = turma.dadosCenso;
       let censoSalvo: Partial<QuestionarioTurmaFormData> = {};
-      if (turma.dadosCenso) {
+      if (typeof brutoCenso === "string") {
         try {
-          censoSalvo = JSON.parse(turma.dadosCenso);
+          censoSalvo = JSON.parse(brutoCenso);
         } catch {
           censoSalvo = {};
         }
+      } else if (brutoCenso && typeof brutoCenso === "object") {
+        censoSalvo = brutoCenso as Partial<QuestionarioTurmaFormData>;
       }
 
       setFormData((prev) => ({

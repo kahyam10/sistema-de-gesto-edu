@@ -121,7 +121,7 @@ model Escola {
   telefone        String?
   email           String?
   quantidadeSalas Int      @default(0)
-  dadosCenso      String?  // JSON - respostas do questionário Censo Escolar (INEP)
+  dadosCenso      Json?    // respostas do questionário Censo Escolar (INEP)
   ativo           Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -232,7 +232,7 @@ model Turma {
   anoLetivo        Int
   capacidadeMaxima Int      @default(25)
   limitePCD        Int      @default(3)
-  dadosCenso       String?  // JSON - respostas do questionário Censo Escolar (INEP)
+  dadosCenso       Json?    // respostas do questionário Censo Escolar (INEP)
   ativo            Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -295,7 +295,7 @@ model Matricula {
   cep               String?
   
   // Documentos e Observações
-  documentosEntregues String?  // JSON string com lista de documentos
+  documentosEntregues Json?  // [{ nome, entregue, dataEntrega? }]
   observacoes       String?
 
   // Saúde e Emergência
@@ -362,7 +362,7 @@ model ProfissionalEducacao {
   formacao      String?  // Campo legado - manter compatibilidade
   especialidade String?
   matricula     String?  @unique
-  dadosCenso    String?  // JSON - respostas do questionário Censo Escolar (gestor/INEP)
+  dadosCenso    Json?    // respostas do questionário Censo Escolar (gestor/INEP)
 
   // Dados adicionais / RH (Módulo 4)
   dataNascimento     DateTime?
@@ -497,7 +497,7 @@ model Phase {
   duration    String   // Ex: "3 meses"
   ordem       Int      @default(0)
   status      String   @default("planning") // planning, in-progress, completed, blocked
-  moduleIds   String   // JSON array de IDs de módulos relacionados
+  moduleIds   Json     // array de IDs de módulos relacionados
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -905,7 +905,7 @@ model AcompanhamentoIndividualizado {
   dataFim         DateTime?
 
   // Evolução
-  evolucoes       String?  // Registros de evolução (JSON array)
+  evolucoes       Json?    // registros de evolução [{ id, data, observacao, profissionalId?, criadoEm }]
 
   // Status
   status          String   @default("EM_ANDAMENTO") // EM_ANDAMENTO, CONCLUIDO, SUSPENSO
@@ -1108,7 +1108,7 @@ model Notificacao {
   prioridade    String    @default("NORMAL") // BAIXA, NORMAL, ALTA, URGENTE
 
   // Canais de envio
-  canais        String    // JSON array: ["APP", "EMAIL", "SMS", "PUSH"]
+  canais        Json      // ["APP", "EMAIL", "SMS", "PUSH"]
 
   // Link/Ação
   link          String?   // Link para mais detalhes ou ação

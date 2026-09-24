@@ -189,7 +189,7 @@ export const createMatriculaSchema = z.object({
   cep: z.string().optional(),
 
   // Documentos e Observações
-  documentosEntregues: z.string().optional(),
+  documentosEntregues: z.record(z.boolean()).optional(),
   observacoes: z.string().optional(),
 
   // Saúde e Emergência

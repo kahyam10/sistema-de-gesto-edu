@@ -7,10 +7,17 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
-class ApiError extends Error {
-  constructor(public status: number, message: string) {
+export interface IssueValidacao {
+  campo: string;
+  mensagem: string;
+}
+
+export class ApiError extends Error {
+  public issues?: IssueValidacao[];
+  constructor(public status: number, message: string, issues?: IssueValidacao[]) {
     super(message);
     this.name = "ApiError";
+    this.issues = issues;
   }
 }
 
@@ -50,10 +57,23 @@ async function request<T>(
         window.location.href = "/login";
       }
     }
-    const error = await response
-      .json()
-      .catch(() => ({ error: "Erro desconhecido" }));
-    throw new ApiError(response.status, error.error || "Erro na requisição");
+    const payload: unknown = await response.json().catch(() => null);
+    const p = payload as
+      | { message?: unknown; error?: unknown; issues?: unknown }
+      | null;
+    // Cobre os 3 formatos coexistentes de erro da API:
+    // novo { statusCode, error: "VALIDATION", message, issues },
+    // legado plano { error: "..." } e envelope global { error: { message } }
+    const message =
+      (typeof p?.message === "string" && p.message) ||
+      (typeof p?.error === "string" && p.error) ||
+      (typeof (p?.error as { message?: unknown })?.message === "string" &&
+        (p!.error as { message: string }).message) ||
+      "Erro na requisição";
+    const issues = Array.isArray(p?.issues)
+      ? (p!.issues as IssueValidacao[])
+      : undefined;
+    throw new ApiError(response.status, message, issues);
   }
 
   // Para DELETE que retorna 204
@@ -261,7 +281,7 @@ export interface Escola {
   telefone?: string;
   email?: string;
   quantidadeSalas: number;
-  dadosCenso?: string | null;
+  dadosCenso?: Record<string, unknown> | null;
   ativo: boolean;
   etapas?: { etapa: EtapaEnsino }[];
 
@@ -495,7 +515,7 @@ export interface Turma {
   anoLetivo: number;
   capacidadeMaxima: number;
   limitePCD: number;
-  dadosCenso?: string | null;
+  dadosCenso?: Record<string, unknown> | null;
   ativo: boolean;
   escolaId: string;
   escola?: Escola;
@@ -621,7 +641,7 @@ export interface Matricula {
   cidade?: string;
   estado?: string;
   cep?: string;
-  documentosEntregues?: string;
+  documentosEntregues?: Record<string, boolean> | null;
   observacoes?: string;
   // Saúde e emergência (opcionais — usados na Ficha de Matrícula PDF)
   tipoSanguineo?: string;
@@ -673,7 +693,7 @@ export interface CreateMatriculaData {
   cidade?: string;
   estado?: string;
   cep?: string;
-  documentosEntregues?: string;
+  documentosEntregues?: Record<string, boolean> | null;
   observacoes?: string;
   // Saúde e emergência
   tipoSanguineo?: string;
@@ -772,7 +792,7 @@ export interface ProfissionalEducacao {
   formacao?: string;
   especialidade?: string;
   matricula?: string;
-  dadosCenso?: string | null;
+  dadosCenso?: Record<string, unknown> | null;
   ativo: boolean;
   escolas?: { escola: Escola }[];
   turmas?: { turma: Turma; tipo: string; disciplina?: string }[];
@@ -1255,8 +1275,6 @@ export const calendarioApi = {
     );
   },
 };
-
-export { ApiError };
 
 // ==================== MÓDULO 2: PEDAGÓGICO ====================
 
@@ -2013,7 +2031,7 @@ export interface AcompanhamentoIndividualizado {
   estrategias?: string;
   dataInicio: string;
   dataFim?: string;
-  evolucoes?: string;
+  evolucoes?: Array<{ id: string; data: string; observacao: string; profissionalId?: string; criadoEm: string }>;
   status: string;
   resultado?: string;
   createdAt: string;
@@ -2450,7 +2468,7 @@ export interface Notificacao {
   mensagem: string;
   tipo: string;
   prioridade: string;
-  canais: string;
+  canais: string[];
   link?: string;
   acaoTipo?: string;
   acaoId?: string;
@@ -2771,7 +2789,7 @@ export const notificacaoApi = {
     mensagem: string;
     tipo: string;
     prioridade?: string;
-    canais: string;
+    canais: string[];
     link?: string;
     acaoTipo?: string;
     acaoId?: string;

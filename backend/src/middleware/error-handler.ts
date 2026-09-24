@@ -1,5 +1,10 @@
 import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
-import { AppError, DatabaseError, SystemError } from "../errors/index.js";
+import {
+  AppError,
+  DatabaseError,
+  SystemError,
+  formatarErroZod,
+} from "../errors/index.js";
 import { logger } from "../utils/logger.js";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
@@ -27,18 +32,7 @@ export function errorHandler(
 
   // Erro de validação do Zod
   if (error instanceof ZodError) {
-    return reply.status(400).send({
-      error: {
-        code: "VAL_001",
-        message: "Dados de entrada inválidos",
-        category: "VALIDACAO",
-        timestamp: new Date().toISOString(),
-        details: error.errors.map((err) => ({
-          path: err.path.join("."),
-          message: err.message,
-        })),
-      },
-    });
+    return reply.status(400).send(formatarErroZod(error));
   }
 
   // Erros do Prisma (Database)

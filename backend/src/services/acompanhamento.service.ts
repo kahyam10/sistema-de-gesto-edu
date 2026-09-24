@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "@prisma/client";
 import { NotFoundError, BusinessError } from "../errors/index.js";
 
 export interface CreateAcompanhamentoInput {
@@ -18,7 +19,6 @@ export interface UpdateAcompanhamentoInput {
   profissionalId?: string;
   acoes?: string;
   estrategias?: string;
-  evolucoes?: string; // JSON string
   status?: string; // EM_ANDAMENTO, CONCLUIDO, SUSPENSO
   resultado?: string;
   dataFim?: Date;
@@ -319,9 +319,9 @@ export class AcompanhamentoService {
       }); // Acompanhamento não está em andamento
     }
 
-    // Parse existing evolutions or create new array
-    const evolucoes = acompanhamento.evolucoes
-      ? JSON.parse(acompanhamento.evolucoes)
+    // evolucoes é Json nativo (jsonb) — array de registros
+    const evolucoes: Prisma.JsonArray = Array.isArray(acompanhamento.evolucoes)
+      ? [...(acompanhamento.evolucoes as Prisma.JsonArray)]
       : [];
 
     // Add new evolution
@@ -336,7 +336,7 @@ export class AcompanhamentoService {
     return await prisma.acompanhamentoIndividualizado.update({
       where: { id },
       data: {
-        evolucoes: JSON.stringify(evolucoes),
+        evolucoes,
       },
       include: {
         matricula: {

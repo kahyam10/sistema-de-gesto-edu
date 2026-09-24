@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { z } from "zod";
+import { formatarErroZod } from "../errors/index.js";
 
 // Schemas de validação
 const createSalaSchema = z.object({
@@ -131,7 +132,7 @@ export async function salasRoutes(app: FastifyInstance) {
         return reply.status(201).send(sala);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          return reply.status(400).send({ error: error.errors });
+          return reply.status(400).send(formatarErroZod(error));
         }
         console.error("Erro ao criar sala:", error);
         return reply.status(500).send({ error: "Erro ao criar sala" });
@@ -189,7 +190,7 @@ export async function salasRoutes(app: FastifyInstance) {
         return reply.send(sala);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          return reply.status(400).send({ error: error.errors });
+          return reply.status(400).send(formatarErroZod(error));
         }
         console.error("Erro ao atualizar sala:", error);
         return reply.status(500).send({ error: "Erro ao atualizar sala" });

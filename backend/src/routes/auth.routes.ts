@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { AppError } from "../errors/index.js";
+import { AppError, formatarErroZod } from "../errors/index.js";
 import { ZodError } from "zod";
 import { authService } from "../services/index.js";
 import { registerSchema, loginSchema } from "../schemas/index.js";
@@ -27,9 +27,7 @@ export async function authRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
       const message =
         error instanceof Error ? error.message : "Erro ao registrar usuário";
@@ -57,9 +55,7 @@ export async function authRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
       const message =
         error instanceof Error ? error.message : "Erro ao fazer login";
@@ -83,9 +79,7 @@ export async function authRoutes(app: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message });
       }
       if (error instanceof ZodError) {
-        return reply
-          .status(400)
-          .send({ error: error.issues[0]?.message ?? "Dados inválidos" });
+        return reply.status(400).send(formatarErroZod(error));
       }
       const message =
         error instanceof Error ? error.message : "Erro ao buscar usuário";

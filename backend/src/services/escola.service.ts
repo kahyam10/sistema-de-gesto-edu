@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "@prisma/client";
 import { CreateEscolaInput, UpdateEscolaInput } from "../schemas/index.js";
 
 export class EscolaService {
@@ -93,7 +94,12 @@ export class EscolaService {
   async updateCenso(id: string, dados: unknown) {
     return prisma.escola.update({
       where: { id },
-      data: { dadosCenso: JSON.stringify(dados) },
+      data: {
+        dadosCenso:
+          dados === null || dados === undefined
+            ? Prisma.DbNull
+            : (dados as Prisma.InputJsonValue),
+      },
     });
   }
 

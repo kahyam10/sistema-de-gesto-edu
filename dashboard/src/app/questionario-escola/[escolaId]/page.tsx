@@ -186,13 +186,17 @@ export default function QuestionarioEscolaIdPage() {
   // Preencher dados da escola quando carregada (censo salvo + dados cadastrais)
   useEffect(() => {
     if (escola) {
+      // dadosCenso agora chega como objeto (Json nativo); aceita string legada
+      const brutoCenso: unknown = escola.dadosCenso;
       let censoSalvo: Partial<QuestionarioEscolaFormData> = {};
-      if (escola.dadosCenso) {
+      if (typeof brutoCenso === "string") {
         try {
-          censoSalvo = JSON.parse(escola.dadosCenso);
+          censoSalvo = JSON.parse(brutoCenso);
         } catch {
           censoSalvo = {};
         }
+      } else if (brutoCenso && typeof brutoCenso === "object") {
+        censoSalvo = brutoCenso as Partial<QuestionarioEscolaFormData>;
       }
       setFormData((prev) => ({
         ...prev,

@@ -6,6 +6,10 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { errorHandler } from "./middleware/error-handler.js";
 import { prisma } from "./lib/prisma.js";
+import { configurarZodPtBr } from "./lib/zod-pt-br.js";
+
+// Mensagens de validação zod em PT-BR (antes de qualquer parse)
+configurarZodPtBr();
 
 import {
   authRoutes,

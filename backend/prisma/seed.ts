@@ -1036,7 +1036,7 @@ async function main() {
     await prisma.phase.create({
       data: {
         ...phaseInfo,
-        moduleIds: JSON.stringify(moduleIds),
+        moduleIds,
       },
     });
   }

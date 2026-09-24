@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "@prisma/client";
 import {
   CreateProfissionalInput,
   UpdateProfissionalInput,
@@ -135,7 +136,12 @@ export class ProfissionalService {
   async updateCenso(id: string, dados: unknown) {
     return prisma.profissionalEducacao.update({
       where: { id },
-      data: { dadosCenso: JSON.stringify(dados) },
+      data: {
+        dadosCenso:
+          dados === null || dados === undefined
+            ? Prisma.DbNull
+            : (dados as Prisma.InputJsonValue),
+      },
     });
   }
 

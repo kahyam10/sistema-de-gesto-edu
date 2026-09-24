@@ -4,17 +4,21 @@ import type {
   UpdatePhaseInput as UpdatePhaseData,
 } from "../schemas/index.js";
 
+// moduleIds é Json nativo (jsonb) — normaliza para string[] na saída
+function comModuleIds<T extends { moduleIds: unknown }>(phase: T) {
+  return {
+    ...phase,
+    moduleIds: (phase.moduleIds as string[] | null) ?? [],
+  };
+}
+
 export const phaseService = {
   async findAll() {
     const phases = await prisma.phase.findMany({
       orderBy: { ordem: "asc" },
     });
 
-    // Parse moduleIds de JSON string para array
-    return phases.map((phase) => ({
-      ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || "[]"),
-    }));
+    return phases.map(comModuleIds);
   },
 
   async findById(id: string) {
@@ -24,10 +28,7 @@ export const phaseService = {
 
     if (!phase) return null;
 
-    return {
-      ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || "[]"),
-    };
+    return comModuleIds(phase);
   },
 
   async create(data: CreatePhaseData) {
@@ -36,14 +37,11 @@ export const phaseService = {
     const phase = await prisma.phase.create({
       data: {
         ...rest,
-        moduleIds: JSON.stringify(moduleIds || []),
+        moduleIds: moduleIds ?? [],
       },
     });
 
-    return {
-      ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || "[]"),
-    };
+    return comModuleIds(phase);
   },
 
   async update(id: string, data: UpdatePhaseData) {
@@ -51,7 +49,7 @@ export const phaseService = {
 
     const updateData: Record<string, unknown> = { ...rest };
     if (moduleIds !== undefined) {
-      updateData.moduleIds = JSON.stringify(moduleIds);
+      updateData.moduleIds = moduleIds;
     }
 
     const phase = await prisma.phase.update({
@@ -59,10 +57,7 @@ export const phaseService = {
       data: updateData,
     });
 
-    return {
-      ...phase,
-      moduleIds: JSON.parse(phase.moduleIds || "[]"),
-    };
+    return comModuleIds(phase);
   },
 
   async delete(id: string) {
