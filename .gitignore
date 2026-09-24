@@ -25,6 +25,7 @@ dashboard/.next/
 .env
 .env.local
 .env.*.local
+.env.test
 backend/.env
 dashboard/.env
 

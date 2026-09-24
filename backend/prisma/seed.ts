@@ -1,9 +1,31 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { existsSync } from "node:fs";
+
+// `npm run db:seed` roda via tsx (sem o carregamento de .env do Prisma CLI)
+if (existsSync(".env")) process.loadEnvFile(".env");
 
 const prisma = new PrismaClient();
 
+// Seed de DESENVOLVIMENTO: APAGA os dados e recria uma base de demonstração.
+// Nunca roda em produção (lá o boot usa prisma/seed-prod.cjs, idempotente).
+// Credenciais do admin local vêm do backend/.env (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD).
+function credenciaisAdmin() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("seed.ts é só para desenvolvimento — em produção use prisma/seed-prod.cjs");
+  }
+  const email = process.env.SEED_ADMIN_EMAIL;
+  const senha = process.env.SEED_ADMIN_PASSWORD;
+  if (!email || !senha || senha.length < 12) {
+    throw new Error(
+      "Defina SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD (mín. 12 caracteres) no backend/.env"
+    );
+  }
+  return { email, senha };
+}
+
 async function main() {
+  const credenciais = credenciaisAdmin();
   console.log("🌱 Iniciando seed do banco de dados...");
 
   // Limpar dados existentes (ordem importa por causa das foreign keys)
@@ -20,17 +42,17 @@ async function main() {
   await prisma.escola.deleteMany();
   await prisma.etapaEnsino.deleteMany();
   await prisma.tipoEducacao.deleteMany();
-  await prisma.eventosCalendario?.deleteMany();
-  await prisma.anoLetivo?.deleteMany();
+  await prisma.eventoCalendario.deleteMany();
+  await prisma.anoLetivo.deleteMany();
   await prisma.user.deleteMany();
 
   console.log("✅ Dados antigos removidos");
 
   // Criar usuário admin
-  const adminPassword = await bcrypt.hash("admin123", 10);
+  const adminPassword = await bcrypt.hash(credenciais.senha, 10);
   const admin = await prisma.user.create({
     data: {
-      email: "admin@ibirapitanga.ba.gov.br",
+      email: credenciais.email,
       password: adminPassword,
       nome: "Administrador SEMEC",
       role: "ADMIN",
@@ -1080,7 +1102,7 @@ async function main() {
 
   console.log("\n🎉 Seed concluído com sucesso!");
   console.log("\n📋 Dados criados:");
-  console.log(`   - 1 usuário admin (admin@ibirapitanga.ba.gov.br / admin123)`);
+  console.log(`   - 1 usuário admin (${credenciais.email} — senha em backend/.env)`);
   console.log(`   - 1 tipo de educação (Educação Básica)`);
   console.log(`   - ${etapas.length} etapas de ensino`);
   console.log(`   - ${niveis.length} níveis de ensino`);
