@@ -1,6 +1,6 @@
 // App mobile (tokens no corpo + Bearer) e propriedade de turma do PROFESSOR.
 // Dados 100% fictícios.
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import bcrypt from "bcryptjs";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../src/lib/prisma.js";
@@ -296,5 +296,26 @@ describe("portal para o app (professor e responsável)", () => {
 
     const depois = await app.inject({ method: "GET", url: "/api/portal/meu/comunicados", headers: bearer(token) });
     expect(depois.json()[0].confirmado).toBe(true);
+  });
+});
+
+describe("resumo do professor usa o dia da Bahia, não o do servidor (UTC)", () => {
+  it("às 23h40 de quinta na Bahia (02h40 de sexta em UTC) mostra as aulas de quinta", async () => {
+    await prisma.gradeHoraria.create({
+      data: {
+        turmaId: turmaDoProfessor.id, diaSemana: "QUINTA", horaInicio: "07:30", horaFim: "08:20",
+        disciplina: "Ciências", profissionalId: profissional.id,
+      },
+    });
+    const token = (await loginMobile("prof@teste.local")).body.accessToken;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-25T02:40:00Z"));
+    try {
+      const res = await app.inject({ method: "GET", url: "/api/portal/professor/resumo", headers: bearer(token) });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().aulasHoje.map((a: { turmaId: string }) => a.turmaId)).toContain(turmaDoProfessor.id);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -37,12 +37,14 @@ export class PortalService {
 
   async resumoProfessor(userId: string) {
     const profissionalId = await this.getProfissionalId(userId);
-    const hoje = new Date();
-    const diaSemana = DIAS_SEMANA[hoje.getDay()];
-    const inicioDia = new Date(hoje);
-    inicioDia.setHours(0, 0, 0, 0);
-    const fimDia = new Date(hoje);
-    fimDia.setHours(23, 59, 59, 999);
+    // "Hoje" no fuso da rede (Bahia), não no do servidor (containers rodam em
+    // UTC: depois das 21h o dia já virava e as aulas do dia sumiam). A
+    // frequência é gravada como meia-noite UTC de AAAA-MM-DD, então comparamos
+    // com o mesmo instante.
+    const hojeISO = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bahia" }).format(new Date());
+    const inicioDia = new Date(hojeISO);
+    const diaSemana = DIAS_SEMANA[inicioDia.getUTCDay()];
+    const fimDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000 - 1);
 
     const [profissional, vinculos, aulasHoje] = await Promise.all([
       prisma.profissionalEducacao.findUnique({
