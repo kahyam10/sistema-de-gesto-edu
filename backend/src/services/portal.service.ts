@@ -188,6 +188,63 @@ export class PortalService {
     return { turma: { id: turma.id, nome: turma.nome }, disciplinas, avaliacoes, alunos };
   }
 
+  /**
+   * Alunos ativos da turma com o percentual de presença de cada um (mesma
+   * fórmula de frequenciaService.calcularEstatisticas: presenças / aulas).
+   * Só campos mínimos — nada de CPF, saúde, endereço.
+   */
+  async alunosDaTurma(userId: string, turmaId: string) {
+    await this.validarTurmaDoProfessor(userId, turmaId);
+    const [turma, alunos, agrupado] = await Promise.all([
+      prisma.turma.findUnique({
+        where: { id: turmaId },
+        select: {
+          id: true, nome: true, turno: true,
+          escola: { select: { nome: true } },
+          serie: { select: { nome: true } },
+        },
+      }),
+      prisma.matricula.findMany({
+        where: { turmaId, status: "ATIVA" },
+        select: { id: true, nomeAluno: true, numeroMatricula: true },
+        orderBy: { nomeAluno: "asc" },
+      }),
+      prisma.frequencia.groupBy({
+        by: ["matriculaId", "status"],
+        where: { turmaId },
+        _count: true,
+      }),
+    ]);
+    if (!turma) throw new NotFoundError("NF_005");
+
+    const cont = new Map<string, { total: number; presencas: number }>();
+    for (const g of agrupado) {
+      const c = cont.get(g.matriculaId) ?? { total: 0, presencas: 0 };
+      c.total += g._count;
+      if (g.status === "PRESENTE") c.presencas += g._count;
+      cont.set(g.matriculaId, c);
+    }
+    const lista = alunos.map((a) => {
+      const c = cont.get(a.id);
+      const percentualPresenca = c && c.total > 0 ? Math.round((c.presencas / c.total) * 100) : null;
+      return {
+        ...a,
+        totalAulas: c?.total ?? 0,
+        percentualPresenca,
+        abaixoDoLimite: percentualPresenca !== null && percentualPresenca < 75,
+      };
+    });
+    const comAulas = lista.filter((a) => a.percentualPresenca !== null);
+    return {
+      turma,
+      frequenciaMedia: comAulas.length
+        ? Math.round(comAulas.reduce((s, a) => s + (a.percentualPresenca ?? 0), 0) / comAulas.length)
+        : null,
+      totalAbaixoDoLimite: lista.filter((a) => a.abaixoDoLimite).length,
+      alunos: lista,
+    };
+  }
+
   // ---------- Portal do Aluno/Responsável ----------
 
   async alunosDoUsuario(userId: string) {

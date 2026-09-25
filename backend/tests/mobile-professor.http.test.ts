@@ -237,14 +237,31 @@ describe("portal para o app (professor e responsável)", () => {
     );
   });
 
-  it("chamada/notas de turma alheia → 403", async () => {
+  it("chamada/notas/alunos de turma alheia → 403", async () => {
     const token = (await loginMobile("prof@teste.local")).body.accessToken;
-    for (const sufixo of ["chamada", "notas"]) {
+    for (const sufixo of ["chamada", "notas", "alunos"]) {
       const res = await app.inject({
         method: "GET", url: `/api/portal/professor/turmas/${outraTurma.id}/${sufixo}`, headers: bearer(token),
       });
       expect(res.statusCode).toBe(403);
     }
+  });
+
+  it("alunos da turma trazem % de presença e só campos mínimos", async () => {
+    const token = (await loginMobile("prof@teste.local")).body.accessToken;
+    const res = await app.inject({
+      method: "GET", url: `/api/portal/professor/turmas/${turmaDoProfessor.id}/alunos`, headers: bearer(token),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.alunos).toHaveLength(1);
+    expect(Object.keys(body.alunos[0]).sort()).toEqual(
+      ["abaixoDoLimite", "id", "nomeAluno", "numeroMatricula", "percentualPresenca", "totalAulas"].sort()
+    );
+    // Uma aula registrada, com falta → 0% e abaixo do limite
+    expect(body.alunos[0]).toMatchObject({ totalAulas: 1, percentualPresenca: 0, abaixoDoLimite: true });
+    expect(body.frequenciaMedia).toBe(0);
+    expect(body.totalAbaixoDoLimite).toBe(1);
   });
 
   it("notas da turma traz disciplinas da etapa, avaliações e alunos", async () => {

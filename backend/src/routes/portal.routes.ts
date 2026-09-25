@@ -103,6 +103,19 @@ export async function portalRoutes(app: FastifyInstance) {
     }
   );
 
+  // GET /api/portal/professor/turmas/:turmaId/alunos — alunos ativos com % de presença
+  app.get(
+    "/professor/turmas/:turmaId/alunos",
+    async (request: FastifyRequest<{ Params: { turmaId: string } }>, reply: FastifyReply) => {
+      try {
+        const user = request.user as TokenUser;
+        return reply.send(await portalService.alunosDaTurma(user.id, request.params.turmaId));
+      } catch (error) {
+        return tratar(error, reply, "Erro ao carregar alunos da turma");
+      }
+    }
+  );
+
   // GET /api/portal/meu/comunicados — comunicados relevantes com status de leitura
   app.get("/meu/comunicados", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
