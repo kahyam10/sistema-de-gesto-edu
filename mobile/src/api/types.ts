@@ -68,6 +68,20 @@ export interface NotasDaTurma {
   alunos: Array<{ id: string; nomeAluno: string; numeroMatricula: string }>;
 }
 
+export interface AlunosDaTurma {
+  turma: { id: string; nome: string; turno: string; escola: { nome: string }; serie: { nome: string } };
+  frequenciaMedia: number | null;
+  totalAbaixoDoLimite: number;
+  alunos: Array<{
+    id: string;
+    nomeAluno: string;
+    numeroMatricula: string;
+    totalAulas: number;
+    percentualPresenca: number | null;
+    abaixoDoLimite: boolean;
+  }>;
+}
+
 // ---------- Responsável ----------
 export interface AlunoVinculado {
   vinculoId: string;

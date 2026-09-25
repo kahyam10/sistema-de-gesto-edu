@@ -1,36 +1,35 @@
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Alert, View } from "react-native";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { professorApi } from "../../api/endpoints";
-import { Botao, Campo, Rotulo, Tela } from "../../components/ui";
+import { Botao, Cabecalho, Campo, Cartao, Rotulo, Segmentos, Tela } from "../../components/ui";
 import type { ProfessorStack } from "../../navigation/tipos";
-import { cores, espaco, raio } from "../../theme";
-import { hojeISO } from "../../utils/formato";
+import { espaco } from "../../theme";
+import {
+  dataBR, dataBRparaISO, hojeISO, lerNumero, rotuloTipoAvaliacao, TIPOS_AVALIACAO, TipoAvaliacao,
+} from "../../utils/formato";
 
 type Props = NativeStackScreenProps<ProfessorStack, "NovaAvaliacao">;
-const TIPOS = ["PROVA", "TRABALHO", "ATIVIDADE", "PARTICIPACAO", "RECUPERACAO"] as const;
-const ROTULO_TIPO: Record<(typeof TIPOS)[number], string> = {
-  PROVA: "Prova", TRABALHO: "Trabalho", ATIVIDADE: "Atividade", PARTICIPACAO: "Participação", RECUPERACAO: "Recuperação",
-};
-
-const numero = (t: string) => Number(t.replace(",", "."));
+type Erros = Partial<Record<"nome" | "data" | "valorMaximo" | "peso", string>>;
 
 export function NovaAvaliacaoScreen({ route, navigation }: Props) {
   const { turmaId, turmaNome, disciplinaId } = route.params;
   const queryClient = useQueryClient();
+  const notas = useQuery({ queryKey: ["notas", turmaId], queryFn: () => professorApi.notas(turmaId) });
+  const disciplina = notas.data?.disciplinas.find((d) => d.id === disciplinaId)?.nome;
+
   const [nome, setNome] = useState("");
-  const [tipo, setTipo] = useState<(typeof TIPOS)[number]>("PROVA");
-  const [bimestre, setBimestre] = useState(1);
+  const [tipo, setTipo] = useState<TipoAvaliacao>("PROVA");
+  const [bimestre, setBimestre] = useState(route.params.bimestre);
   const [valorMaximo, setValorMaximo] = useState("10");
   const [peso, setPeso] = useState("1");
-  const [data, setData] = useState(hojeISO());
+  const [data, setData] = useState(dataBR(hojeISO()));
+  const [erros, setErros] = useState<Erros>({});
 
   const criar = useMutation({
-    mutationFn: () =>
-      professorApi.criarAvaliacao({
-        nome: nome.trim(), tipo, bimestre, data, valorMaximo: numero(valorMaximo), peso: numero(peso), turmaId, disciplinaId,
-      }),
+    mutationFn: (dados: { data: string; valorMaximo: number; peso: number }) =>
+      professorApi.criarAvaliacao({ nome: nome.trim(), tipo, bimestre, turmaId, disciplinaId, ...dados }),
     onSuccess: (av) => {
       void queryClient.invalidateQueries({ queryKey: ["notas", turmaId] });
       navigation.replace("LancarNotas", { turmaId, turmaNome, avaliacaoId: av.id });
@@ -38,50 +37,70 @@ export function NovaAvaliacaoScreen({ route, navigation }: Props) {
     onError: (e) => Alert.alert("Não foi possível criar", e instanceof Error ? e.message : ""),
   });
 
+  // Validação local só para ajudar; o servidor valida de novo (schema)
   function validarEEnviar() {
-    if (nome.trim().length < 2) return Alert.alert("Informe o nome da avaliação");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return Alert.alert("Data no formato AAAA-MM-DD");
-    const vm = numero(valorMaximo);
-    const p = numero(peso);
-    if (!(vm > 0 && vm <= 100)) return Alert.alert("Valor máximo inválido");
-    if (!(p > 0 && p <= 10)) return Alert.alert("Peso inválido");
-    criar.mutate();
+    const e: Erros = {};
+    const iso = dataBRparaISO(data);
+    const vm = lerNumero(valorMaximo);
+    const p = lerNumero(peso);
+    if (nome.trim().length < 2) e.nome = "Informe o nome da avaliação.";
+    if (!iso) e.data = "Use o formato DD/MM/AAAA.";
+    if (vm === null || Number.isNaN(vm) || vm <= 0 || vm > 100) e.valorMaximo = "Entre 0 e 100.";
+    if (p === null || Number.isNaN(p) || p <= 0 || p > 10) e.peso = "Entre 0 e 10.";
+    setErros(e);
+    if (Object.keys(e).length) return;
+    criar.mutate({ data: iso!, valorMaximo: vm!, peso: p! });
   }
 
   return (
-    <Tela>
-      <Campo rotulo="Nome" value={nome} onChangeText={setNome} placeholder="Ex.: Prova do 3º bimestre" />
-      <Rotulo>Tipo</Rotulo>
-      <View style={s.linha}>
-        {TIPOS.map((t) => (
-          <Pressable key={t} onPress={() => setTipo(t)} style={[s.chip, tipo === t && s.chipAtivo]}
-            accessibilityRole="radio" accessibilityState={{ selected: tipo === t }}>
-            <Text style={[s.chipTexto, tipo === t && { color: "#fff" }]}>{ROTULO_TIPO[t]}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Rotulo>Bimestre</Rotulo>
-      <View style={s.linha}>
-        {[1, 2, 3, 4].map((b) => (
-          <Pressable key={b} onPress={() => setBimestre(b)} style={[s.chip, bimestre === b && s.chipAtivo]}
-            accessibilityRole="radio" accessibilityState={{ selected: bimestre === b }}>
-            <Text style={[s.chipTexto, bimestre === b && { color: "#fff" }]}>{b}º</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Campo rotulo="Data (AAAA-MM-DD)" value={data} onChangeText={setData} keyboardType="numbers-and-punctuation" />
-      <View style={{ flexDirection: "row", gap: espaco.md }}>
-        <View style={{ flex: 1 }}><Campo rotulo="Vale" value={valorMaximo} onChangeText={setValorMaximo} keyboardType="decimal-pad" /></View>
-        <View style={{ flex: 1 }}><Campo rotulo="Peso" value={peso} onChangeText={setPeso} keyboardType="decimal-pad" /></View>
-      </View>
-      <Botao titulo="Criar e lançar notas" onPress={validarEEnviar} carregando={criar.isPending} />
+    <Tela
+      cabecalho={
+        <Cabecalho
+          aoVoltar={() => navigation.goBack()}
+          rotuloVoltar="Cancelar e voltar"
+          sobretitulo="Nova avaliação"
+          titulo={`Turma ${turmaNome}`}
+          subtitulo={disciplina}
+        />
+      }
+      rodape={<Botao titulo="Criar e lançar notas" onPress={validarEEnviar} carregando={criar.isPending} />}
+    >
+      <Cartao style={{ gap: espaco.lg }}>
+        <Campo rotulo="Nome da avaliação" value={nome} onChangeText={setNome} erro={erros.nome}
+          placeholder="Ex.: Prova — Leitura e interpretação" />
+        <View style={{ gap: espaco.sm }}>
+          <Rotulo>Tipo</Rotulo>
+          <Segmentos<TipoAvaliacao>
+            papel="radio"
+            rotulo="Tipo"
+            colunas={2}
+            opcoes={TIPOS_AVALIACAO.map((t) => ({ valor: t, rotulo: rotuloTipoAvaliacao[t] }))}
+            valor={tipo}
+            aoMudar={setTipo}
+          />
+        </View>
+        <View style={{ gap: espaco.sm }}>
+          <Rotulo>Bimestre</Rotulo>
+          <Segmentos
+            papel="radio"
+            rotulo="Bimestre"
+            colunas={4}
+            opcoes={[1, 2, 3, 4].map((b) => ({ valor: b, rotulo: `${b}º` }))}
+            valor={bimestre}
+            aoMudar={setBimestre}
+          />
+        </View>
+        <View style={{ flexDirection: "row", gap: espaco.md }}>
+          <View style={{ flex: 1 }}>
+            <Campo rotulo="Valor máximo" value={valorMaximo} onChangeText={setValorMaximo} keyboardType="decimal-pad" erro={erros.valorMaximo} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Campo rotulo="Peso" value={peso} onChangeText={setPeso} keyboardType="decimal-pad" erro={erros.peso} />
+          </View>
+        </View>
+        <Campo rotulo="Data de aplicação" value={data} onChangeText={setData} keyboardType="numbers-and-punctuation"
+          placeholder="DD/MM/AAAA" maxLength={10} erro={erros.data} />
+      </Cartao>
     </Tela>
   );
 }
-
-const s = StyleSheet.create({
-  linha: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm },
-  chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: raio.sm, backgroundColor: cores.superficie, borderWidth: 1, borderColor: cores.borda },
-  chipAtivo: { backgroundColor: cores.marca, borderColor: cores.marca },
-  chipTexto: { color: cores.texto, fontWeight: "600" },
-});

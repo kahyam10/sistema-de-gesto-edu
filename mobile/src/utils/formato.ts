@@ -26,3 +26,82 @@ export const rotuloPapel: Record<string, string> = {
   COORDENADOR: "Coordenação",
   SECRETARIA: "Secretaria",
 };
+
+const DIAS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+/** Dia da semana de "AAAA-MM-DD" (calculado em UTC para não deslocar o dia). */
+export function diaDaSemana(valor: string, curto = false): string {
+  const d = new Date(`${valor.slice(0, 10)}T12:00:00Z`).getUTCDay();
+  return (curto ? DIAS_CURTOS : DIAS)[d];
+}
+
+/** "2026-09-25" → "Sex, 25 de setembro". */
+export function dataPorExtenso(valor: string): string {
+  const [, m, d] = valor.slice(0, 10).split("-").map(Number);
+  return `${diaDaSemana(valor, true)}, ${d} de ${MESES[m - 1]}`;
+}
+
+/** "2026-09-25" → "25/09". */
+export function diaMes(valor: string): string {
+  const [, m, d] = valor.slice(0, 10).split("-");
+  return `${d}/${m}`;
+}
+
+/** Saudação pela hora da Bahia (UTC-3). */
+export function saudacao(agora: Date = new Date()): string {
+  const h = new Date(agora.getTime() - 3 * 60 * 60 * 1000).getUTCHours();
+  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+}
+
+/** Converte "7,5" / "7.5" em número; "" → null; lixo → NaN. */
+export function lerNumero(texto: string): number | null {
+  const t = texto.trim().replace(",", ".");
+  if (t === "") return null;
+  return /^\d+(\.\d*)?$/.test(t) ? Number(t) : NaN;
+}
+
+/** "25/09/2026" → "2026-09-25" (ou null se inválida). */
+export function dataBRparaISO(texto: string): string | null {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto.trim());
+  if (!m) return null;
+  const [, d, mes, a] = m;
+  const iso = `${a}-${mes}-${d}`;
+  const data = new Date(`${iso}T12:00:00Z`);
+  if (Number.isNaN(data.getTime()) || data.getUTCDate() !== Number(d) || data.getUTCMonth() + 1 !== Number(mes)) return null;
+  return iso;
+}
+
+/** Média simples ignorando vazios; null se não há valores. */
+export function media(valores: Array<number | null | undefined>): number | null {
+  const v = valores.filter((x): x is number => typeof x === "number");
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+
+/** "MATUTINO" → "Matutino"; "AVISO" → "Aviso". */
+export function capitalizar(texto: string): string {
+  const t = texto.replace(/_/g, " ").toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** "Ana", "Ana e Pedro", "Ana, Pedro e Lia" — só primeiros nomes. */
+export function listaDeNomes(nomes: string[]): string {
+  const p = nomes.map((n) => n.trim().split(/\s+/)[0]);
+  if (p.length <= 1) return p.join("");
+  return `${p.slice(0, -1).join(", ")} e ${p[p.length - 1]}`;
+}
+
+export const TIPOS_AVALIACAO = ["PROVA", "TRABALHO", "ATIVIDADE", "PARTICIPACAO", "RECUPERACAO"] as const;
+export type TipoAvaliacao = (typeof TIPOS_AVALIACAO)[number];
+export const rotuloTipoAvaliacao: Record<string, string> = {
+  PROVA: "Prova", TRABALHO: "Trabalho", ATIVIDADE: "Atividade", PARTICIPACAO: "Participação", RECUPERACAO: "Recuperação",
+};
+
+/** Iniciais para avatar: primeira letra do primeiro e do último nome (ignora "de", "da"...). */
+export function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter((p) => p.length > 2);
+  if (partes.length === 0) return nome.slice(0, 2).toUpperCase();
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (partes[0][0] + ultima).toUpperCase();
+}

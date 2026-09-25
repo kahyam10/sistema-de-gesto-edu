@@ -3,14 +3,16 @@ import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { professorApi } from "../../api/endpoints";
-import { Botao, Cartao, Carregando, Erro, Tela, Texto, Titulo } from "../../components/ui";
+import { Botao, Cabecalho, Cartao, Carregando, Erro, Estatistica, Tela, Texto } from "../../components/ui";
 import type { ProfessorStack } from "../../navigation/tipos";
-import { cores, espaco, raio } from "../../theme";
+import { cores, espaco, fontes } from "../../theme";
+import { dataBR, lerNumero, media, nota, rotuloTipoAvaliacao } from "../../utils/formato";
 
 type Props = NativeStackScreenProps<ProfessorStack, "LancarNotas">;
+const num = (v: number) => String(v).replace(".", ",");
 
 export function LancarNotasScreen({ route, navigation }: Props) {
-  const { turmaId, avaliacaoId } = route.params;
+  const { turmaId, turmaNome, avaliacaoId } = route.params;
   const queryClient = useQueryClient();
   const q = useQuery({ queryKey: ["notas", turmaId], queryFn: () => professorApi.notas(turmaId) });
   const avaliacao = q.data?.avaliacoes.find((a) => a.id === avaliacaoId);
@@ -18,73 +20,102 @@ export function LancarNotasScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     if (!avaliacao) return;
-    setValores(Object.fromEntries(avaliacao.notas.map((n) => [n.matriculaId, String(n.valor).replace(".", ",")])));
+    setValores(Object.fromEntries(avaliacao.notas.map((n) => [n.matriculaId, num(n.valor)])));
   }, [avaliacao?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const salvar = useMutation({
     mutationFn: (notas: Array<{ matriculaId: string; valor: number }>) => professorApi.lancarNotas(avaliacaoId, notas),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["notas", turmaId] });
-      Alert.alert("Notas salvas");
-      navigation.goBack();
+      navigation.popTo("Notas", { turmaId, turmaNome, aviso: `Notas de “${avaliacao?.nome ?? "avaliação"}” salvas.` });
     },
     onError: (e) => Alert.alert("Não foi possível salvar", e instanceof Error ? e.message : ""),
   });
 
   if (q.isPending) return <Carregando />;
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
-  if (!avaliacao) return <Erro erro={new Error("Avaliação não encontrada.")} />;
+  if (!avaliacao) return <Erro erro={new Error("Avaliação não encontrada.")} tentarDeNovo={() => navigation.goBack()} />;
+
+  const max = avaliacao.valorMaximo;
+  // Validação na hora: vazio = ainda sem nota; fora de 0..max ou texto inválido = erro
+  const linhas = q.data.alunos.map((a) => {
+    const texto = valores[a.id] ?? "";
+    const v = lerNumero(texto);
+    const invalida = v !== null && (Number.isNaN(v) || v < 0 || v > max);
+    return { ...a, texto, v, invalida };
+  });
+  const validas = linhas.filter((l) => l.v !== null && !l.invalida).map((l) => l.v as number);
+  const temInvalida = linhas.some((l) => l.invalida);
 
   function enviar() {
-    const notas: Array<{ matriculaId: string; valor: number }> = [];
-    for (const [matriculaId, texto] of Object.entries(valores)) {
-      if (texto.trim() === "") continue; // em branco = ainda sem nota
-      const valor = Number(texto.replace(",", "."));
-      if (Number.isNaN(valor) || valor < 0 || valor > avaliacao!.valorMaximo) {
-        const aluno = q.data!.alunos.find((a) => a.id === matriculaId)?.nomeAluno ?? "aluno";
-        Alert.alert("Nota inválida", `${aluno}: use um valor entre 0 e ${avaliacao!.valorMaximo}.`);
-        return;
-      }
-      notas.push({ matriculaId, valor });
-    }
+    const notas = linhas
+      .filter((l) => l.v !== null && !l.invalida)
+      .map((l) => ({ matriculaId: l.id, valor: l.v as number }));
     if (notas.length === 0) return Alert.alert("Nenhuma nota preenchida");
     salvar.mutate(notas);
   }
 
   return (
-    <Tela>
-      <Cartao>
-        <Titulo>{avaliacao.nome}</Titulo>
-        <Texto suave>{avaliacao.bimestre}º bimestre · vale {avaliacao.valorMaximo}. Deixe em branco quem ainda não fez.</Texto>
+    <Tela
+      cabecalho={
+        <Cabecalho
+          aoVoltar={() => navigation.goBack()}
+          sobretitulo={`${rotuloTipoAvaliacao[avaliacao.tipo] ?? avaliacao.tipo} · Turma ${turmaNome}`}
+          titulo={avaliacao.nome}
+          subtitulo={`${avaliacao.bimestre}º bimestre · vale ${num(max)} · peso ${num(avaliacao.peso)} · ${dataBR(avaliacao.data)}`}
+        />
+      }
+      rodape={
+        <>
+          {temInvalida ? <Text style={s.erroRodape}>Corrija as notas marcadas para salvar.</Text> : null}
+          <Botao titulo="Salvar notas" onPress={enviar} carregando={salvar.isPending} desabilitado={temInvalida} />
+        </>
+      }
+    >
+      <Cartao style={{ flexDirection: "row", gap: espaco.sm, padding: espaco.md }}>
+        <Estatistica valor={`${validas.length} / ${linhas.length}`} rotulo="Notas lançadas" />
+        <Estatistica valor={nota(media(validas))} rotulo="Média da turma" />
       </Cartao>
-      {q.data.alunos.map((a) => (
+      <Texto pequeno suave>Use vírgula para decimais. Deixe em branco quem ainda não fez a avaliação.</Texto>
+
+      {linhas.map((a) => (
         <View key={a.id} style={s.linha}>
-          <Text style={s.nome} numberOfLines={2}>{a.nomeAluno}</Text>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={s.nome} numberOfLines={2}>{a.nomeAluno}</Text>
+            {a.invalida ? (
+              <Text style={s.erro}>Nota entre 0 e {num(max)}</Text>
+            ) : (
+              <Texto pequeno suave>Matrícula {a.numeroMatricula}</Texto>
+            )}
+          </View>
           <TextInput
-            value={valores[a.id] ?? ""}
+            value={a.texto}
             onChangeText={(t) => setValores((v) => ({ ...v, [a.id]: t.replace(/[^0-9.,]/g, "") }))}
             keyboardType="decimal-pad"
             placeholder="—"
-            placeholderTextColor={cores.textoSuave}
+            placeholderTextColor={cores.textoApagado}
             accessibilityLabel={`Nota de ${a.nomeAluno}`}
-            style={s.input}
+            accessibilityHint={a.invalida ? `Inválida: use de 0 a ${num(max)}` : undefined}
+            style={[s.input, a.invalida && s.inputErro]}
             maxLength={5}
           />
         </View>
       ))}
-      <Botao titulo="Salvar notas" onPress={enviar} carregando={salvar.isPending} />
     </Tela>
   );
 }
 
 const s = StyleSheet.create({
   linha: {
-    flexDirection: "row", alignItems: "center", gap: espaco.md, backgroundColor: cores.superficie,
-    borderRadius: raio.md, borderWidth: 1, borderColor: cores.borda, padding: espaco.md,
+    flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: cores.superficie,
+    borderRadius: 14, borderWidth: 1, borderColor: cores.borda, paddingVertical: espaco.sm, paddingLeft: espaco.md, paddingRight: espaco.sm,
   },
-  nome: { flex: 1, fontSize: 15, color: cores.texto },
+  nome: { fontFamily: fontes.negrito, fontSize: 15, color: cores.texto },
+  erro: { fontFamily: fontes.negrito, fontSize: 12, color: cores.perigoTexto },
+  erroRodape: { fontFamily: fontes.negrito, fontSize: 13, color: cores.perigoTexto, textAlign: "center" },
   input: {
-    width: 72, height: 44, borderWidth: 1, borderColor: cores.borda, borderRadius: raio.sm,
-    textAlign: "center", fontSize: 17, fontWeight: "600", color: cores.texto,
+    width: 76, height: 44, borderWidth: 1, borderColor: cores.bordaCampo, borderRadius: 10, backgroundColor: cores.superficie,
+    textAlign: "center", fontSize: 18, fontFamily: fontes.negrito, color: cores.texto,
   },
+  inputErro: { borderWidth: 2, borderColor: cores.perigo, backgroundColor: "#FFF6F3" },
 });

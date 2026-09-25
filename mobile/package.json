@@ -12,6 +12,8 @@
     "android:emulador": "expo start --android"
   },
   "dependencies": {
+    "@expo-google-fonts/atkinson-hyperlegible": "^0.4.1",
+    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.19.2",
     "@react-navigation/native": "^7.4.1",

@@ -4,35 +4,40 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { professorApi } from "../../api/endpoints";
 import type { StatusFrequencia } from "../../api/types";
-import { Botao, Cartao, Carregando, Erro, Selo, Tela, Texto, Titulo, Vazio } from "../../components/ui";
+import { Aviso, Botao, Cabecalho, Carregando, Erro, Estatistica, Tela, Texto, Vazio } from "../../components/ui";
 import type { ProfessorStack } from "../../navigation/tipos";
-import { cores, espaco, raio } from "../../theme";
-import { dataBR, hojeISO } from "../../utils/formato";
+import { cores, espaco, fontes, raio } from "../../theme";
+import { dataPorExtenso, hojeISO } from "../../utils/formato";
 
 type Props = NativeStackScreenProps<ProfessorStack, "Chamada">;
 
-const OPCOES: Array<{ valor: StatusFrequencia; rotulo: string; bg: string; fg: string }> = [
-  { valor: "PRESENTE", rotulo: "P", bg: cores.sucessoSuave, fg: cores.sucesso },
-  { valor: "FALTA", rotulo: "F", bg: cores.perigoSuave, fg: cores.perigo },
-  { valor: "JUSTIFICADA", rotulo: "J", bg: cores.alertaSuave, fg: cores.alerta },
+const OPCOES: Array<{ valor: StatusFrequencia; letra: string; nome: string; cor: string }> = [
+  { valor: "PRESENTE", letra: "P", nome: "Presente", cor: cores.sucesso },
+  { valor: "FALTA", letra: "F", nome: "Falta", cor: cores.perigo },
+  { valor: "JUSTIFICADA", letra: "J", nome: "Falta justificada", cor: cores.alerta },
 ];
 
 export function ChamadaScreen({ route, navigation }: Props) {
-  const { turmaId } = route.params;
+  const { turmaId, turmaNome } = route.params;
   const data = hojeISO();
   const queryClient = useQueryClient();
   const q = useQuery({ queryKey: ["chamada", turmaId, data], queryFn: () => professorApi.chamada(turmaId, data) });
   const [marcacoes, setMarcacoes] = useState<Record<string, StatusFrequencia>>({});
+  const [salvoAgora, setSalvoAgora] = useState(false);
 
-  // Pré-preenche: o que já foi lançado hoje, ou todos presentes
+  // Pré-preenche: o que já foi lançado hoje ou, se nada, todos presentes
   useEffect(() => {
     if (!q.data) return;
     setMarcacoes(Object.fromEntries(q.data.alunos.map((a) => [a.id, a.status ?? "PRESENTE"])));
   }, [q.data]);
 
-  const totais = useMemo(() => {
+  const cont = useMemo(() => {
     const v = Object.values(marcacoes);
-    return { presentes: v.filter((x) => x === "PRESENTE").length, faltas: v.filter((x) => x !== "PRESENTE").length };
+    return {
+      P: v.filter((x) => x === "PRESENTE").length,
+      F: v.filter((x) => x === "FALTA").length,
+      J: v.filter((x) => x === "JUSTIFICADA").length,
+    };
   }, [marcacoes]);
 
   const salvar = useMutation({
@@ -43,44 +48,86 @@ export function ChamadaScreen({ route, navigation }: Props) {
         Object.entries(marcacoes).map(([matriculaId, status]) => ({ matriculaId, status }))
       ),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["professor", "resumo"] });
+      setSalvoAgora(true);
+      void queryClient.invalidateQueries({ queryKey: ["professor"] });
       void queryClient.invalidateQueries({ queryKey: ["chamada", turmaId, data] });
-      Alert.alert("Chamada salva", `${totais.presentes} presentes, ${totais.faltas} ausentes.`);
-      navigation.goBack();
     },
     onError: (e) => Alert.alert("Não foi possível salvar", e instanceof Error ? e.message : ""),
   });
 
+  function marcar(id: string, status: StatusFrequencia) {
+    setSalvoAgora(false);
+    setMarcacoes((m) => ({ ...m, [id]: status }));
+  }
+
   if (q.isPending) return <Carregando />;
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
+  const ja = q.data.jaRegistrada;
 
   return (
-    <Tela>
-      <Cartao>
-        <Titulo>{q.data.turma.nome}</Titulo>
-        <Texto suave>{dataBR(q.data.data)} · {q.data.turma.escola.nome}</Texto>
-        {q.data.jaRegistrada && <Selo texto="Já registrada hoje — salvar substitui" tom="marca" />}
-      </Cartao>
+    <Tela
+      cabecalho={
+        <Cabecalho
+          aoVoltar={() => navigation.goBack()}
+          sobretitulo="Chamada"
+          titulo={`Turma ${turmaNome}`}
+          subtitulo={`${dataPorExtenso(q.data.data)} · ${q.data.turma.escola.nome}`}
+        />
+      }
+      rodape={
+        <>
+          {salvoAgora ? <Aviso texto={`Chamada salva: ${cont.P} presentes, ${cont.F + cont.J} ausentes.`} /> : null}
+          <Botao
+            titulo={ja ? "Salvar correções" : "Registrar chamada"}
+            onPress={() => salvar.mutate()}
+            carregando={salvar.isPending}
+            desabilitado={q.data.alunos.length === 0}
+          />
+        </>
+      }
+    >
+      {ja && !salvoAgora ? <Aviso tom="alerta" texto="A chamada de hoje já foi registrada. Salvar de novo substitui." /> : null}
+
+      <View style={{ flexDirection: "row", gap: espaco.sm }}>
+        <Estatistica centro tom="sucesso" valor={cont.P} rotulo="Presentes" />
+        <Estatistica centro tom="perigo" valor={cont.F} rotulo="Faltas" />
+        <Estatistica centro tom="alerta" valor={cont.J} rotulo="Justificadas" />
+      </View>
+      <View style={s.legendaLinha}>
+        <Texto pequeno suave>P presente · F falta · J justificada</Texto>
+        <Botao
+          compacto
+          variante="secundario"
+          titulo="Todos presentes"
+          onPress={() => {
+            setSalvoAgora(false);
+            setMarcacoes(Object.fromEntries(q.data.alunos.map((a) => [a.id, "PRESENTE" as const])));
+          }}
+        />
+      </View>
 
       {q.data.alunos.length === 0 ? (
         <Vazio texto="Nenhum aluno ativo nesta turma." />
       ) : (
         q.data.alunos.map((a) => (
           <View key={a.id} style={s.linha}>
-            <Text style={s.nome} numberOfLines={2}>{a.nomeAluno}</Text>
-            <View style={s.opcoes}>
+            <View style={{ flex: 1, gap: 1 }}>
+              <Text style={s.nome} numberOfLines={2}>{a.nomeAluno}</Text>
+              <Texto pequeno suave>Matrícula {a.numeroMatricula}</Texto>
+            </View>
+            <View style={s.opcoes} accessibilityRole="radiogroup" accessibilityLabel={`Situação de ${a.nomeAluno}`}>
               {OPCOES.map((o) => {
                 const ativo = marcacoes[a.id] === o.valor;
                 return (
                   <Pressable
                     key={o.valor}
-                    onPress={() => setMarcacoes((m) => ({ ...m, [a.id]: o.valor }))}
+                    onPress={() => marcar(a.id, o.valor)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: ativo }}
-                    accessibilityLabel={`${a.nomeAluno}: ${o.valor.toLowerCase()}`}
-                    style={[s.opcao, { backgroundColor: ativo ? o.fg : o.bg }]}
+                    accessibilityLabel={`${a.nomeAluno}: ${o.nome}`}
+                    style={[s.opcao, ativo ? { backgroundColor: o.cor, borderColor: o.cor } : null]}
                   >
-                    <Text style={[s.opcaoTexto, { color: ativo ? "#fff" : o.fg }]}>{o.rotulo}</Text>
+                    <Text style={[s.opcaoTexto, { color: ativo ? "#fff" : "#3B4642" }]}>{o.letra}</Text>
                   </Pressable>
                 );
               })}
@@ -88,25 +135,21 @@ export function ChamadaScreen({ route, navigation }: Props) {
           </View>
         ))
       )}
-
-      <Texto suave>{totais.presentes} presentes · {totais.faltas} ausentes</Texto>
-      <Botao
-        titulo="Salvar chamada"
-        onPress={() => salvar.mutate()}
-        carregando={salvar.isPending}
-        desabilitado={q.data.alunos.length === 0}
-      />
     </Tela>
   );
 }
 
 const s = StyleSheet.create({
+  legendaLinha: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: espaco.sm },
   linha: {
-    flexDirection: "row", alignItems: "center", gap: espaco.md, backgroundColor: cores.superficie,
-    borderRadius: raio.md, borderWidth: 1, borderColor: cores.borda, padding: espaco.md,
+    flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: cores.superficie,
+    borderRadius: 14, borderWidth: 1, borderColor: cores.borda, paddingVertical: espaco.sm, paddingLeft: espaco.md, paddingRight: espaco.sm,
   },
-  nome: { flex: 1, fontSize: 15, color: cores.texto },
+  nome: { fontFamily: fontes.negrito, fontSize: 15, color: cores.texto },
   opcoes: { flexDirection: "row", gap: espaco.xs },
-  opcao: { width: 44, height: 44, borderRadius: raio.sm, alignItems: "center", justifyContent: "center" },
-  opcaoTexto: { fontSize: 16, fontWeight: "700" },
+  opcao: {
+    width: 44, height: 44, borderRadius: raio.sm + 2, alignItems: "center", justifyContent: "center",
+    backgroundColor: cores.superficie, borderWidth: 1, borderColor: cores.bordaCampo,
+  },
+  opcaoTexto: { fontFamily: fontes.negrito, fontSize: 16 },
 });

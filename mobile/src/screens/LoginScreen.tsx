@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthContext";
 import { Botao, Campo } from "../components/ui";
-import { cores, espaco } from "../theme";
+import { cores, espaco, fontes } from "../theme";
 
 export function LoginScreen() {
   const { entrar } = useAuth();
@@ -68,13 +68,13 @@ const s = StyleSheet.create({
   tela: { flex: 1, backgroundColor: cores.marcaEscura },
   corpo: { flex: 1, justifyContent: "flex-end" },
   marca: { padding: espaco.xl, gap: espaco.sm },
-  sobretitulo: { color: "#9FB6E6", fontSize: 12, fontWeight: "700", letterSpacing: 1 },
-  nome: { color: "#fff", fontSize: 28, fontWeight: "700" },
-  descricao: { color: "#C9D6F0", fontSize: 15, lineHeight: 21 },
+  sobretitulo: { color: "#9FB6E6", fontSize: 13, fontFamily: fontes.negrito, letterSpacing: 1 },
+  nome: { color: "#fff", fontSize: 30, fontFamily: fontes.titulo },
+  descricao: { color: "#C9D6F0", fontSize: 16, lineHeight: 22, fontFamily: fontes.regular },
   form: {
     backgroundColor: cores.superficie, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: espaco.xl, gap: espaco.lg,
   },
-  erro: { color: cores.perigo, fontSize: 14 },
-  ajuda: { color: cores.textoSuave, fontSize: 13, textAlign: "center" },
+  erro: { color: cores.perigoTexto, fontSize: 14, fontFamily: fontes.negrito },
+  ajuda: { color: cores.textoSuave, fontSize: 13, textAlign: "center", fontFamily: fontes.regular },
 });

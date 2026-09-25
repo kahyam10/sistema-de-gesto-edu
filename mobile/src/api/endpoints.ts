@@ -1,6 +1,6 @@
 import { api } from "./client";
 import type {
-  AlunoVinculado, Boletim, Chamada, Comunicado, FrequenciaAluno, NotasDaTurma,
+  AlunosDaTurma, AlunoVinculado, Boletim, Chamada, Comunicado, FrequenciaAluno, NotasDaTurma,
   ResumoProfessor, StatusFrequencia, TokensResposta, Usuario,
 } from "./types";
 
@@ -23,6 +23,7 @@ export const professorApi = {
     data: string,
     presencas: Array<{ matriculaId: string; status: StatusFrequencia }>
   ) => api<{ message: string }>("/api/frequencia/turma", { method: "POST", body: { turmaId, data, presencas } }),
+  alunos: (turmaId: string) => api<AlunosDaTurma>(`/api/portal/professor/turmas/${turmaId}/alunos`),
   notas: (turmaId: string) => api<NotasDaTurma>(`/api/portal/professor/turmas/${turmaId}/notas`),
   criarAvaliacao: (dados: {
     nome: string;
@@ -44,5 +45,6 @@ export const responsavelApi = {
   boletim: (matriculaId: string) => api<Boletim>(`/api/portal/meu/alunos/${matriculaId}/boletim`),
   frequencia: (matriculaId: string) => api<FrequenciaAluno>(`/api/portal/meu/alunos/${matriculaId}/frequencia`),
   comunicados: () => api<Comunicado[]>("/api/portal/meu/comunicados"),
+  marcarLido: (id: string) => api<unknown>(`/api/comunicados/${id}/marcar-lido`, { method: "POST", body: {} }),
   confirmarComunicado: (id: string) => api<unknown>(`/api/comunicados/${id}/confirmar`, { method: "POST", body: {} }),
 };
