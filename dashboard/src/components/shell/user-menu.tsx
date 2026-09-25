@@ -44,9 +44,9 @@ export function UserMenu() {
 
   const roleLabel = ROLE_LABELS[user.role] ?? user.role;
 
-  function handleLogout() {
+  async function handleLogout() {
     setOpen(false);
-    logout();
+    await logout();
     router.push('/login');
   }
 

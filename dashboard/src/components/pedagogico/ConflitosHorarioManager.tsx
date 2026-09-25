@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEscolas, useTurmas, useProfissionais } from "@/hooks/useApi";
 import { WarningCircle, CheckCircle, ChalkboardTeacher, MapPin } from "@phosphor-icons/react";
-import { API_BASE_URL } from "@/lib/api";
+import { gradeHorariaApi } from "@/lib/api";
 
 interface GradeHorario {
   id: string;
@@ -77,21 +77,15 @@ export function ConflitosHorarioManager() {
   const fetchGradeEscola = async (escolaId: string) => {
     setLoadingGrade(true);
     try {
-      const token = localStorage.getItem("token");
       const turmasDaEscola = turmas.filter((t) => t.escolaId === escolaId);
 
+      // Cliente central: sessão por cookie + prefixo /api (antes: token de
+      // chave errada e URL sem /api → toda consulta falhava)
       const promises = turmasDaEscola.map(async (turma) => {
-        const response = await fetch(
-          `${API_BASE_URL}/grade-horaria/${turma.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) return [];
-        const data = await response.json();
-        return data.map((g: GradeHorario) => ({
+        const grade = await gradeHorariaApi
+          .list({ turmaId: turma.id })
+          .catch(() => [] as GradeHorario[]);
+        return grade.map((g) => ({
           ...g,
           turma: { nome: turma.nome, turno: turma.turno },
         }));

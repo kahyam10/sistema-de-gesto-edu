@@ -1,7 +1,7 @@
 // ==================== EXPORTAÇÕES OFICIAIS (EDUCACENSO / SISTEMA PRESENÇA) ====================
 // Camada de API própria do módulo (padrão api-<modulo>.ts) — importa a base de "./api".
 
-import { request, ApiError, API_BASE_URL } from "./api";
+import { request, apiFetch, erroDaResposta } from "./api";
 
 // ---------- Educacenso ----------
 
@@ -91,22 +91,15 @@ export interface PresencaParams {
   escolaId?: string;
 }
 
-// Download binário: mesmo padrão do documentosMatriculaApi.download (api.ts),
-// com Authorization do localStorage e filename vindo do Content-Disposition.
+// Download binário autenticado pelo cookie de sessão (apiFetch), com o
+// filename vindo do Content-Disposition.
 async function requestDownload(
   endpoint: string,
   fallbackFilename: string
 ): Promise<void> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: { ...(token && { Authorization: `Bearer ${token}` }) },
-  });
+  const response = await apiFetch(endpoint);
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ error: "Erro desconhecido" }));
-    throw new ApiError(response.status, error.error || "Erro na requisição");
+    throw await erroDaResposta(response);
   }
   const cd = response.headers.get("Content-Disposition");
   const filename = cd?.match(/filename="([^"]+)"/)?.[1] ?? fallbackFilename;

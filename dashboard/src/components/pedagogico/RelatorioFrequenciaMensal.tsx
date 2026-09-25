@@ -34,7 +34,7 @@ import { CalendarCheck, FileText, Users } from "@phosphor-icons/react";
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { toast } from "sonner";
-import { API_BASE_URL } from "@/lib/api";
+import { frequenciaApi } from "@/lib/api";
 
 const styles = StyleSheet.create({
   page: {
@@ -243,18 +243,8 @@ export function RelatorioFrequenciaMensal() {
       const dataInicio = primeiroDia.toISOString().split('T')[0];
       const dataFim = ultimoDia.toISOString().split('T')[0];
 
-      const response = await fetch(
-        `${API_BASE_URL}/frequencia?turmaId=${turmaId}&dataInicio=${dataInicio}&dataFim=${dataFim}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Erro ao buscar frequências");
-
-      const data = await response.json();
+      // Cliente central: sessão por cookie + prefixo /api
+      const data = await frequenciaApi.list({ turmaId, dataInicio, dataFim });
       setFrequencias(data);
     } catch (error) {
       toast.error("Erro ao buscar frequências");

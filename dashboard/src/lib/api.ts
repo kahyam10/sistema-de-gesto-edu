@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3103";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3051";
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -21,6 +21,107 @@ export class ApiError extends Error {
   }
 }
 
+// ==================== SESSÃO (cookies httpOnly) ====================
+// O navegador NUNCA recebe nem guarda o token de acesso: ele vive em cookies
+// httpOnly definidos pela API. Aqui só circula o csrfToken, mantido em memória
+// (não em localStorage) e reenviado no header X-CSRF-Token em toda escrita.
+
+let csrfToken: string | null = null;
+
+export function definirCsrf(token: string | null) {
+  csrfToken = token;
+}
+
+const ROTAS_SESSAO = new Set(["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]);
+const METODOS_ESCRITA = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+// Uma única renovação por vez (vários requests podem expirar juntos)
+let renovacaoEmAndamento: Promise<boolean> | null = null;
+
+async function renovarSessao(): Promise<boolean> {
+  if (!renovacaoEmAndamento) {
+    renovacaoEmAndamento = (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        });
+        // 409: outra aba renovou agora — o cookie novo já está no navegador
+        if (res.status === 409) return true;
+        if (!res.ok) return false;
+        const body = (await res.json().catch(() => null)) as { csrfToken?: string } | null;
+        if (body?.csrfToken) csrfToken = body.csrfToken;
+        return true;
+      } catch {
+        return false;
+      }
+    })().finally(() => {
+      renovacaoEmAndamento = null;
+    });
+  }
+  return renovacaoEmAndamento;
+}
+
+function irParaLogin() {
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    window.location.href = "/login";
+  }
+}
+
+/**
+ * fetch autenticado pelo cookie de sessão. Anexa o CSRF nas escritas e, se o
+ * access token expirou (401), renova a sessão uma vez e repete o request.
+ * Use para respostas não-JSON (download/blob); para JSON prefira `request`.
+ */
+export async function apiFetch(endpoint: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method ?? "GET").toUpperCase();
+  const montar = (): RequestInit => ({
+    ...init,
+    method,
+    credentials: "include",
+    headers: {
+      ...(init.headers as Record<string, string> | undefined),
+      ...(METODOS_ESCRITA.has(method) && csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+    },
+  });
+
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, montar());
+  if (ROTAS_SESSAO.has(endpoint)) return response;
+
+  const csrfRecusado =
+    response.status === 403 &&
+    METODOS_ESCRITA.has(method) &&
+    (await response.clone().json().catch(() => null))?.code === "CSRF";
+
+  if (response.status === 401 || csrfRecusado) {
+    if (await renovarSessao()) {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, montar());
+    }
+    if (response.status === 401) irParaLogin();
+  }
+  return response;
+}
+
+/** Converte uma resposta de erro da API em ApiError (3 formatos coexistentes). */
+export async function erroDaResposta(response: Response, padrao = "Erro na requisição"): Promise<ApiError> {
+  const payload: unknown = await response.json().catch(() => null);
+  const p = payload as
+    | { message?: unknown; error?: unknown; issues?: unknown }
+    | null;
+  // novo { statusCode, error: "VALIDATION", message, issues },
+  // legado plano { error: "..." } e envelope global { error: { message } }
+  const message =
+    (typeof p?.message === "string" && p.message) ||
+    (typeof p?.error === "string" && p.error) ||
+    (typeof (p?.error as { message?: unknown })?.message === "string" &&
+      (p!.error as { message: string }).message) ||
+    padrao;
+  const issues = Array.isArray(p?.issues)
+    ? (p!.issues as IssueValidacao[])
+    : undefined;
+  return new ApiError(response.status, message, issues);
+}
+
 // Exportado para módulos com camada de API própria (api-*.ts)
 export async function request<T>(
   endpoint: string,
@@ -28,56 +129,20 @@ export async function request<T>(
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-
-  const config: RequestInit = {
+  const response = await apiFetch(endpoint, {
     method,
     headers: {
       ...(body !== undefined && { "Content-Type": "application/json" }),
-      ...(token && { Authorization: `Bearer ${token}` }),
       ...headers,
     },
-  };
-
-  if (body !== undefined) {
-    config.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
 
   if (!response.ok) {
-    // Sessão expirada/inválida: limpa o token e volta ao login
-    if (
-      response.status === 401 &&
-      endpoint !== "/api/auth/login" &&
-      typeof window !== "undefined"
-    ) {
-      localStorage.removeItem("auth_token");
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
-      }
-    }
-    const payload: unknown = await response.json().catch(() => null);
-    const p = payload as
-      | { message?: unknown; error?: unknown; issues?: unknown }
-      | null;
-    // Cobre os 3 formatos coexistentes de erro da API:
-    // novo { statusCode, error: "VALIDATION", message, issues },
-    // legado plano { error: "..." } e envelope global { error: { message } }
-    const message =
-      (typeof p?.message === "string" && p.message) ||
-      (typeof p?.error === "string" && p.error) ||
-      (typeof (p?.error as { message?: unknown })?.message === "string" &&
-        (p!.error as { message: string }).message) ||
-      "Erro na requisição";
-    const issues = Array.isArray(p?.issues)
-      ? (p!.issues as IssueValidacao[])
-      : undefined;
-    throw new ApiError(response.status, message, issues);
+    throw await erroDaResposta(response);
   }
 
-  // Para DELETE que retorna 204
+  // DELETE/logout que retornam 204
   if (response.status === 204) {
     return {} as T;
   }
@@ -87,26 +152,9 @@ export async function request<T>(
 
 // Upload multipart: sem Content-Type manual (o browser define o boundary)
 async function requestUpload<T>(endpoint: string, formData: FormData): Promise<T> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: { ...(token && { Authorization: `Bearer ${token}` }) },
-    body: formData,
-  });
-
+  const response = await apiFetch(endpoint, { method: "POST", body: formData });
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
-      }
-    }
-    const error = await response
-      .json()
-      .catch(() => ({ error: "Erro desconhecido" }));
-    throw new ApiError(response.status, error.error || "Erro na requisição");
+    throw await erroDaResposta(response);
   }
   return response.json();
 }
@@ -123,9 +171,15 @@ export interface User {
   createdAt: string;
 }
 
+// A API não devolve token: a sessão fica em cookies httpOnly
 export interface LoginResponse {
   user: User;
-  token: string;
+  csrfToken: string;
+}
+
+export interface SessaoAtual {
+  user: User;
+  csrfToken: string | null;
 }
 
 export const authApi = {
@@ -142,12 +196,14 @@ export const authApi = {
     role?: string;
     escolaId?: string;
   }) =>
-    request<LoginResponse>("/api/auth/register", {
+    request<{ user: User }>("/api/auth/register", {
       method: "POST",
       body: data,
     }),
 
-  me: () => request<User>("/api/auth/me"),
+  me: () => request<SessaoAtual>("/api/auth/me"),
+
+  logout: () => request<void>("/api/auth/logout", { method: "POST" }),
 };
 
 // ==================== TIPO DE EDUCAÇÃO ====================
@@ -850,17 +906,11 @@ export const documentosMatriculaApi = {
     );
   },
   download: async (matriculaId: string, documentoId: string): Promise<Blob> => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-    const response = await fetch(
-      `${API_BASE_URL}/api/matriculas/${matriculaId}/documentos/${documentoId}/download`,
-      { headers: { ...(token && { Authorization: `Bearer ${token}` }) } }
+    const response = await apiFetch(
+      `/api/matriculas/${matriculaId}/documentos/${documentoId}/download`
     );
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ error: "Erro ao baixar documento" }));
-      throw new ApiError(response.status, error.error || "Erro ao baixar documento");
+      throw await erroDaResposta(response, "Erro ao baixar documento");
     }
     return response.blob();
   },
