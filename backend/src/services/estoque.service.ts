@@ -171,7 +171,7 @@ export class EstoqueService {
    * Saldo derivado: soma das entradas menos soma das saídas.
    * NUNCA materializado — aceita tx para uso dentro de transações.
    */
-  async calcularSaldo(itemId: string, tx?: Prisma.TransactionClient) {
+  async calcularSaldo(itemId: string, tx?: Pick<typeof prisma, "movimentacaoEstoque">) {
     const db = tx ?? prisma;
 
     const grupos = await db.movimentacaoEstoque.groupBy({

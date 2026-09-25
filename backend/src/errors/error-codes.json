@@ -67,6 +67,12 @@
       "message": "Professores só acessam as próprias turmas",
       "statusCode": 403,
       "category": "PERMISSAO"
+    },
+    "PERM_007": {
+      "code": "PERM_007",
+      "message": "Acesso negado: registro fora da sua escola ou das suas turmas",
+      "statusCode": 403,
+      "category": "PERMISSAO"
     }
   },
   "VALIDATION": {
@@ -594,6 +600,12 @@
       "code": "BIZ_034",
       "message": "Acompanhamento não está em andamento - não é possível registrar evolução",
       "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_035": {
+      "code": "BIZ_035",
+      "message": "A turma de destino não pertence à escola de destino",
+      "statusCode": 400,
       "category": "REGRA_NEGOCIO"
     }
   },

@@ -11,6 +11,9 @@ import { prisma } from "./lib/prisma.js";
 import { configurarZodPtBr } from "./lib/zod-pt-br.js";
 import { PUBLIC_API, WRITE_METHODS, autorizar } from "./lib/rbac.js";
 import { COOKIE_ACCESS, HEADER_CSRF, csrfConfere } from "./lib/sessao.js";
+import { contextoAcesso, contextoAtual } from "./lib/contexto.js";
+import { calcularEscopo } from "./lib/escopo-usuario.js";
+import { minimizarParaProfessor } from "./lib/minimizacao.js";
 import {
   RECURSOS_DO_PROFESSOR,
   professorLecionaNaTurma,
@@ -101,6 +104,13 @@ export async function buildApp() {
         strict: false, // Permite keywords de documentação como 'example' nos schemas
       },
     },
+  });
+
+  // Contexto de acesso por requisição (AsyncLocalStorage). Precisa ser o
+  // PRIMEIRO hook e no estilo callback: tudo o que roda depois (outros hooks,
+  // handler, services, Prisma) herda o mesmo contexto.
+  app.addHook("onRequest", (_request, _reply, done) => {
+    contextoAcesso.run({ cache: new Map() }, done);
   });
 
   // Plugins
@@ -215,6 +225,14 @@ export async function buildApp() {
 
     const userToken = request.user;
 
+    // Escopo de dados: direção/coordenação/secretaria → própria escola;
+    // professor → próprias turmas. Aplicado pela extensão do Prisma (lib/escopo.ts).
+    const ctx = contextoAtual();
+    if (ctx) {
+      ctx.papel = userToken.role;
+      ctx.escopo = await calcularEscopo(userToken);
+    }
+
     if (
       viaCookie &&
       WRITE_METHODS.has(request.method) &&
@@ -266,6 +284,14 @@ export async function buildApp() {
     if (url === "/api/avaliacoes" && request.method === "POST" && body) {
       body.profissionalId = profissionalId;
     }
+  });
+
+  // Minimização na resposta: professor não recebe CPF, NIS, endereço etc.
+  app.addHook("preSerialization", async (request, _reply, payload) => {
+    if (request.user?.role === "PROFESSOR" && payload && typeof payload === "object") {
+      return minimizarParaProfessor(payload);
+    }
+    return payload;
   });
 
   // Health check

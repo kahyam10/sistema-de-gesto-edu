@@ -1,4 +1,5 @@
-import { PrismaClient, Licenca } from "@prisma/client";
+import { Licenca } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import {
   CreateLicencaInput,
@@ -6,7 +7,6 @@ import {
   AprovarLicencaInput,
 } from "../schemas/index.js";
 
-const prisma = new PrismaClient();
 
 export class LicencaService {
   // Cria uma solicitação de licença

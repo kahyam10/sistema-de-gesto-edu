@@ -1,11 +1,11 @@
-import { PrismaClient, Ponto } from "@prisma/client";
+import { Ponto } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
 import {
   CreatePontoInput,
   UpdatePontoInput,
   RegistrarPontoInput,
 } from "../schemas/index.js";
 
-const prisma = new PrismaClient();
 
 export class PontoService {
   // Cria um registro de ponto manual (admin)

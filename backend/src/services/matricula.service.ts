@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../lib/prisma.js";
+import { prisma, prismaSemEscopo } from "../lib/prisma.js";
 import { BusinessError, NotFoundError } from "../errors/index.js";
 import { documentoMatriculaService } from "./documento-matricula.service.js";
 import {
@@ -156,7 +156,23 @@ export class MatriculaService {
     novaTurmaId?: string,
     motivo?: string
   ) {
-    return prisma.$transaction(async (tx) => {
+    // A ORIGEM precisa estar no escopo de quem transfere (cliente com escopo:
+    // a secretaria só transfere alunos da própria escola)...
+    const origem = await prisma.matricula.findUnique({ where: { id }, select: { id: true } });
+    if (!origem) throw new NotFoundError("NF_004");
+    // ...e a turma de destino precisa ser da escola de destino
+    if (novaTurmaId) {
+      const turmaDestino = await prismaSemEscopo.turma.findUnique({
+        where: { id: novaTurmaId },
+        select: { escolaId: true },
+      });
+      if (!turmaDestino || turmaDestino.escolaId !== novaEscolaId) {
+        throw new BusinessError("BIZ_035");
+      }
+    }
+    // O destino é outra escola da rede (fora do escopo da origem): a escrita
+    // usa o cliente sem escopo, com a origem já validada acima.
+    return prismaSemEscopo.$transaction(async (tx) => {
       const atual = await tx.matricula.findUnique({ where: { id } });
       if (!atual) throw new NotFoundError("NF_004");
 
