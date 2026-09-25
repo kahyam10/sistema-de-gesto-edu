@@ -153,6 +153,12 @@ Implementação integral da lista "adiado conscientemente", em duas ondas (funda
 
 ## 5. Passo a passo do deploy de lançamento — VPS + Coolify + Supabase self-hosted
 
+> ⚠️ **Atualizado em 09/2026:** as imagens agora usam a raiz do repo como contexto
+> (Base Directory `/`), a sessão web exige dashboard e API no **mesmo domínio**, e
+> há novas variáveis (`TRUST_PROXY`, `ACCESS_TOKEN_MINUTOS`...). O checklist
+> vigente está em **[docs/DEPLOY_PRODUCAO.md](docs/DEPLOY_PRODUCAO.md)**; os
+> passos abaixo continuam válidos para VPS, Coolify e Supabase.
+
 ### 5.1 Provisionar a VPS
 1. Ubuntu 22.04/24.04 LTS, mínimo **4 vCPU / 8 GB RAM / 80 GB SSD** (o stack Supabase self-hosted sozinho consome ~2-4 GB).
 2. DNS (registros A para o IP da VPS):

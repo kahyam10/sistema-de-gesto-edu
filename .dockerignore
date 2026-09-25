@@ -1,0 +1,23 @@
+# Contexto de build das imagens de PRODUÇÃO = raiz do repo (lockfile do monorepo).
+# Só entra o necessário; segredos e dados nunca.
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/*.db-journal
+**/tsconfig.tsbuildinfo
+.git
+.github
+mobile
+docs
+assets
+models
+backend/uploads
+backend/.uploads-test
+backend/.tmp-demo
+backend/tests
+dashboard/tests
+*.md

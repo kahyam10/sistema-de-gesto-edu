@@ -21,7 +21,9 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: gestao-edu-backend
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/gestao_edu?schema=public
@@ -53,7 +55,8 @@ services:
 
   dashboard:
     build:
-      context: ./dashboard
+      context: .
+      dockerfile: dashboard/Dockerfile
       args:
         # Inlined no build do Next — URL pela qual o NAVEGADOR acessa a API
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3051}
