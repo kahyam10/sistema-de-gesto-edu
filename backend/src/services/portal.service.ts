@@ -104,6 +104,88 @@ export class PortalService {
     };
   }
 
+  /** Garante que o professor logado leciona na turma (403 caso contrário). */
+  private async validarTurmaDoProfessor(userId: string, turmaId: string) {
+    const profissionalId = await this.getProfissionalId(userId);
+    const vinculo = await prisma.turmaProfessor.findUnique({
+      where: { turmaId_profissionalId: { turmaId, profissionalId } },
+      select: { id: true },
+    });
+    if (!vinculo) throw new PermissionError("PERM_006");
+    return profissionalId;
+  }
+
+  /**
+   * Chamada do dia para o app do professor: alunos ATIVOS da turma com o status
+   * já lançado na data (ou null). Só campos necessários — nada de CPF, saúde etc.
+   */
+  async chamadaDaTurma(userId: string, turmaId: string, data: Date) {
+    await this.validarTurmaDoProfessor(userId, turmaId);
+    const [turma, alunos, registros] = await Promise.all([
+      prisma.turma.findUnique({
+        where: { id: turmaId },
+        select: { id: true, nome: true, turno: true, escola: { select: { nome: true } } },
+      }),
+      prisma.matricula.findMany({
+        where: { turmaId, status: "ATIVA" },
+        select: { id: true, nomeAluno: true, numeroMatricula: true },
+        orderBy: { nomeAluno: "asc" },
+      }),
+      prisma.frequencia.findMany({
+        where: { turmaId, data },
+        select: { matriculaId: true, status: true, justificativa: true },
+      }),
+    ]);
+    if (!turma) throw new NotFoundError("NF_005");
+    const porAluno = new Map(registros.map((r) => [r.matriculaId, r]));
+    return {
+      turma,
+      data: data.toISOString().slice(0, 10),
+      jaRegistrada: registros.length > 0,
+      alunos: alunos.map((a) => ({
+        ...a,
+        status: porAluno.get(a.id)?.status ?? null,
+        justificativa: porAluno.get(a.id)?.justificativa ?? null,
+      })),
+    };
+  }
+
+  /** Disciplinas da etapa da turma + avaliações já criadas (para lançar notas). */
+  async notasDaTurma(userId: string, turmaId: string) {
+    await this.validarTurmaDoProfessor(userId, turmaId);
+    const turma = await prisma.turma.findUnique({
+      where: { id: turmaId },
+      select: {
+        id: true,
+        nome: true,
+        serie: { select: { nivel: { select: { etapaId: true } } } },
+      },
+    });
+    if (!turma) throw new NotFoundError("NF_005");
+    const [disciplinas, avaliacoes, alunos] = await Promise.all([
+      prisma.disciplina.findMany({
+        where: { etapaId: turma.serie.nivel.etapaId, ativo: true },
+        select: { id: true, nome: true, codigo: true },
+        orderBy: [{ ordem: "asc" }, { nome: "asc" }],
+      }),
+      prisma.avaliacao.findMany({
+        where: { turmaId },
+        select: {
+          id: true, nome: true, tipo: true, bimestre: true, data: true,
+          valorMaximo: true, peso: true, disciplinaId: true,
+          notas: { select: { matriculaId: true, valor: true } },
+        },
+        orderBy: [{ bimestre: "asc" }, { data: "asc" }],
+      }),
+      prisma.matricula.findMany({
+        where: { turmaId, status: "ATIVA" },
+        select: { id: true, nomeAluno: true, numeroMatricula: true },
+        orderBy: { nomeAluno: "asc" },
+      }),
+    ]);
+    return { turma: { id: turma.id, nome: turma.nome }, disciplinas, avaliacoes, alunos };
+  }
+
   // ---------- Portal do Aluno/Responsável ----------
 
   async alunosDoUsuario(userId: string) {
@@ -178,6 +260,56 @@ export class PortalService {
       frequenciaService.list({ matriculaId, dataInicio, dataFim }),
     ]);
     return { matricula, estatisticas, registros };
+  }
+
+  /**
+   * Comunicados relevantes para o responsável: rede toda ou da escola dos seus
+   * alunos, destinados a TODOS/PAIS/ALUNOS ou à turma/etapa do aluno — com o
+   * status de leitura DESTE usuário.
+   */
+  async comunicadosDoUsuario(userId: string) {
+    const vinculos = await prisma.matriculaUsuario.findMany({
+      where: { userId, ativo: true },
+      select: { matricula: { select: { escolaId: true, turmaId: true, etapaId: true } } },
+    });
+    const escolas = [...new Set(vinculos.map((v) => v.matricula.escolaId))];
+    const turmas = vinculos.map((v) => v.matricula.turmaId).filter((t): t is string => !!t);
+    const etapas = [...new Set(vinculos.map((v) => v.matricula.etapaId))];
+    const agora = new Date();
+
+    const comunicados = await prisma.comunicado.findMany({
+      where: {
+        ativo: true,
+        dataPublicacao: { lte: agora },
+        AND: [
+          { OR: [{ dataExpiracao: null }, { dataExpiracao: { gte: agora } }] },
+          { OR: [{ escolaId: null }, { escolaId: { in: escolas } }] },
+          {
+            OR: [
+              { destinatarios: { in: ["TODOS", "PAIS", "ALUNOS"] } },
+              { destinatarios: "TURMA_ESPECIFICA", turmaId: { in: turmas } },
+              { destinatarios: "ETAPA_ESPECIFICA", etapaId: { in: etapas } },
+            ],
+          },
+        ],
+      },
+      select: {
+        id: true, titulo: true, mensagem: true, tipo: true, categoria: true,
+        dataPublicacao: true, destaque: true, autorNome: true,
+        escola: { select: { nome: true } },
+        destinatariosLeitura: {
+          where: { userId },
+          select: { lido: true, confirmado: true },
+        },
+      },
+      orderBy: [{ destaque: "desc" }, { dataPublicacao: "desc" }],
+      take: 100,
+    });
+    return comunicados.map(({ destinatariosLeitura, ...c }) => ({
+      ...c,
+      lido: destinatariosLeitura[0]?.lido ?? false,
+      confirmado: destinatariosLeitura[0]?.confirmado ?? false,
+    }));
   }
 
   // ---------- Portal do Diretor / Coordenação ----------

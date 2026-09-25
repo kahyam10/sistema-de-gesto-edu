@@ -61,6 +61,12 @@
       "message": "Acesso permitido apenas às matrículas vinculadas ao usuário",
       "statusCode": 403,
       "category": "PERMISSAO"
+    },
+    "PERM_006": {
+      "code": "PERM_006",
+      "message": "Professores só acessam as próprias turmas",
+      "statusCode": 403,
+      "category": "PERMISSAO"
     }
   },
   "VALIDATION": {

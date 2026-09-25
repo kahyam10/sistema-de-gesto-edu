@@ -11,6 +11,12 @@ import { prisma } from "./lib/prisma.js";
 import { configurarZodPtBr } from "./lib/zod-pt-br.js";
 import { PUBLIC_API, WRITE_METHODS, autorizar } from "./lib/rbac.js";
 import { COOKIE_ACCESS, HEADER_CSRF, csrfConfere } from "./lib/sessao.js";
+import {
+  RECURSOS_DO_PROFESSOR,
+  professorLecionaNaTurma,
+  profissionalDoUsuario,
+  turmaAlvo,
+} from "./lib/propriedade-professor.js";
 
 // Mensagens de validação zod em PT-BR (antes de qualquer parse)
 configurarZodPtBr();
@@ -70,6 +76,8 @@ import { reuniaoDemocraticaRoutes } from "./routes/reuniao-democratica.routes.js
 import { exportacaoRoutes } from "./routes/exportacao.routes.js";
 // Trilha de auditoria (LGPD)
 import { auditoriaRoutes } from "./routes/auditoria.routes.js";
+// Avaliações (provas/trabalhos) — usadas no lançamento de notas
+import { avaliacoesRoutes } from "./routes/avaliacoes.routes.js";
 
 export async function buildApp() {
   const isProd = process.env.NODE_ENV === "production";
@@ -239,6 +247,27 @@ export async function buildApp() {
     }
   });
 
+  // Propriedade da turma para PROFESSOR (precisa do corpo já parseado → preHandler).
+  // Só lança frequência/notas/avaliações/grade nas turmas em que leciona.
+  app.addHook("preHandler", async (request, reply) => {
+    const url = request.raw.url?.split("?")[0] ?? "";
+    if (request.user?.role !== "PROFESSOR") return;
+    if (!WRITE_METHODS.has(request.method) || !RECURSOS_DO_PROFESSOR.test(url)) return;
+
+    const profissionalId = await profissionalDoUsuario(request.user.id);
+    const body = (request.body ?? undefined) as Record<string, unknown> | undefined;
+    const turmaId = await turmaAlvo(url, request.method, body);
+    if (!profissionalId || !turmaId || !(await professorLecionaNaTurma(profissionalId, turmaId))) {
+      return reply
+        .status(403)
+        .send({ error: "Professores só podem lançar dados nas próprias turmas", code: "PERM_TURMA" });
+    }
+    // Avaliação criada pelo professor é sempre dele (ignora profissionalId do corpo)
+    if (url === "/api/avaliacoes" && request.method === "POST" && body) {
+      body.profissionalId = profissionalId;
+    }
+  });
+
   // Health check
   app.get("/health", async () => {
     return { status: "ok", timestamp: new Date().toISOString() };
@@ -298,6 +327,7 @@ export async function buildApp() {
   app.register(exportacaoRoutes, { prefix: "/api/exportacao" });
   // Trilha de auditoria (somente leitura, GESTAO)
   app.register(auditoriaRoutes, { prefix: "/api/auditoria" });
+  app.register(avaliacoesRoutes, { prefix: "/api/avaliacoes" });
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);

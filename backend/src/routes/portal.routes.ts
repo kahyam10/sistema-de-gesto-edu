@@ -5,6 +5,21 @@ import { authMiddleware } from "../middleware/auth.js";
 import { portalService } from "../services/portal.service.js";
 import { periodoPortalSchema, resumoPortalQuerySchema } from "../schemas/index.js";
 import { prisma } from "../lib/prisma.js";
+import { z } from "zod";
+
+// Data da chamada: AAAA-MM-DD (padrão: hoje, no fuso da Bahia)
+const chamadaQuerySchema = z.object({
+  data: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato AAAA-MM-DD")
+    .optional()
+    .transform((v) =>
+      new Date(
+        v ??
+          new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bahia" }).format(new Date())
+      )
+    ),
+});
 
 type TokenUser = { id: string; role: string };
 
@@ -43,6 +58,60 @@ export async function portalRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  // ---------- App do professor (propriedade da turma validada no service) ----------
+
+  const tratar = (error: unknown, reply: FastifyReply, padrao: string) => {
+    if (error instanceof AppError) {
+      return reply.status(error.statusCode).send({ error: error.message });
+    }
+    if (error instanceof ZodError) {
+      return reply.status(400).send(formatarErroZod(error));
+    }
+    return reply.status(400).send({ error: error instanceof Error ? error.message : padrao });
+  };
+
+  // GET /api/portal/professor/turmas/:turmaId/chamada?data=AAAA-MM-DD
+  app.get(
+    "/professor/turmas/:turmaId/chamada",
+    async (
+      request: FastifyRequest<{ Params: { turmaId: string }; Querystring: { data?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const q = chamadaQuerySchema.parse(request.query);
+        const user = request.user as TokenUser;
+        return reply.send(
+          await portalService.chamadaDaTurma(user.id, request.params.turmaId, q.data)
+        );
+      } catch (error) {
+        return tratar(error, reply, "Erro ao carregar a chamada");
+      }
+    }
+  );
+
+  // GET /api/portal/professor/turmas/:turmaId/notas — disciplinas, avaliações e alunos
+  app.get(
+    "/professor/turmas/:turmaId/notas",
+    async (request: FastifyRequest<{ Params: { turmaId: string } }>, reply: FastifyReply) => {
+      try {
+        const user = request.user as TokenUser;
+        return reply.send(await portalService.notasDaTurma(user.id, request.params.turmaId));
+      } catch (error) {
+        return tratar(error, reply, "Erro ao carregar notas da turma");
+      }
+    }
+  );
+
+  // GET /api/portal/meu/comunicados — comunicados relevantes com status de leitura
+  app.get("/meu/comunicados", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user as TokenUser;
+      return reply.send(await portalService.comunicadosDoUsuario(user.id));
+    } catch (error) {
+      return tratar(error, reply, "Erro ao carregar comunicados");
+    }
+  });
 
   // GET /api/portal/meu/alunos — matrículas vinculadas ao usuário logado
   app.get(

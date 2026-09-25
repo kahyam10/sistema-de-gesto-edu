@@ -101,13 +101,12 @@ export function limparCookies(reply: FastifyReply) {
   reply.clearCookie(COOKIE_REFRESH, { ...baseCookie, path: "/api/auth" });
 }
 
-/** Login bem-sucedido: cria uma nova família de sessão e grava os cookies. */
-export async function iniciarSessao(
+/** Cria uma nova família de sessão (login) e devolve os tokens em claro. */
+async function criarFamilia(
   app: FastifyInstance,
-  reply: FastifyReply,
   user: UsuarioSessao,
   ctx: ContextoRequisicao
-): Promise<{ csrfToken: string }> {
+) {
   const refresh = tokenAleatorio();
   const csrfToken = tokenAleatorio();
   const familia = randomBytes(16).toString("hex");
@@ -124,8 +123,40 @@ export async function iniciarSessao(
       userAgent: ctx.userAgent,
     },
   });
-  gravarCookies(reply, assinarAccess(app, user, csrfToken, familia), refresh);
-  return { csrfToken };
+  return { access: assinarAccess(app, user, csrfToken, familia), refresh, csrfToken };
+}
+
+/** Login web: cria a sessão e grava os cookies httpOnly. */
+export async function iniciarSessao(
+  app: FastifyInstance,
+  reply: FastifyReply,
+  user: UsuarioSessao,
+  ctx: ContextoRequisicao
+): Promise<{ csrfToken: string }> {
+  const t = await criarFamilia(app, user, ctx);
+  gravarCookies(reply, t.access, t.refresh);
+  return { csrfToken: t.csrfToken };
+}
+
+export interface TokensMobile {
+  accessToken: string;
+  refreshToken: string;
+  /** segundos até o access token expirar */
+  expiresIn: number;
+}
+
+/**
+ * Login do app mobile: mesmos tokens, entregues no CORPO (não há cookie no app).
+ * O app guarda os dois no expo-secure-store (Keychain/Keystore) e usa o access
+ * como "Authorization: Bearer" — requisições Bearer não passam pelo CSRF.
+ */
+export async function iniciarSessaoMobile(
+  app: FastifyInstance,
+  user: UsuarioSessao,
+  ctx: ContextoRequisicao
+): Promise<TokensMobile> {
+  const t = await criarFamilia(app, user, ctx);
+  return { accessToken: t.access, refreshToken: t.refresh, expiresIn: ACCESS_MIN * 60 };
 }
 
 export type ResultadoRenovacao =
@@ -134,13 +165,16 @@ export type ResultadoRenovacao =
   | { ok: false; motivo: "CONCORRENTE" }
   | { ok: false; motivo: "REUSO_DETECTADO"; userId: string };
 
+type ResultadoRotacao =
+  | { ok: true; access: string; refresh: string; csrfToken: string; user: UsuarioSessao }
+  | Exclude<ResultadoRenovacao, { ok: true }>;
+
 /** Troca o refresh token por um novo (rotação) e emite novo access token. */
-export async function renovarSessao(
+async function rotacionar(
   app: FastifyInstance,
-  reply: FastifyReply,
   refreshAtual: string | undefined,
   ctx: ContextoRequisicao
-): Promise<ResultadoRenovacao> {
+): Promise<ResultadoRotacao> {
   if (!refreshAtual) return { ok: false, motivo: "AUSENTE" };
   const registro = await prisma.sessaoRefresh.findUnique({
     where: { tokenHash: hashToken(refreshAtual) },
@@ -201,8 +235,44 @@ export async function renovarSessao(
     role: u.role, // papel atualizado a cada renovação
     escolaId: u.escolaId,
   };
-  gravarCookies(reply, assinarAccess(app, user, registro.csrfToken, registro.familia), novo);
-  return { ok: true, csrfToken: registro.csrfToken, user };
+  return {
+    ok: true,
+    access: assinarAccess(app, user, registro.csrfToken, registro.familia),
+    refresh: novo,
+    csrfToken: registro.csrfToken,
+    user,
+  };
+}
+
+/** Renovação web: grava os novos cookies. */
+export async function renovarSessao(
+  app: FastifyInstance,
+  reply: FastifyReply,
+  refreshAtual: string | undefined,
+  ctx: ContextoRequisicao
+): Promise<ResultadoRenovacao> {
+  const r = await rotacionar(app, refreshAtual, ctx);
+  if (!r.ok) return r;
+  gravarCookies(reply, r.access, r.refresh);
+  return { ok: true, csrfToken: r.csrfToken, user: r.user };
+}
+
+/** Renovação mobile: devolve os novos tokens no corpo. */
+export async function renovarSessaoMobile(
+  app: FastifyInstance,
+  refreshAtual: string | undefined,
+  ctx: ContextoRequisicao
+): Promise<
+  | { ok: true; tokens: TokensMobile; user: UsuarioSessao }
+  | Exclude<ResultadoRenovacao, { ok: true }>
+> {
+  const r = await rotacionar(app, refreshAtual, ctx);
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    user: r.user,
+    tokens: { accessToken: r.access, refreshToken: r.refresh, expiresIn: ACCESS_MIN * 60 },
+  };
 }
 
 export async function revogarFamilia(familia: string, motivo: string) {

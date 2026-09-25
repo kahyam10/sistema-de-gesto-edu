@@ -254,17 +254,13 @@ export class FrequenciaService {
       }
     }
 
-    // Remove registros existentes para esta data (se houver)
-    await prisma.frequencia.deleteMany({
-      where: {
-        turmaId: data.turmaId,
-        data: data.data,
-      },
-    });
-
-    // Cria novos registros
-    const registros = await Promise.all(
-      data.presencas.map((presenca) =>
+    // Substitui a chamada do dia de forma ATÔMICA: apagar e recriar na mesma
+    // transação (antes, uma falha no meio deixava a turma sem frequência no dia)
+    const [, ...registros] = await prisma.$transaction([
+      prisma.frequencia.deleteMany({
+        where: { turmaId: data.turmaId, data: data.data },
+      }),
+      ...data.presencas.map((presenca) =>
         prisma.frequencia.create({
           data: {
             turmaId: data.turmaId,
@@ -285,7 +281,7 @@ export class FrequenciaService {
           },
         }),
       ),
-    );
+    ]);
 
     return {
       message: `Frequência registrada para ${registros.length} aluno(s)`,

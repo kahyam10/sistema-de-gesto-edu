@@ -330,13 +330,8 @@ export async function comunicadoRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        required: ["userId"],
-        properties: {
-          userId: { type: "string", description: "ID do usuário" },
-        },
-      },
+      // Sem corpo: o usuário é SEMPRE o da sessão (antes vinha do corpo e
+      // qualquer um podia marcar leitura/ciência em nome de outra pessoa)
       response: {
         200: { type: "object", additionalProperties: true },
         400: { type: "object", additionalProperties: true },
@@ -344,15 +339,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as any;
-    const { userId } = request.body as any;
-
-    if (!userId) {
-      return reply.status(400).send({
-        error: "userId é obrigatório",
-      });
-    }
-
-    const registro = await comunicadoService.marcarComoLido(id, userId);
+    const registro = await comunicadoService.marcarComoLido(id, request.user.id);
     return reply.status(200).send(registro);
   });
 
@@ -370,13 +357,8 @@ export async function comunicadoRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        required: ["userId"],
-        properties: {
-          userId: { type: "string", description: "ID do usuário" },
-        },
-      },
+      // Sem corpo: o usuário é SEMPRE o da sessão (antes vinha do corpo e
+      // qualquer um podia marcar leitura/ciência em nome de outra pessoa)
       response: {
         200: { type: "object", additionalProperties: true },
         400: { type: "object", additionalProperties: true },
@@ -384,15 +366,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as any;
-    const { userId } = request.body as any;
-
-    if (!userId) {
-      return reply.status(400).send({
-        error: "userId é obrigatório",
-      });
-    }
-
-    const registro = await comunicadoService.confirmar(id, userId);
+    const registro = await comunicadoService.confirmar(id, request.user.id);
     return reply.status(200).send(registro);
   });
 
@@ -428,6 +402,12 @@ export async function comunicadoRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { userId } = request.params as any;
     const { filtro } = request.query as any;
+
+    // Recibos de leitura são pessoais: só a própria lista, salvo equipe gestora
+    const EQUIPE = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
+    if (userId !== request.user.id && !EQUIPE.includes(request.user.role)) {
+      return reply.status(403).send({ error: "Acesso negado" });
+    }
 
     const comunicados = await comunicadoService.findByUser(
       userId,

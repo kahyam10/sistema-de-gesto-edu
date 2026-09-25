@@ -10,6 +10,10 @@ export const PUBLIC_API = new Set([
   "/api/auth/login",
   "/api/auth/refresh",
   "/api/auth/logout",
+  // App mobile (tokens no corpo, ver lib/sessao.ts)
+  "/api/auth/mobile/login",
+  "/api/auth/mobile/refresh",
+  "/api/auth/mobile/logout",
 ]);
 export const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -61,7 +65,7 @@ export const REGRAS_ESCRITA: RegraEscrita[] = [
   },
   // Pedagógico: professores lançam frequência/notas/avaliações e grade
   {
-    pattern: /^\/api\/(frequencia|notas|grade-horaria)(\/|$)/,
+    pattern: /^\/api\/(frequencia|notas|avaliacoes|grade-horaria)(\/|$)/,
     roles: PEDAGOGICO,
   },
   // Programas especiais: busca ativa, AEE e acompanhamento (equipe + professores AEE)
