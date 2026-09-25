@@ -28,6 +28,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY prisma ./prisma
 COPY package.json ./
-EXPOSE 3103
+EXPOSE 3051
 # Aplica migrations, garante o admin (seed idempotente) e sobe a API
 CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed-prod.cjs && node dist/server.js"]

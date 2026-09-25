@@ -85,11 +85,11 @@ Tudo abaixo foi implementado, compilado e testado (curl + builds):
 
 | # | Item | Como ficou |
 |---|------|------------|
-| 1 | **Prisma → PostgreSQL** | `provider = "postgresql"` no schema; **rebaseline feito** — migrations SQLite antigas removidas (preservadas no histórico git) e baseline única `init` gerada contra Postgres 16. Dev usa o Postgres do docker compose (porta **3104** do host, antes 5435); testes usam banco separado `gestao_edu_test` no mesmo Postgres (17/17 passando). Campos JSON continuam como `String` serializado — conversão para `Json` nativo fica como refinamento futuro (exige mudanças coordenadas no frontend) |
+| 1 | **Prisma → PostgreSQL** | `provider = "postgresql"` no schema; **rebaseline feito** — migrations SQLite antigas removidas (preservadas no histórico git) e baseline única `init` gerada contra Postgres 16. Dev usa o Postgres do docker compose (porta **3052** do host, antes 5435); testes usam banco separado `gestao_edu_test` no mesmo Postgres (17/17 passando). Campos JSON continuam como `String` serializado — conversão para `Json` nativo fica como refinamento futuro (exige mudanças coordenadas no frontend) |
 | 2 | **Seed de produção** | `backend/prisma/seed-prod.cjs` — idempotente, roda a cada boot: cria admin de `ADMIN_EMAIL`/`ADMIN_PASSWORD` (não sobrescreve senha se já existir; exige ≥8 caracteres) e a hierarquia de ensino padrão só se a tabela estiver vazia. **Zero `deleteMany`** |
 | 3 | **Dockerfiles** | `backend/Dockerfile` multi-stage (build tsc + deps de produção com prisma CLI; boot = `migrate deploy` → `seed-prod` → `node dist/server.js`); `dashboard/Dockerfile` com `ARG NEXT_PUBLIC_API_URL` e runtime da saída `standalone`; `.dockerignore` em ambos; `prisma` CLI movido para `dependencies` (necessário no runtime) |
 | 4 | **Swagger em produção** | `/docs` registrado apenas quando `NODE_ENV !== "production"` |
-| 5 | **Compose local** | `docker-compose.yml` na raiz: postgres 16 (host 3104, volume `pgdata`, healthcheck) + backend (host 3103, healthcheck `/health`) + dashboard (host **3100**). Faixa 31xx adotada em 07/2026 (3101/3102 ocupadas por outros serviços da máquina). Segredos via `.env` na raiz (gitignored; template em `.env.docker.example`) |
+| 5 | **Compose local** | `docker-compose.yml` na raiz: postgres 16 (host 3052, volume `pgdata`, healthcheck) + backend (host 3051, healthcheck `/health`) + dashboard (host **3050**). Faixa 3050+ adotada em 09/2026 (ver `docs/MAPA_PORTAS.md`). Segredos via `.env` na raiz (gitignored; template em `.env.docker.example`) |
 
 Pendência P2 restante: CI no GitHub Actions (build + testes em PRs) — opcional para o launch.
 
@@ -193,10 +193,10 @@ Acessar `http://SEU_IP:8000`, criar o usuário admin, definir o domínio do pain
    | `JWT_EXPIRES_IN` | `7d` (ou menor, ex. `12h`) |
    | `CORS_ORIGIN` | `https://app.SEUDOMINIO` |
    | `NODE_ENV` | `production` |
-   | `PORT` / `HOST` | `3333` / `0.0.0.0` |
+   | `PORT` / `HOST` | `3051` / `0.0.0.0` |
    | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | credenciais do admin inicial (seed-prod) |
 3. Comando de release (pre-deploy no Coolify): `npx prisma migrate deploy` (e `node dist/seed-prod.js` só no primeiro deploy).
-4. Healthcheck: `GET /health` porta 3333. Domínio `api.SEUDOMINIO` — HTTPS automático (Let's Encrypt via proxy do Coolify).
+4. Healthcheck: `GET /health` porta 3051. Domínio `api.SEUDOMINIO` — HTTPS automático (Let's Encrypt via proxy do Coolify).
 
 ### 5.5 Deploy do dashboard
 1. **+ New → Application** → mesmo repositório, base directory `dashboard/`, Dockerfile.

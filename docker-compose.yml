@@ -1,6 +1,6 @@
 # Deploy local/self-hosted do Sistema de Gestão Educacional
-# Portas do host: dashboard 3100, API 3103, Postgres 3104
-# (3101 e 3102 já estão em uso por outros serviços locais — supabase-kong e kssoft-mcp)
+# Portas do host (faixa 3050+, ver docs/MAPA_PORTAS.md): dashboard 3050, API 3051, Postgres 3052
+# Mesmas portas do docker-compose.dev.yml — suba um OU outro, não os dois.
 # Variáveis vêm do arquivo .env na raiz (ver .env.docker.example)
 services:
   postgres:
@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
       POSTGRES_DB: gestao_edu
     ports:
-      - "3104:5432"
+      - "3052:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -28,9 +28,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
       ACCESS_TOKEN_MINUTOS: ${ACCESS_TOKEN_MINUTOS:-15}
       TRUST_PROXY: ${TRUST_PROXY:-}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3100}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3050}
       NODE_ENV: production
-      PORT: "3103"
+      PORT: "3051"
       HOST: 0.0.0.0
       ADMIN_EMAIL: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
@@ -38,14 +38,14 @@ services:
       UPLOADS_DIR: /app/uploads
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
     ports:
-      - "3103:3103"
+      - "3051:3051"
     volumes:
       - uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3103/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3051/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -56,10 +56,10 @@ services:
       context: ./dashboard
       args:
         # Inlined no build do Next — URL pela qual o NAVEGADOR acessa a API
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3103}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3051}
     container_name: gestao-edu-dashboard
     ports:
-      - "3100:3000"
+      - "3050:3000"
     depends_on:
       backend:
         condition: service_healthy

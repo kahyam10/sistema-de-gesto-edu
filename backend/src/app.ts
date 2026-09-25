@@ -103,7 +103,7 @@ export async function buildApp() {
   await app.register(cors, {
     // Com cookies de sessão, refletir qualquer origem deixaria sites de
     // terceiros lerem respostas autenticadas: fora de produção o padrão é o dashboard local.
-    origin: isProd ? corsOrigins! : corsOrigins ?? ["http://localhost:3100"],
+    origin: isProd ? corsOrigins! : corsOrigins ?? ["http://localhost:3050"],
     credentials: true,
     // Nome de arquivo dos downloads (exportadores/documentos) visível cross-origin
     exposedHeaders: ["Content-Disposition"],
@@ -142,7 +142,7 @@ export async function buildApp() {
         },
         servers: [
           {
-            url: `http://localhost:${process.env.PORT || 3103}`,
+            url: `http://localhost:${process.env.PORT || 3051}`,
             description: "Servidor de desenvolvimento",
           },
         ],
