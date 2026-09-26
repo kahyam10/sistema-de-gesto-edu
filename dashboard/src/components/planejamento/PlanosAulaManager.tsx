@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -56,15 +56,14 @@ const formDoPlano = (p: PlanoAula): Form => ({
 
 /** Formulário de criação/edição. Turma e disciplina ficam fixas na edição. */
 function PlanoDialog({
-  aberto, aoFechar, turmas, plano,
-}: { aberto: boolean; aoFechar: () => void; turmas: Turma[]; plano: PlanoAula | null }) {
-  const [f, setF] = useState<Form>(formVazio());
+  aoFechar, turmas, plano,
+}: { aoFechar: () => void; turmas: Turma[]; plano: PlanoAula | null }) {
+  // Montado só enquanto aberto (key no pai): o estado nasce do plano a editar
+  const [f, setF] = useState<Form>(() =>
+    plano ? formDoPlano(plano) : formVazio(turmas.length === 1 ? turmas[0].id : "")
+  );
   const salvar = useSalvarPlano();
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
-
-  useEffect(() => {
-    if (aberto) setF(plano ? formDoPlano(plano) : formVazio(turmas.length === 1 ? turmas[0].id : ""));
-  }, [aberto, plano, turmas]);
 
   const turma = turmas.find((t) => t.id === f.turmaId);
   const { data: disciplinas = [] } = useDisciplinasByEtapa(etapaDaTurma(turma));
@@ -90,7 +89,7 @@ function PlanoDialog({
   const valido = f.turmaId && f.disciplinaId && f.dataAula && f.titulo.trim() && f.objetivos.trim();
 
   return (
-    <Dialog open={aberto} onOpenChange={(o) => !o && aoFechar()}>
+    <Dialog open onOpenChange={(o) => !o && aoFechar()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{plano ? "Editar plano de aula" : "Novo plano de aula"}</DialogTitle>
@@ -182,6 +181,16 @@ function PlanoDialog({
   );
 }
 
+function Secao({ titulo, texto }: { titulo: string; texto: string | null }) {
+  if (!texto) return null;
+  return (
+    <div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{titulo}</div>
+      <p className="mt-1 whitespace-pre-line text-sm text-ink">{texto}</p>
+    </div>
+  );
+}
+
 /** Detalhe do plano com as ações cabíveis ao papel e à situação. */
 function PlanoDetalhe({
   id, aoFechar, aoEditar, usuario,
@@ -189,19 +198,10 @@ function PlanoDetalhe({
   const q = usePlano(id);
   const acao = useAcaoPlano();
   const [parecer, setParecer] = useState("");
-  useEffect(() => setParecer(""), [id]);
   const p = q.data;
   const ehAutor = p?.autorId === usuario.id;
   const editavel = ehAutor && (p?.status === "RASCUNHO" || p?.status === "DEVOLVIDO");
   const revisa = !!p && p.status === "ENVIADO" && !ehAutor && COORDENACAO_PEDAGOGICA.includes(usuario.role);
-
-  const Secao = ({ titulo, texto }: { titulo: string; texto: string | null }) =>
-    texto ? (
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{titulo}</div>
-        <p className="mt-1 whitespace-pre-line text-sm text-ink">{texto}</p>
-      </div>
-    ) : null;
 
   return (
     <Dialog open={!!id} onOpenChange={(o) => !o && aoFechar()}>
@@ -292,12 +292,17 @@ export function PlanosAulaManager() {
   const { data: todasTurmas = [] } = useTurmas();
   const turmas = useMemo(() => (todasTurmas as Turma[]).filter((t) => t.ativo), [todasTurmas]);
 
-  const [turmaId, setTurmaId] = useState("");
-  const [bimestre, setBimestre] = useState("");
-  const [status, setStatus] = useState(ehProfessor ? "" : "ENVIADO");
-  const [meus, setMeus] = useState(ehProfessor);
+  const [turmaId, setTurmaIdBruto] = useState("");
+  const [bimestre, setBimestreBruto] = useState("");
+  const [status, setStatusBruto] = useState(ehProfessor ? "" : "ENVIADO");
+  const [meus, setMeusBruto] = useState(ehProfessor);
   const [page, setPage] = useState(1);
-  useEffect(() => setPage(1), [turmaId, bimestre, status, meus]);
+  // Mudar um filtro volta para a primeira página
+  const comReset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
+  const setTurmaId = comReset(setTurmaIdBruto);
+  const setBimestre = comReset(setBimestreBruto);
+  const setStatus = comReset(setStatusBruto);
+  const setMeus = comReset(setMeusBruto);
 
   const q = usePlanos({ turmaId, bimestre: bimestre ? Number(bimestre) : undefined, status, meus: meus || undefined, page, limit: 20 });
   const [detalhe, setDetalhe] = useState<string | null>(null);
@@ -372,10 +377,14 @@ export function PlanosAulaManager() {
         )}
       </Panel>
 
-      <PlanoDetalhe id={detalhe} usuario={usuario} aoFechar={() => setDetalhe(null)}
-        aoEditar={(p) => { setDetalhe(null); setEditando({ aberto: true, plano: p }); }} />
-      <PlanoDialog aberto={editando.aberto} plano={editando.plano} turmas={turmas}
-        aoFechar={() => setEditando({ aberto: false, plano: null })} />
+      {detalhe && (
+        <PlanoDetalhe key={detalhe} id={detalhe} usuario={usuario} aoFechar={() => setDetalhe(null)}
+          aoEditar={(p) => { setDetalhe(null); setEditando({ aberto: true, plano: p }); }} />
+      )}
+      {editando.aberto && (
+        <PlanoDialog key={editando.plano?.id ?? "novo"} plano={editando.plano} turmas={turmas}
+          aoFechar={() => setEditando({ aberto: false, plano: null })} />
+      )}
     </div>
   );
 }

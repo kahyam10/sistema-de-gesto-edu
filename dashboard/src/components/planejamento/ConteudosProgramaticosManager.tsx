@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,6 @@ export function ConteudosProgramaticosManager() {
   const [bimestre, setBimestre] = useState("");
   const serie = (series as Serie[]).find((s) => s.id === serieId);
   const { data: disciplinas = [] } = useDisciplinasByEtapa(serie?.nivel?.etapaId);
-  useEffect(() => setDisciplinaId(""), [serieId]);
 
   const q = useConteudos(
     { anoLetivo: Number(anoLetivo) || undefined, serieId, disciplinaId: disciplinaId || undefined, bimestre: bimestre ? Number(bimestre) : undefined },
@@ -81,7 +80,7 @@ export function ConteudosProgramaticosManager() {
           <Label htmlFor="c-ano">Ano letivo</Label>
           <Input id="c-ano" type="number" className="w-28" value={anoLetivo} onChange={(e) => setAnoLetivo(e.target.value)} />
         </div>
-        <FiltroSelect id="c-serie" rotulo="Série" valor={serieId} aoMudar={setSerieId} todos={null} largura="w-52"
+        <FiltroSelect id="c-serie" rotulo="Série" valor={serieId} aoMudar={(v) => { setSerieId(v); setDisciplinaId(""); }} todos={null} largura="w-52"
           opcoes={(series as Serie[]).map((s) => ({ valor: s.id, rotulo: s.nome }))} />
         <FiltroSelect id="c-disc" rotulo="Disciplina" valor={disciplinaId} aoMudar={setDisciplinaId} todos="Todas" largura="w-52"
           opcoes={disciplinas.map((d) => ({ valor: d.id, rotulo: d.nome }))} desabilitado={!serie} />

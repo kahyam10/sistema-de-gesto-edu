@@ -89,7 +89,10 @@ export function useSalvarPlano() {
   return useMutation({
     mutationFn: ({ id, dados }: { id?: string; dados: DadosPlano }) => {
       if (!id) return api.planos.create(dados);
-      const { turmaId: _t, disciplinaId: _d, ...resto } = dados;
+      // Turma e disciplina não mudam depois de criado o plano
+      const resto: Partial<DadosPlano> = { ...dados };
+      delete resto.turmaId;
+      delete resto.disciplinaId;
       return api.planos.update(id, resto);
     },
     onSuccess: (_r, v) => {
