@@ -21,6 +21,17 @@ const chamadaQuerySchema = z.object({
     ),
 });
 
+const agendaQuerySchema = z.object({
+  dias: z.coerce.number().int().min(1).max(120).default(60),
+});
+const cardapioQuerySchema = z.object({
+  de: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato AAAA-MM-DD")
+    .optional()
+    .transform((v) => (v ? new Date(v) : undefined)),
+});
+
 type TokenUser = { id: string; role: string };
 
 /**
@@ -115,6 +126,50 @@ export async function portalRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  // ---------- Apps: agenda, cardápio, contatos e "meus dados" (sempre do usuário da sessão) ----------
+
+  // GET /api/portal/meu/agenda?dias=60 — calendário, reuniões de pais e plantões
+  app.get("/meu/agenda", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { dias } = agendaQuerySchema.parse(request.query);
+      const user = request.user as TokenUser;
+      return reply.send(await portalService.agenda(user.id, dias));
+    } catch (error) {
+      return tratar(error, reply, "Erro ao carregar a agenda");
+    }
+  });
+
+  // GET /api/portal/meu/cardapio?de=AAAA-MM-DD — cardápio da semana
+  app.get("/meu/cardapio", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { de } = cardapioQuerySchema.parse(request.query);
+      const user = request.user as TokenUser;
+      return reply.send(await portalService.cardapio(user.id, de));
+    } catch (error) {
+      return tratar(error, reply, "Erro ao carregar o cardápio");
+    }
+  });
+
+  // GET /api/portal/meu/escolas — contato institucional das escolas do usuário
+  app.get("/meu/escolas", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user as TokenUser;
+      return reply.send(await portalService.escolasDoUsuario(user.id));
+    } catch (error) {
+      return tratar(error, reply, "Erro ao carregar as escolas");
+    }
+  });
+
+  // GET /api/portal/meu/dados — o que o sistema guarda sobre o usuário (LGPD)
+  app.get("/meu/dados", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user as TokenUser;
+      return reply.send(await portalService.meusDados(user.id));
+    } catch (error) {
+      return tratar(error, reply, "Erro ao carregar seus dados");
+    }
+  });
 
   // GET /api/portal/meu/comunicados — comunicados relevantes com status de leitura
   app.get("/meu/comunicados", async (request: FastifyRequest, reply: FastifyReply) => {

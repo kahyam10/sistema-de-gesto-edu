@@ -1,6 +1,16 @@
 import { FastifyInstance } from "fastify";
 import { ComunicadoService } from "../services/comunicado.service";
 import { authMiddleware } from "../middleware/auth";
+import { NotFoundError } from "../errors/index.js";
+import { portalService } from "../services/portal.service.js";
+
+// Quem usa os apps só registra leitura/ciência de comunicado que está entre os
+// seus (mesmo filtro da lista do portal). Equipe da escola segue o escopo.
+const PAPEIS_DO_PORTAL = new Set(["RESPONSAVEL", "USER", "PROFESSOR"]);
+async function garantirDestinatario(user: { id: string; role: string }, comunicadoId: string) {
+  if (!PAPEIS_DO_PORTAL.has(user.role)) return;
+  if (!(await portalService.comunicadoVisivelPara(user.id, comunicadoId))) throw new NotFoundError("NF_027");
+}
 
 const comunicadoService = new ComunicadoService();
 
@@ -339,6 +349,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as any;
+    await garantirDestinatario(request.user, id);
     const registro = await comunicadoService.marcarComoLido(id, request.user.id);
     return reply.status(200).send(registro);
   });
@@ -366,6 +377,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as any;
+    await garantirDestinatario(request.user, id);
     const registro = await comunicadoService.confirmar(id, request.user.id);
     return reply.status(200).send(registro);
   });

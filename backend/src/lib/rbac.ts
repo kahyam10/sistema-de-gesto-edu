@@ -138,6 +138,9 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/portal\/semec(\/|$)/, roles: GESTAO },
   // Exportadores oficiais (Educacenso/Sistema Presença): CPF/NIS — equipe operacional
   { pattern: /^\/api\/exportacao(\/|$)/, roles: OPERACAO },
+  // Notificações são pessoais: a lista geral e os relatórios só para a equipe
+  // que as envia; cada usuário lê as suas em /usuario/:id (dono checado na rota)
+  { pattern: /^\/api\/notificacoes(\/relatorios(\/|$)|\/?$)/, roles: OPERACAO },
   // Trilha de auditoria (quem acessou dados pessoais) — só gestão da rede
   { pattern: /^\/api\/auditoria(\/|$)/, roles: GESTAO },
 ];

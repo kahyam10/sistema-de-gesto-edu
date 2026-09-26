@@ -1,6 +1,9 @@
 import { FastifyInstance } from "fastify";
 import { NotificacaoService } from "../services/notificacao.service";
 import { authMiddleware } from "../middleware/auth";
+import { garantirProprio, podeVerDeOutro } from "../lib/proprio.js";
+import { NotFoundError, PermissionError } from "../errors/index.js";
+import { prisma } from "../lib/prisma.js";
 
 const notificacaoService = new NotificacaoService();
 
@@ -113,6 +116,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { userId } = request.params as any;
+    garantirProprio(request, userId);
     const { filtro } = request.query as any;
 
     const notificacoes = await notificacaoService.findByUser(
@@ -143,6 +147,9 @@ export async function notificacaoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as any;
+    const alvo = await prisma.notificacao.findUnique({ where: { id }, select: { userId: true } });
+    if (!alvo) throw new NotFoundError("NF_028");
+    if (alvo.userId !== request.user.id && !podeVerDeOutro(request.user)) throw new PermissionError("PERM_004");
     const notificacao = await notificacaoService.findById(id);
     return reply.status(200).send(notificacao);
   });
@@ -296,6 +303,9 @@ export async function notificacaoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as any;
+    const alvo = await prisma.notificacao.findUnique({ where: { id }, select: { userId: true } });
+    if (!alvo) throw new NotFoundError("NF_028");
+    if (alvo.userId !== request.user.id && !podeVerDeOutro(request.user)) throw new PermissionError("PERM_004");
     const notificacao = await notificacaoService.marcarComoLida(id);
     return reply.status(200).send(notificacao);
   });
@@ -320,6 +330,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { userId } = request.params as any;
+    garantirProprio(request, userId);
     const result = await notificacaoService.marcarTodasComoLidas(userId);
     return reply.status(200).send(result);
   });
@@ -368,6 +379,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { userId } = request.params as any;
+    garantirProprio(request, userId);
     const result = await notificacaoService.deletarLidas(userId);
     return reply.status(200).send(result);
   });
@@ -392,6 +404,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { userId } = request.params as any;
+    garantirProprio(request, userId);
     const result = await notificacaoService.countNaoLidas(userId);
     return reply.status(200).send(result);
   });

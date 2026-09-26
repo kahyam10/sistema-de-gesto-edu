@@ -73,9 +73,11 @@ export class PortalService {
 
     // Pendência = turma com aula hoje SEM nenhum registro de frequência na data
     const turmaIdsComAulaHoje = [...new Set(aulasHoje.map((a) => a.turmaId))];
-    const frequenciasHoje = await prisma.frequencia.findMany({
+    // Chamadas de hoje com o horário do último registro (para "feita às HH:MM")
+    const frequenciasHoje = await prisma.frequencia.groupBy({
+      by: ["turmaId"],
       where: { turmaId: { in: turmaIdsComAulaHoje }, data: { gte: inicioDia, lte: fimDia } },
-      select: { turmaId: true },
+      _max: { updatedAt: true },
     });
     const turmasComFrequencia = new Set(frequenciasHoje.map((f) => f.turmaId));
 
@@ -98,6 +100,10 @@ export class PortalService {
         disciplina: a.disciplina,
         horaInicio: a.horaInicio,
         horaFim: a.horaFim,
+      })),
+      chamadasRegistradasHoje: frequenciasHoje.map((f) => ({
+        turmaId: f.turmaId,
+        registradaEm: f._max.updatedAt,
       })),
       frequenciasPendentesHoje: aulasHoje
         .filter((a) => !turmasComFrequencia.has(a.turmaId))
@@ -135,17 +141,24 @@ export class PortalService {
       }),
       prisma.frequencia.findMany({
         where: { turmaId, data },
-        select: { matriculaId: true, status: true, justificativa: true },
+        select: { matriculaId: true, status: true, justificativa: true, updatedAt: true },
       }),
     ]);
     if (!turma) throw new NotFoundError("NF_005");
     const porAluno = new Map(registros.map((r) => [r.matriculaId, r]));
+    const ultimo = registros.reduce<Date | null>(
+      (m, r) => (m === null || r.updatedAt > m ? r.updatedAt : m),
+      null
+    );
     return {
       turma,
       data: data.toISOString().slice(0, 10),
       jaRegistrada: registros.length > 0,
+      registradaEm: ultimo,
       alunos: alunos.map((a) => ({
-        ...a,
+        id: a.id,
+        nomeAluno: a.nomeAluno,
+        numeroMatricula: a.numeroMatricula,
         status: porAluno.get(a.id)?.status ?? null,
         justificativa: porAluno.get(a.id)?.justificativa ?? null,
       })),
@@ -327,31 +340,10 @@ export class PortalService {
    * status de leitura DESTE usuário.
    */
   async comunicadosDoUsuario(userId: string) {
-    const vinculos = await prisma.matriculaUsuario.findMany({
-      where: { userId, ativo: true },
-      select: { matricula: { select: { escolaId: true, turmaId: true, etapaId: true } } },
-    });
-    const escolas = [...new Set(vinculos.map((v) => v.matricula.escolaId))];
-    const turmas = vinculos.map((v) => v.matricula.turmaId).filter((t): t is string => !!t);
-    const etapas = [...new Set(vinculos.map((v) => v.matricula.etapaId))];
-    const agora = new Date();
-
+    const where = await this.whereComunicados(userId);
+    if (!where) return [];
     const comunicados = await prisma.comunicado.findMany({
-      where: {
-        ativo: true,
-        dataPublicacao: { lte: agora },
-        AND: [
-          { OR: [{ dataExpiracao: null }, { dataExpiracao: { gte: agora } }] },
-          { OR: [{ escolaId: null }, { escolaId: { in: escolas } }] },
-          {
-            OR: [
-              { destinatarios: { in: ["TODOS", "PAIS", "ALUNOS"] } },
-              { destinatarios: "TURMA_ESPECIFICA", turmaId: { in: turmas } },
-              { destinatarios: "ETAPA_ESPECIFICA", etapaId: { in: etapas } },
-            ],
-          },
-        ],
-      },
+      where,
       select: {
         id: true, titulo: true, mensagem: true, tipo: true, categoria: true,
         dataPublicacao: true, destaque: true, autorNome: true,
@@ -536,6 +528,225 @@ export class PortalService {
         percentualFrequencia:
           totalRegistros > 0 ? Math.round((totalPresencas / totalRegistros) * 100) : null,
       },
+    };
+  }
+
+  // ---------- Apps (pais e professores): agenda, cardápio, contatos, dados ----------
+
+  /**
+   * De onde vêm as escolas/turmas de um usuário: dos alunos vinculados
+   * (responsável) e das turmas em que leciona (professor). Sempre derivado
+   * do userId da sessão.
+   */
+  private async contextoDoUsuario(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, nome: true, email: true, role: true, createdAt: true, escolaId: true, profissionalId: true },
+    });
+    if (!user) throw new NotFoundError("NF_002");
+    const [vinculos, aulas] = await Promise.all([
+      prisma.matriculaUsuario.findMany({
+        where: { userId, ativo: true },
+        select: {
+          parentesco: true,
+          matricula: {
+            select: {
+              id: true, nomeAluno: true, numeroMatricula: true, escolaId: true, turmaId: true, etapaId: true,
+              escola: { select: { nome: true } },
+              turma: { select: { nome: true, turno: true } },
+            },
+          },
+        },
+      }),
+      user.profissionalId
+        ? prisma.turmaProfessor.findMany({
+            where: { profissionalId: user.profissionalId, turma: { ativo: true } },
+            select: { turma: { select: { id: true, nome: true, escolaId: true, escola: { select: { nome: true } } } } },
+          })
+        : Promise.resolve([]),
+    ]);
+    const unicos = <T>(xs: Array<T | null | undefined>) => [...new Set(xs.filter((x): x is T => x != null))];
+    const escolasAluno = unicos(vinculos.map((v) => v.matricula.escolaId));
+    const escolasProfessor = unicos([...aulas.map((a) => a.turma.escolaId), ...(user.profissionalId ? [user.escolaId] : [])]);
+    return {
+      user,
+      vinculos,
+      aulas,
+      escolasAluno,
+      escolasProfessor,
+      escolaIds: unicos([...escolasAluno, ...escolasProfessor]),
+      turmasAluno: unicos(vinculos.map((v) => v.matricula.turmaId)),
+      turmasProfessor: unicos(aulas.map((a) => a.turma.id)),
+      etapasAluno: unicos(vinculos.map((v) => v.matricula.etapaId)),
+    };
+  }
+
+  /**
+   * Filtro dos comunicados que o usuário pode ver: como responsável (escolas
+   * dos alunos; TODOS/PAIS/ALUNOS, turma ou etapa do aluno) e/ou como
+   * professor (escolas das turmas; TODOS/PROFESSORES ou turma que leciona).
+   * null = nenhum comunicado. Usado na lista E na trava de leitura/ciência.
+   */
+  async whereComunicados(userId: string) {
+    const c = await this.contextoDoUsuario(userId);
+    const agora = new Date();
+    const daEscola = (ids: string[]) => ({ OR: [{ escolaId: null }, { escolaId: { in: ids } }] });
+    const alvos: Array<Record<string, unknown>> = [];
+    if (c.vinculos.length) {
+      alvos.push({
+        AND: [
+          daEscola(c.escolasAluno),
+          {
+            OR: [
+              { destinatarios: { in: ["TODOS", "PAIS", "ALUNOS"] } },
+              { destinatarios: "TURMA_ESPECIFICA", turmaId: { in: c.turmasAluno } },
+              { destinatarios: "ETAPA_ESPECIFICA", etapaId: { in: c.etapasAluno } },
+            ],
+          },
+        ],
+      });
+    }
+    if (c.user.profissionalId) {
+      alvos.push({
+        AND: [
+          daEscola(c.escolasProfessor),
+          {
+            OR: [
+              { destinatarios: { in: ["TODOS", "PROFESSORES"] } },
+              { destinatarios: "TURMA_ESPECIFICA", turmaId: { in: c.turmasProfessor } },
+            ],
+          },
+        ],
+      });
+    }
+    if (!alvos.length) return null;
+    return {
+      ativo: true,
+      dataPublicacao: { lte: agora },
+      AND: [{ OR: [{ dataExpiracao: null }, { dataExpiracao: { gte: agora } }] }, { OR: alvos }],
+    };
+  }
+
+  /** O comunicado está entre os que o usuário pode ver? (trava de marcar-lido/confirmar) */
+  async comunicadoVisivelPara(userId: string, comunicadoId: string): Promise<boolean> {
+    const where = await this.whereComunicados(userId);
+    if (!where) return false;
+    const achado = await prisma.comunicado.findFirst({ where: { id: comunicadoId, ...where }, select: { id: true } });
+    return !!achado;
+  }
+
+  /** Início do dia de hoje na Bahia, como a frequência grava (meia-noite UTC de AAAA-MM-DD). */
+  private hojeBahia(): Date {
+    return new Date(new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bahia" }).format(new Date()));
+  }
+
+  /**
+   * Agenda dos próximos `dias`: eventos do calendário (rede + escolas do
+   * usuário; os recorrentes ficam de fora por ora), reuniões de pais e
+   * plantões pedagógicos (gerais da escola ou das turmas do usuário).
+   * Sem ata, pauta interna, encaminhamentos ou lista de profissionais.
+   */
+  async agenda(userId: string, dias: number) {
+    const c = await this.contextoDoUsuario(userId);
+    const inicio = this.hojeBahia();
+    const fim = new Date(inicio.getTime() + dias * 24 * 60 * 60 * 1000 - 1);
+    const turmas = [...new Set([...c.turmasAluno, ...c.turmasProfessor])];
+    const daTurma = { OR: [{ turmaId: null }, { turmaId: { in: turmas } }] };
+    const [eventos, reunioes, plantoes] = await Promise.all([
+      prisma.eventoCalendario.findMany({
+        where: {
+          recorrente: false,
+          AND: [
+            { OR: [{ escolaId: null }, { escolaId: { in: c.escolaIds } }] },
+            { dataInicio: { lte: fim } },
+            { OR: [{ dataFim: { gte: inicio } }, { dataFim: null, dataInicio: { gte: inicio } }] },
+          ],
+        },
+        select: {
+          id: true, titulo: true, descricao: true, dataInicio: true, dataFim: true,
+          horaInicio: true, horaFim: true, tipo: true, escola: { select: { nome: true } },
+        },
+        orderBy: { dataInicio: "asc" },
+        take: 100,
+      }),
+      c.escolaIds.length
+        ? prisma.reuniaoPais.findMany({
+            where: { escolaId: { in: c.escolaIds }, data: { gte: inicio, lte: fim }, ...daTurma },
+            select: {
+              id: true, titulo: true, descricao: true, data: true, horario: true, duracao: true,
+              local: true, tipo: true, finalidade: true, status: true,
+              escola: { select: { nome: true } }, turma: { select: { nome: true } },
+            },
+            orderBy: { data: "asc" },
+            take: 50,
+          })
+        : Promise.resolve([]),
+      c.escolaIds.length
+        ? prisma.plantaoPedagogico.findMany({
+            where: { ativo: true, escolaId: { in: c.escolaIds }, data: { gte: inicio, lte: fim }, ...daTurma },
+            select: {
+              id: true, data: true, tipo: true, descricao: true, horarioInicio: true, horarioFim: true,
+              local: true, escola: { select: { nome: true } }, turma: { select: { nome: true } },
+            },
+            orderBy: { data: "asc" },
+            take: 50,
+          })
+        : Promise.resolve([]),
+    ]);
+    return { de: inicio.toISOString().slice(0, 10), ate: fim.toISOString().slice(0, 10), eventos, reunioes, plantoes };
+  }
+
+  /** Cardápio da semana (de `de` até +6 dias) das escolas do usuário e da rede. Sem quantidades por aluno. */
+  async cardapio(userId: string, de?: Date) {
+    const c = await this.contextoDoUsuario(userId);
+    const inicio = de ?? this.hojeBahia();
+    const fim = new Date(inicio.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+    const refeicoes = c.escolaIds.length
+      ? await prisma.cardapio.findMany({
+          where: {
+            ativo: true,
+            data: { gte: inicio, lte: fim },
+            OR: [{ escolaId: null }, { escolaId: { in: c.escolaIds } }],
+          },
+          select: {
+            id: true, data: true, turno: true, tipoRefeicao: true, descricao: true,
+            observacoesNutricionais: true, escola: { select: { nome: true } },
+          },
+          orderBy: [{ data: "asc" }, { turno: "asc" }],
+          take: 200,
+        })
+      : [];
+    return { de: inicio.toISOString().slice(0, 10), ate: fim.toISOString().slice(0, 10), refeicoes };
+  }
+
+  /** Contato institucional das escolas do usuário (telefone, e-mail e endereço DA ESCOLA). */
+  async escolasDoUsuario(userId: string) {
+    const c = await this.contextoDoUsuario(userId);
+    if (!c.escolaIds.length) return [];
+    return prisma.escola.findMany({
+      where: { id: { in: c.escolaIds }, ativo: true },
+      select: { id: true, nome: true, telefone: true, email: true, endereco: true },
+      orderBy: { nome: "asc" },
+    });
+  }
+
+  /** "Meus dados" (transparência LGPD): o que o sistema guarda sobre este usuário e os vínculos. */
+  async meusDados(userId: string) {
+    const c = await this.contextoDoUsuario(userId);
+    const sessoesAtivas = await prisma.sessaoRefresh.count({
+      where: { userId, revogadoEm: null, rotacionadoEm: null, familiaExpiraEm: { gt: new Date() } },
+    });
+    return {
+      usuario: { nome: c.user.nome, email: c.user.email, papel: c.user.role, cadastradoEm: c.user.createdAt },
+      alunosVinculados: c.vinculos.map((v) => ({
+        nomeAluno: v.matricula.nomeAluno,
+        numeroMatricula: v.matricula.numeroMatricula,
+        parentesco: v.parentesco,
+        escola: v.matricula.escola.nome,
+        turma: v.matricula.turma?.nome ?? null,
+      })),
+      turmasQueLeciona: c.aulas.map((a) => ({ turma: a.turma.nome, escola: a.turma.escola.nome })),
+      sessoesAtivas,
     };
   }
 }
