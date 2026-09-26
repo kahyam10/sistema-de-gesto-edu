@@ -4,6 +4,10 @@ import { authMiddleware } from "../middleware/auth";
 import { garantirProprio, podeVerDeOutro } from "../lib/proprio.js";
 import { NotFoundError, PermissionError } from "../errors/index.js";
 import { prisma } from "../lib/prisma.js";
+import {
+  createNotificacaoSchema, createNotificacoesEmMassaSchema, filtroLeituraNotificacaoSchema, idParamSchema,
+  listarNotificacoesQuerySchema, statusEnvioSchema, usuarioQuerySchema,
+} from "../schemas/comunicacao.schemas.js";
 
 const notificacaoService = new NotificacaoService();
 
@@ -17,38 +21,6 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       summary: "Listar notificações",
       description: "Lista todas as notificações com filtros opcionais por usuário, tipo, prioridade e status de leitura",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          userId: {
-            type: "string",
-            description: "ID do usuário",
-          },
-          tipo: {
-            type: "string",
-            enum: ["SISTEMA", "ACADEMICO", "FINANCEIRO", "COMUNICADO", "LEMBRETE", "URGENTE"],
-            description: "Tipo da notificação",
-          },
-          prioridade: {
-            type: "string",
-            enum: ["BAIXA", "NORMAL", "ALTA", "URGENTE"],
-            description: "Prioridade da notificação",
-          },
-          lida: {
-            type: "string",
-            enum: ["true", "false"],
-            description: "Filtrar por notificações lidas/não lidas",
-          },
-          page: {
-            type: "number",
-            description: "Número da página (paginação)",
-          },
-          limit: {
-            type: "number",
-            description: "Limite de registros por página",
-          },
-        },
-      },
       response: {
         200: {
           description: "Lista de notificações",
@@ -64,20 +36,11 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { userId, tipo, prioridade, lida, page, limit } = request.query as any;
-
-    const filters: any = {};
-    if (userId) filters.userId = userId;
-    if (tipo) filters.tipo = tipo;
-    if (prioridade) filters.prioridade = prioridade;
-    if (lida !== undefined) filters.lida = lida === "true";
+    const { page, limit, ...filters } = listarNotificacoesQuerySchema.parse(request.query);
 
     // Suporte a paginação
     if (page && limit) {
-      const result = await notificacaoService.findAllPaginated(filters, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-      });
+      const result = await notificacaoService.findAllPaginated(filters, { page, limit });
       return reply.status(200).send(result);
     }
 
@@ -99,30 +62,16 @@ export async function notificacaoRoutes(app: FastifyInstance) {
         },
         required: ["userId"],
       },
-      querystring: {
-        type: "object",
-        properties: {
-          filtro: {
-            type: "string",
-            enum: ["NAO_LIDAS", "LIDAS", "TODAS"],
-            description: "Filtro de leitura",
-            default: "TODAS",
-          },
-        },
-      },
       response: {
         200: { type: "array", items: { type: "object", additionalProperties: true } },
       },
     },
   }, async (request, reply) => {
-    const { userId } = request.params as any;
+    const { userId } = request.params as { userId: string };
     garantirProprio(request, userId);
-    const { filtro } = request.query as any;
+    const { filtro } = filtroLeituraNotificacaoSchema.parse(request.query);
 
-    const notificacoes = await notificacaoService.findByUser(
-      userId,
-      filtro as "NAO_LIDAS" | "LIDAS" | "TODAS"
-    );
+    const notificacoes = await notificacaoService.findByUser(userId, filtro);
     return reply.status(200).send(notificacoes);
   });
 
@@ -146,7 +95,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const alvo = await prisma.notificacao.findUnique({ where: { id }, select: { userId: true } });
     if (!alvo) throw new NotFoundError("NF_028");
     if (alvo.userId !== request.user.id && !podeVerDeOutro(request.user)) throw new PermissionError("PERM_004");
@@ -161,64 +110,6 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       summary: "Criar notificação",
       description: "Cria uma nova notificação para um ou mais usuários do sistema",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["userId", "titulo", "mensagem", "tipo"],
-        properties: {
-          userId: {
-            type: "string",
-            description: "ID do usuário destinatário",
-          },
-          titulo: {
-            type: "string",
-            description: "Título da notificação",
-            example: "Manutenção Programada",
-          },
-          mensagem: {
-            type: "string",
-            description: "Conteúdo da notificação",
-            example: "O sistema ficará indisponível das 22h às 23h para manutenção.",
-          },
-          tipo: {
-            type: "string",
-            enum: ["SISTEMA", "ACADEMICO", "FINANCEIRO", "COMUNICADO", "LEMBRETE", "URGENTE"],
-            description: "Tipo da notificação",
-          },
-          prioridade: {
-            type: "string",
-            enum: ["BAIXA", "NORMAL", "ALTA", "URGENTE"],
-            description: "Prioridade da notificação",
-            default: "NORMAL",
-          },
-          categoria: {
-            type: "string",
-            description: "Categoria da notificação",
-          },
-          linkAcao: {
-            type: "string",
-            description: "URL de redirecionamento ao clicar",
-          },
-          canais: {
-            type: "array",
-            items: {
-              type: "string",
-              enum: ["APP", "EMAIL", "SMS", "PUSH"],
-            },
-            description: "Canais de envio",
-            default: ["APP"],
-          },
-          agendadaPara: {
-            type: "string",
-            format: "date-time",
-            description: "Data/hora para envio agendado",
-          },
-          expirarEm: {
-            type: "string",
-            format: "date-time",
-            description: "Data/hora de expiração",
-          },
-        },
-      },
       response: {
         201: {
           description: "Notificação criada com sucesso",
@@ -241,7 +132,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
+    const data = createNotificacaoSchema.parse(request.body);
     const notificacao = await notificacaoService.create(data);
     return reply.status(201).send(notificacao);
   });
@@ -253,32 +144,12 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       summary: "Criar notificações em massa",
       description: "Cria múltiplas notificações de uma vez",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["notificacoes"],
-        properties: {
-          notificacoes: {
-            type: "array",
-            items: {
-              type: "object",
-              required: ["userId", "titulo", "mensagem", "tipo"],
-              properties: {
-                userId: { type: "string" },
-                titulo: { type: "string" },
-                mensagem: { type: "string" },
-                tipo: { type: "string", enum: ["SISTEMA", "ACADEMICO", "FINANCEIRO", "COMUNICADO", "LEMBRETE", "URGENTE"] },
-                prioridade: { type: "string", enum: ["BAIXA", "NORMAL", "ALTA", "URGENTE"] },
-              },
-            },
-          },
-        },
-      },
       response: {
         201: { type: "array", items: { type: "object", additionalProperties: true } },
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
+    const data = createNotificacoesEmMassaSchema.parse(request.body);
     const notificacoes = await notificacaoService.createBulk(data);
     return reply.status(201).send(notificacoes);
   });
@@ -302,7 +173,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const alvo = await prisma.notificacao.findUnique({ where: { id }, select: { userId: true } });
     if (!alvo) throw new NotFoundError("NF_028");
     if (alvo.userId !== request.user.id && !podeVerDeOutro(request.user)) throw new PermissionError("PERM_004");
@@ -329,7 +200,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { userId } = request.params as any;
+    const { userId } = request.params as { userId: string };
     garantirProprio(request, userId);
     const result = await notificacaoService.marcarTodasComoLidas(userId);
     return reply.status(200).send(result);
@@ -354,7 +225,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const result = await notificacaoService.delete(id);
     return reply.status(200).send(result);
   });
@@ -378,7 +249,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { userId } = request.params as any;
+    const { userId } = request.params as { userId: string };
     garantirProprio(request, userId);
     const result = await notificacaoService.deletarLidas(userId);
     return reply.status(200).send(result);
@@ -403,7 +274,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { userId } = request.params as any;
+    const { userId } = request.params as { userId: string };
     garantirProprio(request, userId);
     const result = await notificacaoService.countNaoLidas(userId);
     return reply.status(200).send(result);
@@ -416,12 +287,6 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       summary: "Estatísticas de notificações",
       description: "Retorna estatísticas gerais ou por usuário das notificações",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          userId: { type: "string", description: "ID do usuário (opcional)" },
-        },
-      },
       response: {
         200: {
           description: "Estatísticas",
@@ -437,7 +302,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { userId } = request.query as any;
+    const { userId } = usuarioQuerySchema.parse(request.query);
     const estatisticas = await notificacaoService.getEstatisticas(userId);
     return reply.status(200).send(estatisticas);
   });
@@ -456,28 +321,14 @@ export async function notificacaoRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        required: ["canal", "enviado"],
-        properties: {
-          canal: { type: "string", enum: ["APP", "EMAIL", "SMS", "PUSH"], description: "Canal de envio" },
-          enviado: { type: "boolean", description: "Status de envio" },
-        },
-      },
       response: {
         200: { type: "object", additionalProperties: true },
         400: { type: "object", additionalProperties: true },
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
-    const { canal, enviado } = request.body as any;
-
-    if (!canal || enviado === undefined) {
-      return reply.status(400).send({
-        error: "canal e enviado são obrigatórios",
-      });
-    }
+    const { id } = idParamSchema.parse(request.params);
+    const { canal, enviado } = statusEnvioSchema.parse(request.body);
 
     const notificacao = await notificacaoService.atualizarStatusEnvio(
       id,

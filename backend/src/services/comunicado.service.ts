@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
@@ -116,7 +117,7 @@ export class ComunicadoService {
     ativo?: boolean;
     destaque?: boolean;
   }) {
-    const where: any = {};
+    const where: Prisma.ComunicadoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.turmaId) where.turmaId = filters.turmaId;
@@ -180,7 +181,7 @@ export class ComunicadoService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.ComunicadoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.turmaId) where.turmaId = filters.turmaId;
@@ -473,7 +474,7 @@ export class ComunicadoService {
    * Busca comunicados por usuário (não lidos, lidos, todos)
    */
   async findByUser(userId: string, filtro?: "NAO_LIDOS" | "LIDOS" | "TODOS") {
-    const where: any = {
+    const where: Prisma.ComunicadoWhereInput = {
       ativo: true,
       OR: [
         { dataExpiracao: null },
@@ -516,7 +517,7 @@ export class ComunicadoService {
    * Estatísticas de comunicados
    */
   async getEstatisticas(escolaId?: string) {
-    const where: any = {
+    const where: Prisma.ComunicadoWhereInput = {
       ativo: true,
     };
     if (escolaId) where.escolaId = escolaId;
@@ -545,11 +546,11 @@ export class ComunicadoService {
     return {
       total,
       destaques,
-      porTipo: porTipo.reduce((acc: any, item) => {
+      porTipo: porTipo.reduce((acc: Record<string, number>, item) => {
         acc[item.tipo] = item._count;
         return acc;
       }, {}),
-      porCategoria: porCategoria.reduce((acc: any, item) => {
+      porCategoria: porCategoria.reduce((acc: Record<string, number>, item) => {
         if (item.categoria) {
           acc[item.categoria] = item._count;
         }

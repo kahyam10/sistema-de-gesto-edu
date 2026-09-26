@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
@@ -93,7 +94,7 @@ export class ReuniaoPaisService {
     dataInicio?: Date;
     dataFim?: Date;
   }) {
-    const where: any = {};
+    const where: Prisma.ReuniaoPaisWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.turmaId) where.turmaId = filters.turmaId;
@@ -101,9 +102,10 @@ export class ReuniaoPaisService {
     if (filters?.status) where.status = filters.status;
 
     if (filters?.dataInicio || filters?.dataFim) {
-      where.data = {};
-      if (filters.dataInicio) where.data.gte = filters.dataInicio;
-      if (filters.dataFim) where.data.lte = filters.dataFim;
+      where.data = {
+        ...(filters.dataInicio && { gte: filters.dataInicio }),
+        ...(filters.dataFim && { lte: filters.dataFim }),
+      };
     }
 
     const reunioes = await prisma.reuniaoPais.findMany({
@@ -150,7 +152,7 @@ export class ReuniaoPaisService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.ReuniaoPaisWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.turmaId) where.turmaId = filters.turmaId;
@@ -158,9 +160,10 @@ export class ReuniaoPaisService {
     if (filters?.status) where.status = filters.status;
 
     if (filters?.dataInicio || filters?.dataFim) {
-      where.data = {};
-      if (filters.dataInicio) where.data.gte = filters.dataInicio;
-      if (filters.dataFim) where.data.lte = filters.dataFim;
+      where.data = {
+        ...(filters.dataInicio && { gte: filters.dataInicio }),
+        ...(filters.dataFim && { lte: filters.dataFim }),
+      };
     }
 
     const include = {
@@ -501,7 +504,7 @@ export class ReuniaoPaisService {
    * Estatísticas de reuniões
    */
   async getEstatisticas(escolaId?: string) {
-    const where: any = {};
+    const where: Prisma.ReuniaoPaisWhereInput = {};
     if (escolaId) where.escolaId = escolaId;
 
     const total = await prisma.reuniaoPais.count({ where });
@@ -571,11 +574,11 @@ export class ReuniaoPaisService {
     return {
       total,
       proximas,
-      porStatus: porStatus.reduce((acc: any, item) => {
+      porStatus: porStatus.reduce((acc: Record<string, number>, item) => {
         acc[item.status] = item._count;
         return acc;
       }, {}),
-      porTipo: porTipo.reduce((acc: any, item) => {
+      porTipo: porTipo.reduce((acc: Record<string, number>, item) => {
         acc[item.tipo] = item._count;
         return acc;
       }, {}),

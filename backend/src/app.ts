@@ -305,12 +305,43 @@ export async function buildApp() {
   // schemas 4xx/5xx antigos declaravam só { error: string } e o serializador
   // descartava (ou corrompia) o resto. Aqui eles viram "objeto livre",
   // mantendo a descrição para a documentação.
+  //
+  // Nos de sucesso, "type: object" sem "properties" fazia o serializador
+  // devolver {} (ex.: POST de comunicado e de reunião respondiam vazio) e
+  // "type: array" dava 500 nas listas paginadas. Schemas genéricos saem;
+  // objetos sem campos aninhados em schemas detalhados aceitam o que vier.
+  const liberarObjetosSemCampos = (schema: unknown, profundidade = 0): void => {
+    if (!schema || typeof schema !== "object" || profundidade > 8) return;
+    const sch = schema as Record<string, unknown>;
+    if (sch.type === "object" && !sch.properties && sch.additionalProperties === undefined) {
+      sch.additionalProperties = true;
+    }
+    for (const chave of ["items", "properties", "additionalProperties"]) {
+      const filho = sch[chave];
+      if (chave === "properties" && filho && typeof filho === "object") {
+        for (const v of Object.values(filho as Record<string, unknown>)) liberarObjetosSemCampos(v, profundidade + 1);
+      } else if (filho && typeof filho === "object") {
+        liberarObjetosSemCampos(filho, profundidade + 1);
+      }
+    }
+  };
   app.addHook("onRoute", (rota) => {
     const resposta = rota.schema?.response as Record<string, { description?: string }> | undefined;
     if (!resposta) return;
     for (const status of Object.keys(resposta)) {
       if (/^[45]/.test(status)) {
         resposta[status] = { description: resposta[status]?.description, type: "object", additionalProperties: true } as never;
+      } else {
+        const sch = resposta[status] as Record<string, unknown> | undefined;
+        const itens = sch?.items as Record<string, unknown> | undefined;
+        if (sch && !sch.properties && !itens?.properties) {
+          // Schema genérico ("array" ou "object" sem campos) não filtra nada e
+          // quebrava rotas que devolvem lista OU página ({ data, pagination }):
+          // sem ele, a resposta sai com JSON.stringify.
+          delete resposta[status];
+        } else {
+          liberarObjetosSemCampos(sch);
+        }
       }
     }
   });

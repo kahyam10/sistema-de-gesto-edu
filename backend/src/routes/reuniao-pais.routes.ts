@@ -1,6 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { ReuniaoPaisService } from "../services/reuniao-pais.service";
 import { authMiddleware } from "../middleware/auth";
+import {
+  createReuniaoPaisSchema, escolaQuerySchema, idParamSchema, listarReunioesQuerySchema,
+  registrarPresencaReuniaoSchema, updateReuniaoPaisSchema,
+} from "../schemas/comunicacao.schemas.js";
 
 const reuniaoPaisService = new ReuniaoPaisService();
 
@@ -14,47 +18,6 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       summary: "Listar reuniões de pais e responsáveis",
       description: "Lista todas as reuniões de pais com filtros opcionais por escola, turma, tipo, status e período",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: {
-            type: "string",
-            description: "ID da escola",
-          },
-          turmaId: {
-            type: "string",
-            description: "ID da turma",
-          },
-          tipo: {
-            type: "string",
-            enum: ["BIMESTRAL", "TRIMESTRAL", "EXTRAORDINARIA", "CONSELHO_PARTICIPATIVO"],
-            description: "Tipo da reunião",
-          },
-          status: {
-            type: "string",
-            enum: ["AGENDADA", "REALIZADA", "CANCELADA"],
-            description: "Status da reunião",
-          },
-          dataInicio: {
-            type: "string",
-            format: "date",
-            description: "Data inicial do período (YYYY-MM-DD)",
-          },
-          dataFim: {
-            type: "string",
-            format: "date",
-            description: "Data final do período (YYYY-MM-DD)",
-          },
-          page: {
-            type: "number",
-            description: "Número da página (paginação)",
-          },
-          limit: {
-            type: "number",
-            description: "Limite de registros por página",
-          },
-        },
-      },
       response: {
         200: {
           description: "Lista de reuniões",
@@ -70,23 +33,11 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { escolaId, turmaId, tipo, status, dataInicio, dataFim, page, limit } =
-      request.query as any;
-
-    const filters: any = {};
-    if (escolaId) filters.escolaId = escolaId;
-    if (turmaId) filters.turmaId = turmaId;
-    if (tipo) filters.tipo = tipo;
-    if (status) filters.status = status;
-    if (dataInicio) filters.dataInicio = new Date(dataInicio);
-    if (dataFim) filters.dataFim = new Date(dataFim);
+    const { page, limit, ...filters } = listarReunioesQuerySchema.parse(request.query);
 
     // Suporte a paginação
     if (page && limit) {
-      const result = await reuniaoPaisService.findAllPaginated(filters, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-      });
+      const result = await reuniaoPaisService.findAllPaginated(filters, { page, limit });
       return reply.status(200).send(result);
     }
 
@@ -114,7 +65,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const reuniao = await reuniaoPaisService.findById(id);
     return reply.status(200).send(reuniao);
   });
@@ -126,59 +77,6 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       summary: "Criar reunião de pais",
       description: "Agenda uma nova reunião de pais e responsáveis",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["titulo", "data", "horario", "tipo", "escolaId"],
-        properties: {
-          titulo: {
-            type: "string",
-            description: "Título da reunião",
-            example: "Reunião Bimestral - 1º Bimestre",
-          },
-          data: {
-            type: "string",
-            format: "date-time",
-            description: "Data e hora da reunião",
-            example: "2026-03-15T19:00:00Z",
-          },
-          horario: {
-            type: "string",
-            description: "Horário da reunião",
-            example: "19:00",
-          },
-          duracao: {
-            type: "number",
-            description: "Duração em minutos",
-            example: 120,
-          },
-          tipo: {
-            type: "string",
-            enum: ["BIMESTRAL", "TRIMESTRAL", "EXTRAORDINARIA", "CONSELHO_PARTICIPATIVO"],
-            description: "Tipo da reunião",
-          },
-          escolaId: {
-            type: "string",
-            description: "ID da escola (null para reunião geral da rede)",
-          },
-          turmaId: {
-            type: "string",
-            description: "ID da turma (null para reunião geral da escola)",
-          },
-          local: {
-            type: "string",
-            description: "Local da reunião",
-            example: "Auditório",
-          },
-          finalidade: {
-            type: "string",
-            description: "Finalidade da reunião",
-          },
-          pauta: {
-            type: "string",
-            description: "Pauta da reunião",
-          },
-        },
-      },
       response: {
         201: {
           description: "Reunião criada com sucesso",
@@ -201,13 +99,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
-
-    // Converter data string para Date
-    if (data.data) {
-      data.data = new Date(data.data);
-    }
-
+    const data = createReuniaoPaisSchema.parse(request.body);
     const reuniao = await reuniaoPaisService.create(data);
     return reply.status(201).send(reuniao);
   });
@@ -226,25 +118,14 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        properties: {
-          titulo: { type: "string" },
-          data: { type: "string", format: "date-time" },
-          horario: { type: "string" },
-          local: { type: "string" },
-          status: { type: "string", enum: ["AGENDADA", "REALIZADA", "CANCELADA"] },
-          pauta: { type: "string" },
-        },
-      },
       response: {
         200: { type: "object", additionalProperties: true },
         404: { type: "object", additionalProperties: true },
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
-    const data = request.body as any;
+    const { id } = idParamSchema.parse(request.params);
+    const data = updateReuniaoPaisSchema.parse(request.body);
     const reuniao = await reuniaoPaisService.update(id, data);
     return reply.status(200).send(reuniao);
   });
@@ -269,7 +150,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const result = await reuniaoPaisService.delete(id);
     return reply.status(200).send(result);
   });
@@ -281,22 +162,12 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       summary: "Registrar presença",
       description: "Registra a presença de um responsável em uma reunião",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["reuniaoId", "responsavelNome"],
-        properties: {
-          reuniaoId: { type: "string", description: "ID da reunião" },
-          responsavelNome: { type: "string", description: "Nome do responsável" },
-          alunoMatriculaId: { type: "string", description: "ID da matrícula do aluno (opcional)" },
-          observacoes: { type: "string" },
-        },
-      },
       response: {
         201: { type: "object", additionalProperties: true },
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
+    const data = registrarPresencaReuniaoSchema.parse(request.body);
     const presenca = await reuniaoPaisService.registrarPresenca(data);
     return reply.status(201).send(presenca);
   });
@@ -320,7 +191,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { reuniaoId } = request.params as any;
+    const { reuniaoId } = request.params as { reuniaoId: string };
     const presencas = await reuniaoPaisService.findPresencasByReuniao(
       reuniaoId
     );
@@ -346,7 +217,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const result = await reuniaoPaisService.deletePresenca(id);
     return reply.status(200).send(result);
   });
@@ -358,12 +229,6 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       summary: "Estatísticas de reuniões",
       description: "Retorna estatísticas gerais ou por escola das reuniões de pais",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: { type: "string", description: "ID da escola (opcional)" },
-        },
-      },
       response: {
         200: {
           description: "Estatísticas",
@@ -378,7 +243,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { escolaId } = request.query as any;
+    const { escolaId } = escolaQuerySchema.parse(request.query);
     const estatisticas = await reuniaoPaisService.getEstatisticas(escolaId);
     return reply.status(200).send(estatisticas);
   });

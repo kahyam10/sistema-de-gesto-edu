@@ -3,6 +3,10 @@ import { ComunicadoService } from "../services/comunicado.service";
 import { authMiddleware } from "../middleware/auth";
 import { NotFoundError } from "../errors/index.js";
 import { portalService } from "../services/portal.service.js";
+import {
+  createComunicadoSchema, escolaQuerySchema, filtroLeituraComunicadoSchema, idParamSchema,
+  listarComunicadosQuerySchema, updateComunicadoSchema,
+} from "../schemas/comunicacao.schemas.js";
 
 // Quem usa os apps só registra leitura/ciência de comunicado que está entre os
 // seus (mesmo filtro da lista do portal). Equipe da escola segue o escopo.
@@ -24,56 +28,6 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       summary: "Listar comunicados",
       description: "Lista todos os comunicados com filtros opcionais por escola, turma, tipo, categoria e destinatários",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: {
-            type: "string",
-            description: "ID da escola",
-          },
-          turmaId: {
-            type: "string",
-            description: "ID da turma",
-          },
-          etapaId: {
-            type: "string",
-            description: "ID da etapa",
-          },
-          tipo: {
-            type: "string",
-            enum: ["INFORMATIVO", "URGENTE", "AVISO", "CONVITE", "ALERTA"],
-            description: "Tipo do comunicado",
-          },
-          categoria: {
-            type: "string",
-            enum: ["ACADEMICO", "ADMINISTRATIVO", "EVENTOS", "SAUDE", "SEGURANCA", "GERAL"],
-            description: "Categoria do comunicado",
-          },
-          destinatarios: {
-            type: "string",
-            enum: ["TODOS", "PAIS", "PROFESSORES", "ALUNOS", "FUNCIONARIOS", "DIRETORES"],
-            description: "Público-alvo do comunicado",
-          },
-          ativo: {
-            type: "string",
-            enum: ["true", "false"],
-            description: "Apenas comunicados ativos",
-          },
-          destaque: {
-            type: "string",
-            enum: ["true", "false"],
-            description: "Apenas comunicados em destaque",
-          },
-          page: {
-            type: "number",
-            description: "Número da página (paginação)",
-          },
-          limit: {
-            type: "number",
-            description: "Limite de registros por página",
-          },
-        },
-      },
       response: {
         200: {
           description: "Lista de comunicados",
@@ -89,35 +43,11 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const {
-      escolaId,
-      turmaId,
-      etapaId,
-      tipo,
-      categoria,
-      destinatarios,
-      ativo,
-      destaque,
-      page,
-      limit,
-    } = request.query as any;
-
-    const filters: any = {};
-    if (escolaId) filters.escolaId = escolaId;
-    if (turmaId) filters.turmaId = turmaId;
-    if (etapaId) filters.etapaId = etapaId;
-    if (tipo) filters.tipo = tipo;
-    if (categoria) filters.categoria = categoria;
-    if (destinatarios) filters.destinatarios = destinatarios;
-    if (ativo !== undefined) filters.ativo = ativo === "true";
-    if (destaque !== undefined) filters.destaque = destaque === "true";
+    const { page, limit, ...filters } = listarComunicadosQuerySchema.parse(request.query);
 
     // Suporte a paginação
     if (page && limit) {
-      const result = await comunicadoService.findAllPaginated(filters, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-      });
+      const result = await comunicadoService.findAllPaginated(filters, { page, limit });
       return reply.status(200).send(result);
     }
 
@@ -145,7 +75,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const comunicado = await comunicadoService.findById(id);
     return reply.status(200).send(comunicado);
   });
@@ -157,78 +87,6 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       summary: "Criar comunicado",
       description: "Cria um novo comunicado para pais, alunos ou professores",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["titulo", "mensagem", "tipo", "destinatarios", "autorNome"],
-        properties: {
-          titulo: {
-            type: "string",
-            description: "Título do comunicado",
-            example: "Suspensão de Aulas - Temporal",
-          },
-          mensagem: {
-            type: "string",
-            description: "Conteúdo do comunicado",
-            example: "Informamos que as aulas do dia 16/02 estão suspensas devido às fortes chuvas.",
-          },
-          tipo: {
-            type: "string",
-            enum: ["INFORMATIVO", "URGENTE", "AVISO", "CONVITE", "ALERTA"],
-            description: "Tipo do comunicado",
-          },
-          categoria: {
-            type: "string",
-            enum: ["ACADEMICO", "ADMINISTRATIVO", "EVENTOS", "SAUDE", "SEGURANCA", "GERAL"],
-            description: "Categoria do comunicado",
-          },
-          destinatarios: {
-            type: "string",
-            enum: ["TODOS", "PAIS", "PROFESSORES", "ALUNOS", "FUNCIONARIOS", "DIRETORES"],
-            description: "Público-alvo do comunicado",
-          },
-          autorNome: {
-            type: "string",
-            description: "Nome do autor",
-            example: "Secretaria Municipal de Educação",
-          },
-          escolaId: {
-            type: "string",
-            description: "ID da escola (null para comunicado geral da rede)",
-          },
-          turmaId: {
-            type: "string",
-            description: "ID da turma (null para comunicado geral da escola)",
-          },
-          etapaId: {
-            type: "string",
-            description: "ID da etapa",
-          },
-          dataPublicacao: {
-            type: "string",
-            format: "date-time",
-            description: "Data de publicação",
-          },
-          dataExpiracao: {
-            type: "string",
-            format: "date-time",
-            description: "Data de expiração",
-          },
-          destaque: {
-            type: "boolean",
-            description: "Marcar como destaque",
-            default: false,
-          },
-          ativo: {
-            type: "boolean",
-            description: "Comunicado ativo",
-            default: true,
-          },
-          anexoUrl: {
-            type: "string",
-            description: "URL do anexo",
-          },
-        },
-      },
       response: {
         201: {
           description: "Comunicado criado com sucesso",
@@ -251,16 +109,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
-
-    // Converter datas string para Date
-    if (data.dataPublicacao) {
-      data.dataPublicacao = new Date(data.dataPublicacao);
-    }
-    if (data.dataExpiracao) {
-      data.dataExpiracao = new Date(data.dataExpiracao);
-    }
-
+    const data = createComunicadoSchema.parse(request.body);
     const comunicado = await comunicadoService.create(data);
     return reply.status(201).send(comunicado);
   });
@@ -279,24 +128,14 @@ export async function comunicadoRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        properties: {
-          titulo: { type: "string" },
-          mensagem: { type: "string" },
-          tipo: { type: "string", enum: ["INFORMATIVO", "URGENTE", "AVISO", "CONVITE", "ALERTA"] },
-          ativo: { type: "boolean" },
-          destaque: { type: "boolean" },
-        },
-      },
       response: {
         200: { type: "object", additionalProperties: true },
         404: { type: "object", additionalProperties: true },
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
-    const data = request.body as any;
+    const { id } = idParamSchema.parse(request.params);
+    const data = updateComunicadoSchema.parse(request.body);
     const comunicado = await comunicadoService.update(id, data);
     return reply.status(200).send(comunicado);
   });
@@ -321,7 +160,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     const result = await comunicadoService.delete(id);
     return reply.status(200).send(result);
   });
@@ -348,7 +187,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     await garantirDestinatario(request.user, id);
     const registro = await comunicadoService.marcarComoLido(id, request.user.id);
     return reply.status(200).send(registro);
@@ -376,7 +215,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { id } = request.params as any;
+    const { id } = idParamSchema.parse(request.params);
     await garantirDestinatario(request.user, id);
     const registro = await comunicadoService.confirmar(id, request.user.id);
     return reply.status(200).send(registro);
@@ -396,24 +235,13 @@ export async function comunicadoRoutes(app: FastifyInstance) {
         },
         required: ["userId"],
       },
-      querystring: {
-        type: "object",
-        properties: {
-          filtro: {
-            type: "string",
-            enum: ["NAO_LIDOS", "LIDOS", "TODOS"],
-            description: "Filtro de leitura",
-            default: "TODOS",
-          },
-        },
-      },
       response: {
         200: { type: "array", items: { type: "object", additionalProperties: true } },
       },
     },
   }, async (request, reply) => {
-    const { userId } = request.params as any;
-    const { filtro } = request.query as any;
+    const { userId } = request.params as { userId: string };
+    const { filtro } = filtroLeituraComunicadoSchema.parse(request.query);
 
     // Recibos de leitura são pessoais: só a própria lista, salvo equipe gestora
     const EQUIPE = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
@@ -421,10 +249,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: "Acesso negado" });
     }
 
-    const comunicados = await comunicadoService.findByUser(
-      userId,
-      filtro as "NAO_LIDOS" | "LIDOS" | "TODOS"
-    );
+    const comunicados = await comunicadoService.findByUser(userId, filtro);
     return reply.status(200).send(comunicados);
   });
 
@@ -435,12 +260,6 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       summary: "Estatísticas de comunicados",
       description: "Retorna estatísticas gerais ou por escola dos comunicados",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: { type: "string", description: "ID da escola (opcional)" },
-        },
-      },
       response: {
         200: {
           description: "Estatísticas",
@@ -455,7 +274,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { escolaId } = request.query as any;
+    const { escolaId } = escolaQuerySchema.parse(request.query);
     const estatisticas = await comunicadoService.getEstatisticas(escolaId);
     return reply.status(200).send(estatisticas);
   });

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
@@ -78,7 +79,7 @@ export class NotificacaoService {
     prioridade?: string;
     lida?: boolean;
   }) {
-    const where: any = {};
+    const where: Prisma.NotificacaoWhereInput = {};
 
     if (filters?.userId) where.userId = filters.userId;
     if (filters?.tipo) where.tipo = filters.tipo;
@@ -110,7 +111,7 @@ export class NotificacaoService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.NotificacaoWhereInput = {};
 
     if (filters?.userId) where.userId = filters.userId;
     if (filters?.tipo) where.tipo = filters.tipo;
@@ -146,7 +147,7 @@ export class NotificacaoService {
    * Busca notificações de um usuário
    */
   async findByUser(userId: string, filtro?: "NAO_LIDAS" | "LIDAS" | "TODAS") {
-    const where: any = { userId };
+    const where: Prisma.NotificacaoWhereInput = { userId };
 
     if (filtro === "NAO_LIDAS") {
       where.lida = false;
@@ -279,7 +280,7 @@ export class NotificacaoService {
    * Estatísticas de notificações
    */
   async getEstatisticas(userId?: string) {
-    const where: any = {};
+    const where: Prisma.NotificacaoWhereInput = {};
     if (userId) where.userId = userId;
 
     const total = await prisma.notificacao.count({ where });
@@ -307,11 +308,11 @@ export class NotificacaoService {
       total,
       naoLidas,
       lidas: total - naoLidas,
-      porTipo: porTipo.reduce((acc: any, item) => {
+      porTipo: porTipo.reduce((acc: Record<string, number>, item) => {
         acc[item.tipo] = item._count;
         return acc;
       }, {}),
-      porPrioridade: porPrioridade.reduce((acc: any, item) => {
+      porPrioridade: porPrioridade.reduce((acc: Record<string, number>, item) => {
         acc[item.prioridade] = item._count;
         return acc;
       }, {}),
@@ -334,7 +335,7 @@ export class NotificacaoService {
       throw new NotFoundError("NF_028");
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.NotificacaoUpdateInput = {};
 
     if (canal === "EMAIL") {
       updateData.enviadaEmail = enviado;

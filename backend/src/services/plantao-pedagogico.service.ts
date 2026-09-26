@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/AppError.js";
 
@@ -77,7 +78,7 @@ export class PlantaoPedagogicoService {
     dataFim?: Date;
     ativo?: boolean;
   }) {
-    const where: any = {};
+    const where: Prisma.PlantaoPedagogicoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.turmaId) where.turmaId = filters.turmaId;
@@ -85,9 +86,10 @@ export class PlantaoPedagogicoService {
     if (filters?.ativo !== undefined) where.ativo = filters.ativo;
 
     if (filters?.dataInicio || filters?.dataFim) {
-      where.data = {};
-      if (filters.dataInicio) where.data.gte = filters.dataInicio;
-      if (filters.dataFim) where.data.lte = filters.dataFim;
+      where.data = {
+        ...(filters.dataInicio && { gte: filters.dataInicio }),
+        ...(filters.dataFim && { lte: filters.dataFim }),
+      };
     }
 
     const plantoes = await prisma.plantaoPedagogico.findMany({
@@ -255,7 +257,7 @@ export class PlantaoPedagogicoService {
    * Estatísticas de plantões
    */
   async getEstatisticas(escolaId?: string) {
-    const where: any = {};
+    const where: Prisma.PlantaoPedagogicoWhereInput = {};
     if (escolaId) where.escolaId = escolaId;
 
     const total = await prisma.plantaoPedagogico.count({ where });
@@ -282,7 +284,7 @@ export class PlantaoPedagogicoService {
     return {
       total,
       proximos,
-      porTipo: porTipo.reduce((acc: any, item) => {
+      porTipo: porTipo.reduce((acc: Record<string, number>, item) => {
         acc[item.tipo] = item._count;
         return acc;
       }, {}),
