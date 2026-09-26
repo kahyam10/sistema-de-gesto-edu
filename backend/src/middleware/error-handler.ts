@@ -5,6 +5,7 @@ import {
   SystemError,
   formatarErroZod,
 } from "../errors/index.js";
+import { formatarErroAjv, type ErroAjv } from "../errors/ajv-format.js";
 import { logger } from "../utils/logger.js";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
@@ -56,17 +57,10 @@ export function errorHandler(
     return reply.status(500).send(dbError.toJSON());
   }
 
-  // Erro de validação do Fastify
-  if ((error as FastifyError).validation) {
-    return reply.status(400).send({
-      error: {
-        code: "VAL_001",
-        message: "Dados de entrada inválidos",
-        category: "VALIDACAO",
-        timestamp: new Date().toISOString(),
-        details: (error as FastifyError).validation,
-      },
-    });
+  // Erro de validação do schema da rota (ajv): mesmo formato dos erros zod
+  const fe = error as FastifyError & { validationContext?: string };
+  if (fe.validation) {
+    return reply.status(400).send(formatarErroAjv(fe.validation as ErroAjv[], fe.validationContext));
   }
 
   // Erro de autenticação do Fastify

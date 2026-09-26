@@ -13,6 +13,7 @@ export {
 } from "./AppError.js";
 
 export { formatarErroZod } from "./zod-format.js";
+export { formatarErroAjv } from "./ajv-format.js";
 export type { RespostaErroValidacao, IssueValidacao } from "./zod-format.js";
 
 // Exporta os códigos de erro para uso direto

@@ -300,6 +300,21 @@ export async function buildApp() {
   });
 
   // Rotas
+  // Respostas de ERRO têm um formato único, montado pelo errorHandler
+  // ({ statusCode, error, message, issues } ou o envelope de AppError). Os
+  // schemas 4xx/5xx antigos declaravam só { error: string } e o serializador
+  // descartava (ou corrompia) o resto. Aqui eles viram "objeto livre",
+  // mantendo a descrição para a documentação.
+  app.addHook("onRoute", (rota) => {
+    const resposta = rota.schema?.response as Record<string, { description?: string }> | undefined;
+    if (!resposta) return;
+    for (const status of Object.keys(resposta)) {
+      if (/^[45]/.test(status)) {
+        resposta[status] = { description: resposta[status]?.description, type: "object", additionalProperties: true } as never;
+      }
+    }
+  });
+
   app.register(authRoutes, { prefix: "/api/auth" });
   app.register(tiposEducacaoRoutes, { prefix: "/api/tipos-educacao" });
   app.register(etapasRoutes, { prefix: "/api/etapas" });
