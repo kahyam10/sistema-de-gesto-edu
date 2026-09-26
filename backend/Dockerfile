@@ -1,7 +1,7 @@
 # Imagem de PRODUÇÃO da API. Contexto de build = RAIZ do repositório
 # (docker build -f backend/Dockerfile .): usa o package-lock.json do monorepo
 # com `npm ci`, então o build é reprodutível.
-ARG NODE_IMAGE=node:20-alpine
+ARG NODE_IMAGE=node:24-alpine
 
 # ---- dependências (todas, para compilar) ----
 FROM ${NODE_IMAGE} AS deps

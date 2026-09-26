@@ -1,6 +1,6 @@
 # Imagem de PRODUÇÃO do dashboard. Contexto de build = RAIZ do repositório
 # (docker build -f dashboard/Dockerfile .) para usar o package-lock do monorepo.
-ARG NODE_IMAGE=node:20-alpine
+ARG NODE_IMAGE=node:24-alpine
 
 FROM ${NODE_IMAGE} AS deps
 RUN apk add --no-cache libc6-compat

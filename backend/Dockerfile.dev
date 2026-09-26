@@ -1,6 +1,6 @@
 # Imagem de DESENVOLVIMENTO (docker-compose.dev.yml). Não é a de produção
 # (essa é backend/Dockerfile). O código entra por bind mount, não por COPY.
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssl ca-certificates wget \
  && rm -rf /var/lib/apt/lists/*
