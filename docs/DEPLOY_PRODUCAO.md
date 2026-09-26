@@ -39,7 +39,7 @@ HTTPS obrigatório nos dois (Let's Encrypt pelo Coolify).
 | `DATABASE_URL` | connection string interna do Postgres | nunca expor a 5432 |
 | `JWT_SECRET` | `openssl rand -hex 64` | obrigatório, ≥ 32 caracteres |
 | `CORS_ORIGIN` | `https://app.<domínio>` | obrigatório em produção |
-| `TRUST_PROXY` | `1` | IP real atrás do proxy do Coolify (rate limit e auditoria) |
+| `TRUST_PROXY` | `uniquelocal` | rede do proxy do Coolify (IP real no rate limit e na auditoria). Número de saltos (`1`) não é mais aceito: a API recusa subir |
 | `ACCESS_TOKEN_MINUTOS` | `15` | |
 | `REFRESH_TOKEN_DIAS` / `SESSAO_MAX_DIAS` | `7` / `30` | |
 | `LOGIN_MAX_FALHAS` / `LOGIN_MAX_POR_IP` | `5` / `60` | |

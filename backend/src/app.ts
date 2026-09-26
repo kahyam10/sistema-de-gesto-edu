@@ -7,6 +7,7 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { errorHandler } from "./middleware/error-handler.js";
+import { trustProxyDeEnv } from "./lib/trust-proxy.js";
 import { prisma } from "./lib/prisma.js";
 import { configurarZodPtBr } from "./lib/zod-pt-br.js";
 import { PUBLIC_API, WRITE_METHODS, autorizar } from "./lib/rbac.js";
@@ -100,8 +101,8 @@ export async function buildApp() {
     logger: process.env.NODE_ENV === "development",
     // Atrás do proxy do Coolify o IP real vem no X-Forwarded-For. Sem isso o
     // rate limit enxergaria todos os usuários como um único IP (o do proxy).
-    // TRUST_PROXY = número de proxies confiáveis à frente da API (ex.: 1).
-    trustProxy: process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) : false,
+    // TRUST_PROXY = endereço/rede do proxy (ex.: uniquelocal); ver lib/trust-proxy.ts.
+    trustProxy: trustProxyDeEnv(process.env.TRUST_PROXY),
     ajv: {
       customOptions: {
         strict: false, // Permite keywords de documentação como 'example' nos schemas
@@ -126,6 +127,9 @@ export async function buildApp() {
     // terceiros lerem respostas autenticadas: fora de produção o padrão é o dashboard local.
     origin: isProd ? corsOrigins! : corsOrigins ?? ["http://localhost:3050"],
     credentials: true,
+    // @fastify/cors 11 libera por padrão só GET/HEAD/POST (métodos "simples"):
+    // lista explícita do que a API usa (PUT/PATCH/DELETE vêm do dashboard).
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
     // Nome de arquivo dos downloads (exportadores/documentos) visível cross-origin
     exposedHeaders: ["Content-Disposition"],
   });

@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { ComunicadoService } from "../services/comunicado.service";
 import { authMiddleware } from "../middleware/auth";
-import { NotFoundError } from "../errors/index.js";
+import { NotFoundError, PermissionError } from "../errors/index.js";
 import { portalService } from "../services/portal.service.js";
 import {
   createComunicadoSchema, escolaQuerySchema, filtroLeituraComunicadoSchema, idParamSchema,
@@ -246,7 +246,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     // Recibos de leitura são pessoais: só a própria lista, salvo equipe gestora
     const EQUIPE = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
     if (userId !== request.user.id && !EQUIPE.includes(request.user.role)) {
-      return reply.status(403).send({ error: "Acesso negado" });
+      throw new PermissionError("PERM_004");
     }
 
     const comunicados = await comunicadoService.findByUser(userId, filtro);
