@@ -131,6 +131,8 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/(licencas|pontos)(\/|$)/, roles: OPERACAO },
   // Módulo 4 — quadro de lotação (jornada, regime e carga de cada profissional)
   { pattern: /^\/api\/lotacao(\/|$)/, roles: OPERACAO },
+  // Módulo 2 — acompanhamento de aprendizagens (notas e frequência da turma)
+  { pattern: /^\/api\/aprendizagem(\/|$)/, roles: PEDAGOGICO },
   // Documentos pessoais de menores (LGPD) — PROFESSOR/USER não leem
   { pattern: /^\/api\/matriculas\/[^/]+\/documentos(\/|$)/, roles: OPERACAO },
   // Módulo 3 — emails/vínculos de responsáveis e resumos gerenciais

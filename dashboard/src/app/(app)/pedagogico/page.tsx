@@ -12,6 +12,7 @@ import { ConfiguracaoAvaliacaoManager } from "@/components/pedagogico/Configurac
 import { RecuperacaoManager } from "@/components/pedagogico/RecuperacaoManager";
 import { ConselhoClasseManager } from "@/components/pedagogico/ConselhoClasseManager";
 import { ConflitosHorarioManager } from "@/components/pedagogico/ConflitosHorarioManager";
+import { AcompanhamentoAprendizagem } from "@/components/pedagogico/AcompanhamentoAprendizagem";
 
 // Abas que dependem do @react-pdf/renderer (pesado) carregam sob demanda
 const carregando = () => (
@@ -36,6 +37,7 @@ const TABS = [
   { value: "frequencia", label: "Frequência", component: <FrequenciaManager /> },
   { value: "notas", label: "Notas", component: <NotasManager /> },
   { value: "boletim", label: "Boletim", component: <BoletimDigital /> },
+  { value: "acompanhamento", label: "Acompanhamento", component: <AcompanhamentoAprendizagem /> },
   { value: "grade", label: "Grade Horária", component: <GradeHorariaManager /> },
   { value: "relatorio", label: "Relatório Mensal", component: <RelatorioFrequenciaMensal /> },
   { value: "recuperacao", label: "Recuperação", component: <RecuperacaoManager /> },

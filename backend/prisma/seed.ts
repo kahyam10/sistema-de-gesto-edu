@@ -692,8 +692,9 @@ async function main() {
         {
           name: "Acompanhamento de Aprendizagens",
           description: "Monitoramento do desenvolvimento acadêmico dos alunos",
-          status: "in-progress",
-          observacao: "Boletim digital com médias e situação implementado",
+          status: "completed",
+          observacao:
+            "Situação por turma/disciplina/aluno com motivos de atenção (média, frequência, queda, nota pendente); boletim usa a configuração de avaliação",
           ordem: 3,
         },
         {

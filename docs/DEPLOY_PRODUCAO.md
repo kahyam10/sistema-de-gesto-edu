@@ -46,6 +46,7 @@ HTTPS obrigatório nos dois (Let's Encrypt pelo Coolify).
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | admin inicial | trocar a senha no 1º acesso |
 | `UPLOADS_DIR` / `STORAGE_DRIVER` | `/app/uploads` / `local` | volume persistente em `/app/uploads` |
 | `NODE_ENV` / `PORT` / `HOST` | `production` / `3051` / `0.0.0.0` | |
+| `FRACAO_MAXIMA_REGENCIA` | vazio (= `2/3`) | opcional; só se o estatuto do magistério municipal fixar outro limite de regência |
 
 ### Dashboard (build-arg, não env de runtime)
 | Variável | Valor |

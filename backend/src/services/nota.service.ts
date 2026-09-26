@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
 import { NotFoundError } from "../errors/index.js";
 import { CreateNotaInput, LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
 import { frequenciaService } from "./frequencia.service.js";
@@ -388,17 +389,22 @@ export class NotaService {
   private determinaSituacao(
     mediaFinal: number | null,
     bimestresComNota: number,
-    frequenciaPercentual: number
+    frequenciaPercentual: number,
+    regra: { mediaMinima: number; frequenciaMinima: number; periodos: number } = {
+      mediaMinima: 6.0,
+      frequenciaMinima: 75,
+      periodos: 4,
+    }
   ): "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO" {
     // Se nem todos os bimestres têm nota, está em curso
-    if (bimestresComNota < 4) return "EM_CURSO";
+    if (bimestresComNota < regra.periodos) return "EM_CURSO";
     if (mediaFinal === null) return "EM_CURSO";
 
     // Reprovado por frequência
-    if (frequenciaPercentual < 75) return "REPROVADO";
+    if (frequenciaPercentual < regra.frequenciaMinima) return "REPROVADO";
 
-    // Aprovado
-    if (mediaFinal >= 6.0) return "APROVADO";
+    // Aprovado (média mínima da configuração de avaliação vigente; padrão 6,0)
+    if (mediaFinal >= regra.mediaMinima) return "APROVADO";
 
     // Recuperação
     if (mediaFinal >= 3.0) return "RECUPERACAO";
@@ -490,6 +496,18 @@ export class NotaService {
       return Math.round((somaPonderada / somaPesos) * 100) / 100;
     };
 
+    // Regras da configuração de avaliação vigente (antes fixas em 6,0 e 75%)
+    const cfg = await configuracaoAvaliacaoService.findByAnoLetivo(
+      turma.anoLetivo,
+      turma.escolaId,
+      turma.serie.nivel.etapaId
+    );
+    const regra = {
+      mediaMinima: cfg?.mediaMinima ?? 6.0,
+      frequenciaMinima: cfg?.percentualFrequenciaMinima ?? 75,
+      periodos: Math.min(cfg?.numeroPeriodos ?? 4, 4),
+    };
+
     // Frequência geral (uma única vez, usada em todas as disciplinas)
     const frequencia = await frequenciaService.calcularEstatisticas(
       matriculaId,
@@ -539,7 +557,8 @@ export class NotaService {
       const situacao = this.determinaSituacao(
         mediaFinal,
         bimestresComNota,
-        frequencia.percentualPresenca
+        frequencia.percentualPresenca,
+        regra
       );
 
       boletimDisciplinas.push({
