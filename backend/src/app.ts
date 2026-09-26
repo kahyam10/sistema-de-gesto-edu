@@ -49,6 +49,7 @@ import { gradeHorariaRoutes } from "./routes/grade-horaria.routes.js";
 import { buscaAtivaRoutes } from "./routes/busca-ativa.routes.js";
 import { aeeRoutes } from "./routes/aee.routes.js";
 import { acompanhamentoRoutes } from "./routes/acompanhamento.routes.js";
+import { atividadesComplementaresRoutes, lotacaoRoutes } from "./routes/rh-horarios.routes.js";
 // Módulo 9 — Comunicação e Eventos
 import { comunicadoRoutes } from "./routes/comunicado.routes.js";
 import { notificacaoRoutes } from "./routes/notificacao.routes.js";
@@ -367,6 +368,9 @@ export async function buildApp() {
   app.register(disciplinasRoutes, { prefix: "/api/disciplinas" });
   app.register(configuracaoAvaliacaoRoutes, { prefix: "/api/configuracao-avaliacao" });
   app.register(gradeHorariaRoutes, { prefix: "/api/grade-horaria" });
+  // Módulo 4 — ACs por área e quadro de lotação
+  app.register(atividadesComplementaresRoutes, { prefix: "/api/atividades-complementares" });
+  app.register(lotacaoRoutes, { prefix: "/api/lotacao" });
   // Módulo 5 — Programas Especiais
   app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
   app.register(aeeRoutes, { prefix: "/api/aee" });

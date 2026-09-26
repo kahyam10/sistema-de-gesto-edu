@@ -129,6 +129,8 @@ export const REGRAS_ESCRITA: RegraEscrita[] = [
 // com CPF/NIS, resumos gerenciais) — não PROFESSOR/USER, salvo indicação.
 export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/(licencas|pontos)(\/|$)/, roles: OPERACAO },
+  // Módulo 4 — quadro de lotação (jornada, regime e carga de cada profissional)
+  { pattern: /^\/api\/lotacao(\/|$)/, roles: OPERACAO },
   // Documentos pessoais de menores (LGPD) — PROFESSOR/USER não leem
   { pattern: /^\/api\/matriculas\/[^/]+\/documentos(\/|$)/, roles: OPERACAO },
   // Módulo 3 — emails/vínculos de responsáveis e resumos gerenciais

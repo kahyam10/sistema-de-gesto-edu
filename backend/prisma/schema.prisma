@@ -232,6 +232,7 @@ model Escola {
   users        User[]
   salas        Sala[]
   eventosCalendario EventoCalendario[]
+  atividadesComplementares AtividadeComplementar[]
   configuracoes ConfiguracaoAvaliacao[]
   buscasAtivas        BuscaAtiva[]
   salasRecursos       SalaRecursos[]
@@ -474,6 +475,8 @@ model ProfissionalEducacao {
   pontos         Ponto[]
   licencas       Licenca[]
   membroColegiado MembroColegiado[]
+  acsCoordenados   AtividadeComplementar[] @relation("ACCoordenador")
+  acParticipacoes  AcParticipante[]
 
   @@map("profissionais_educacao")
 }
@@ -1745,4 +1748,45 @@ model PresencaReuniaoDemocratica {
 
   @@index([reuniaoId])
   @@map("presencas_reunioes_democraticas")
+}
+
+// ==================== MÓDULO 4: ATIVIDADE COMPLEMENTAR (AC) ====================
+// Horário fixo de planejamento coletivo por área (parte da jornada fora da
+// regência). Entra no quadro de lotação junto com as aulas da grade.
+model AtividadeComplementar {
+  id            String   @id @default(cuid())
+  escolaId      String
+  area          String   // LINGUAGENS, MATEMATICA, CIENCIAS_NATUREZA, CIENCIAS_HUMANAS, ENSINO_RELIGIOSO, ANOS_INICIAIS, EDUCACAO_INFANTIL, AEE, GERAL
+  titulo        String?
+  diaSemana     String   // SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO
+  horaInicio    String   // "14:00"
+  horaFim       String   // "17:00"
+  local         String?
+  coordenadorId String?
+  observacoes   String?
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  escola        Escola                @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  coordenador   ProfissionalEducacao? @relation("ACCoordenador", fields: [coordenadorId], references: [id], onDelete: SetNull)
+  participantes AcParticipante[]
+
+  @@index([escolaId])
+  @@index([coordenadorId])
+  @@map("atividades_complementares")
+}
+
+model AcParticipante {
+  id             String   @id @default(cuid())
+  acId           String
+  profissionalId String
+  createdAt      DateTime @default(now())
+
+  ac           AtividadeComplementar @relation(fields: [acId], references: [id], onDelete: Cascade)
+  profissional ProfissionalEducacao  @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@unique([acId, profissionalId])
+  @@index([profissionalId])
+  @@map("ac_participantes")
 }

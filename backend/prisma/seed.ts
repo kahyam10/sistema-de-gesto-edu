@@ -786,15 +786,15 @@ async function main() {
         {
           name: "Lotação de Professores",
           description: "Alocação de docentes por escola e disciplina",
-          status: "in-progress",
+          status: "completed",
           observacao:
-            "Vínculo escola/turma implementado; lotação formal por disciplina e carga horária pendente",
+            "Quadro de lotação por escola: jornada × aulas × AC × saldo, com alertas de excesso e choque de horário",
           ordem: 1,
         },
         {
           name: "Gestão de Horários",
           description: "Controle de carga horária e ACs por área",
-          status: "planning",
+          status: "completed",
           ordem: 2,
         },
         {

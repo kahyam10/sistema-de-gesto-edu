@@ -607,6 +607,24 @@
       "message": "A turma de destino não pertence à escola de destino",
       "statusCode": 400,
       "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_036": {
+      "code": "BIZ_036",
+      "message": "Profissional não está lotado nem leciona nesta escola",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_037": {
+      "code": "BIZ_037",
+      "message": "Conflito de horário com aula ou AC já registrada para o profissional",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_038": {
+      "code": "BIZ_038",
+      "message": "O horário de fim deve ser depois do início",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
     }
   },
   "DATABASE": {
