@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
 
@@ -93,7 +94,7 @@ export class BuscaAtivaService {
     prioridade?: string;
     motivo?: string;
   }) {
-    const where: any = {};
+    const where: Prisma.BuscaAtivaWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.status) where.status = filters.status;
@@ -157,7 +158,7 @@ export class BuscaAtivaService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.BuscaAtivaWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.status) where.status = filters.status;
@@ -402,7 +403,7 @@ export class BuscaAtivaService {
   // ==================== RELATÓRIOS E ESTATÍSTICAS ====================
 
   async getEstatisticas(escolaId?: string) {
-    const where: any = {};
+    const where: Prisma.BuscaAtivaWhereInput = {};
     if (escolaId) where.escolaId = escolaId;
 
     const total = await prisma.buscaAtiva.count({ where });

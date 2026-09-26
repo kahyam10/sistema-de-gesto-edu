@@ -1,4 +1,8 @@
 import { FastifyInstance } from "fastify";
+import {
+  createAtendimentoAEESchema, createPEISchema, createSalaRecursosSchema, escolaQuerySchema, listarPEIQuerySchema,
+  listarSalasQuerySchema, mesAnoQuerySchema, updateAtendimentoAEESchema, updatePEISchema, updateSalaRecursosSchema,
+} from "../schemas/programas.schemas.js";
 import { AEEService } from "../services/aee.service.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -17,33 +21,6 @@ export async function aeeRoutes(app: FastifyInstance) {
       summary: "Listar Planos Educacionais Individualizados (PEI)",
       description: "Lista todos os PEIs com filtros opcionais por escola, ano letivo e status",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: {
-            type: "string",
-            description: "ID da escola",
-          },
-          anoLetivo: {
-            type: "number",
-            description: "Ano letivo",
-            example: 2026,
-          },
-          status: {
-            type: "string",
-            enum: ["ATIVO", "CONCLUIDO", "SUSPENSO", "CANCELADO"],
-            description: "Status do PEI",
-          },
-          page: {
-            type: "number",
-            description: "Número da página (paginação)",
-          },
-          limit: {
-            type: "number",
-            description: "Limite de registros por página",
-          },
-        },
-      },
       response: {
         200: {
           description: "Lista de PEIs",
@@ -59,20 +36,11 @@ export async function aeeRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { escolaId, anoLetivo, status, page, limit } = request.query as any;
-
-    const filters = {
-      escolaId,
-      anoLetivo: anoLetivo ? parseInt(anoLetivo) : undefined,
-      status,
-    };
+    const { page, limit, ...filters } = listarPEIQuerySchema.parse(request.query);
 
     // Suporte a paginação
     if (page && limit) {
-      const result = await service.findAllPEIPaginated(filters, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-      });
+      const result = await service.findAllPEIPaginated(filters, { page, limit });
       return reply.send(result);
     }
 
@@ -137,54 +105,6 @@ export async function aeeRoutes(app: FastifyInstance) {
       summary: "Criar Plano Educacional Individualizado (PEI)",
       description: "Cria um novo PEI para aluno com necessidades educacionais especiais",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["matriculaId", "deficiencia", "anoLetivo"],
-        properties: {
-          matriculaId: {
-            type: "string",
-            description: "ID da matrícula do aluno",
-          },
-          deficiencia: {
-            type: "string",
-            enum: ["INTELECTUAL", "VISUAL", "AUDITIVA", "FISICA", "MULTIPLA", "TEA", "OUTRA"],
-            description: "Tipo de deficiência",
-          },
-          anoLetivo: {
-            type: "number",
-            description: "Ano letivo",
-            example: 2026,
-          },
-          diagnostico: {
-            type: "string",
-            description: "Descrição do diagnóstico",
-          },
-          objetivos: {
-            type: "string",
-            description: "Objetivos do plano",
-          },
-          estrategias: {
-            type: "string",
-            description: "Estratégias pedagógicas",
-          },
-          recursos: {
-            type: "string",
-            description: "Recursos necessários",
-          },
-          avaliacoes: {
-            type: "string",
-            description: "Métodos de avaliação",
-          },
-          observacoes: {
-            type: "string",
-            description: "Observações adicionais",
-          },
-          responsavelId: {
-            type: "string",
-            description: "ID do profissional responsável",
-          },
-        },
-      },
       response: {
         201: {
           description: "PEI criado com sucesso",
@@ -207,7 +127,7 @@ export async function aeeRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
+    const data = createPEISchema.parse(request.body);
     const pei = await service.createPEI(data);
     return reply.status(201).send(pei);
   });
@@ -226,17 +146,6 @@ export async function aeeRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        properties: {
-          objetivos: { type: "string" },
-          estrategias: { type: "string" },
-          recursos: { type: "string" },
-          avaliacoes: { type: "string" },
-          observacoes: { type: "string" },
-          status: { type: "string", enum: ["ATIVO", "CONCLUIDO", "SUSPENSO", "CANCELADO"] },
-        },
-      },
       response: {
         200: { type: "object", additionalProperties: true },
         404: { type: "object", additionalProperties: true },
@@ -244,7 +153,7 @@ export async function aeeRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const data = request.body as any;
+    const data = updatePEISchema.parse(request.body);
     const pei = await service.updatePEI(id, data);
     return reply.send(pei);
   });
@@ -283,23 +192,12 @@ export async function aeeRoutes(app: FastifyInstance) {
       summary: "Listar salas de recursos",
       description: "Lista todas as salas de recursos multifuncionais",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: { type: "string", description: "Filtrar por escola" },
-          turno: { type: "string", enum: ["MATUTINO", "VESPERTINO", "NOTURNO"], description: "Filtrar por turno" },
-        },
-      },
       response: {
         200: { type: "array", items: { type: "object", additionalProperties: true } },
       },
     },
   }, async (request, reply) => {
-    const { escolaId, turno } = request.query as any;
-    const salas = await service.findAllSalasRecursos({
-      escolaId,
-      turno,
-    });
+    const salas = await service.findAllSalasRecursos(listarSalasQuerySchema.parse(request.query));
     return reply.send(salas);
   });
 
@@ -335,23 +233,12 @@ export async function aeeRoutes(app: FastifyInstance) {
       summary: "Criar sala de recursos",
       description: "Cria uma nova sala de recursos multifuncional",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["escolaId", "nome", "turno"],
-        properties: {
-          escolaId: { type: "string", description: "ID da escola" },
-          nome: { type: "string", description: "Nome da sala" },
-          turno: { type: "string", enum: ["MATUTINO", "VESPERTINO", "NOTURNO"] },
-          capacidade: { type: "number", description: "Capacidade de atendimento" },
-          recursos: { type: "string", description: "Recursos disponíveis" },
-        },
-      },
       response: {
         201: { type: "object", additionalProperties: true },
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
+    const data = createSalaRecursosSchema.parse(request.body);
     const sala = await service.createSalaRecursos(data);
     return reply.status(201).send(sala);
   });
@@ -370,14 +257,6 @@ export async function aeeRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        properties: {
-          nome: { type: "string" },
-          capacidade: { type: "number" },
-          recursos: { type: "string" },
-        },
-      },
       response: {
         200: { type: "object", additionalProperties: true },
         404: { type: "object", additionalProperties: true },
@@ -385,7 +264,7 @@ export async function aeeRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const data = request.body as any;
+    const data = updateSalaRecursosSchema.parse(request.body);
     const sala = await service.updateSalaRecursos(id, data);
     return reply.send(sala);
   });
@@ -424,24 +303,12 @@ export async function aeeRoutes(app: FastifyInstance) {
       summary: "Criar atendimento AEE",
       description: "Registra um atendimento na sala de recursos",
       security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["peiId", "salaRecursosId", "data"],
-        properties: {
-          peiId: { type: "string", description: "ID do PEI" },
-          salaRecursosId: { type: "string", description: "ID da sala de recursos" },
-          data: { type: "string", format: "date-time", description: "Data do atendimento" },
-          atividades: { type: "string", description: "Atividades realizadas" },
-          observacoes: { type: "string" },
-          presenca: { type: "boolean", default: true },
-        },
-      },
       response: {
         201: { type: "object", additionalProperties: true },
       },
     },
   }, async (request, reply) => {
-    const data = request.body as any;
+    const data = createAtendimentoAEESchema.parse(request.body);
     const atendimento = await service.createAtendimento(data);
     return reply.status(201).send(atendimento);
   });
@@ -460,24 +327,14 @@ export async function aeeRoutes(app: FastifyInstance) {
         },
         required: ["peiId"],
       },
-      querystring: {
-        type: "object",
-        properties: {
-          mes: { type: "number", description: "Filtrar por mês (1-12)" },
-          ano: { type: "number", description: "Filtrar por ano" },
-        },
-      },
       response: {
         200: { type: "array", items: { type: "object", additionalProperties: true } },
       },
     },
   }, async (request, reply) => {
     const { peiId } = request.params as { peiId: string };
-    const { mes, ano } = request.query as any;
-    const atendimentos = await service.findAtendimentosByPEI(peiId, {
-      mes: mes ? parseInt(mes) : undefined,
-      ano: ano ? parseInt(ano) : undefined,
-    });
+    const filtroMes = mesAnoQuerySchema.parse(request.query);
+    const atendimentos = await service.findAtendimentosByPEI(peiId, filtroMes);
     return reply.send(atendimentos);
   });
 
@@ -495,24 +352,14 @@ export async function aeeRoutes(app: FastifyInstance) {
         },
         required: ["salaRecursosId"],
       },
-      querystring: {
-        type: "object",
-        properties: {
-          mes: { type: "number", description: "Filtrar por mês (1-12)" },
-          ano: { type: "number", description: "Filtrar por ano" },
-        },
-      },
       response: {
         200: { type: "array", items: { type: "object", additionalProperties: true } },
       },
     },
   }, async (request, reply) => {
     const { salaRecursosId } = request.params as { salaRecursosId: string };
-    const { mes, ano } = request.query as any;
-    const atendimentos = await service.findAtendimentosBySala(salaRecursosId, {
-      mes: mes ? parseInt(mes) : undefined,
-      ano: ano ? parseInt(ano) : undefined,
-    });
+    const filtroMes = mesAnoQuerySchema.parse(request.query);
+    const atendimentos = await service.findAtendimentosBySala(salaRecursosId, filtroMes);
     return reply.send(atendimentos);
   });
 
@@ -530,14 +377,6 @@ export async function aeeRoutes(app: FastifyInstance) {
         },
         required: ["id"],
       },
-      body: {
-        type: "object",
-        properties: {
-          atividades: { type: "string" },
-          observacoes: { type: "string" },
-          presenca: { type: "boolean" },
-        },
-      },
       response: {
         200: { type: "object", additionalProperties: true },
         404: { type: "object", additionalProperties: true },
@@ -545,7 +384,7 @@ export async function aeeRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const data = request.body as any;
+    const data = updateAtendimentoAEESchema.parse(request.body);
     const atendimento = await service.updateAtendimento(id, data);
     return reply.send(atendimento);
   });
@@ -584,12 +423,6 @@ export async function aeeRoutes(app: FastifyInstance) {
       summary: "Estatísticas AEE",
       description: "Retorna estatísticas gerais ou por escola do Atendimento Educacional Especializado",
       security: [{ bearerAuth: [] }],
-      querystring: {
-        type: "object",
-        properties: {
-          escolaId: { type: "string", description: "ID da escola (opcional)" },
-        },
-      },
       response: {
         200: {
           description: "Estatísticas",
@@ -604,7 +437,7 @@ export async function aeeRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { escolaId } = request.query as any;
+    const { escolaId } = escolaQuerySchema.parse(request.query);
     const estatisticas = await service.getEstatisticasAEE(escolaId);
     return reply.send(estatisticas);
   });

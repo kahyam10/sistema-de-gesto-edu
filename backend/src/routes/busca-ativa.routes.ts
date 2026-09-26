@@ -1,4 +1,8 @@
 import { FastifyInstance } from "fastify";
+import {
+  createBuscaAtivaSchema, createEncaminhamentoSchema, createVisitaSchema, escolaQuerySchema, listarBuscaAtivaQuerySchema,
+  updateBuscaAtivaSchema, updateEncaminhamentoSchema, updateVisitaSchema,
+} from "../schemas/programas.schemas.js";
 import { BuscaAtivaService } from "../services/busca-ativa.service.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -20,34 +24,6 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
         description:
           "Lista todos os casos de busca ativa com filtros opcionais e suporte a paginação",
         security: [{ bearerAuth: [] }],
-        querystring: {
-          type: "object",
-          properties: {
-            escolaId: { type: "string", description: "Filtrar por escola" },
-            status: {
-              type: "string",
-              enum: ["ATIVA", "EM_ACOMPANHAMENTO", "RESOLVIDA", "CANCELADA"],
-              description: "Filtrar por status",
-            },
-            prioridade: {
-              type: "string",
-              enum: ["BAIXA", "MEDIA", "ALTA", "URGENTE"],
-              description: "Filtrar por prioridade",
-            },
-            motivo: {
-              type: "string",
-              enum: [
-                "EVASAO",
-                "INFREQUENCIA",
-                "RISCO_ABANDONO",
-                "TRANSFERENCIA_NAO_CONFIRMADA",
-              ],
-              description: "Filtrar por motivo",
-            },
-            page: { type: "string", description: "Número da página" },
-            limit: { type: "string", description: "Itens por página" },
-          },
-        },
         response: {
           200: {
             description: "Lista de casos de busca ativa",
@@ -58,17 +34,11 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { escolaId, status, prioridade, motivo, page, limit } =
-        request.query as any;
-
-      const filters = { escolaId, status, prioridade, motivo };
+      const { page, limit, ...filters } = listarBuscaAtivaQuerySchema.parse(request.query);
 
       // Suporte a paginação
       if (page && limit) {
-        const result = await service.findAllPaginated(filters, {
-          page: parseInt(page),
-          limit: parseInt(limit),
-        });
+        const result = await service.findAllPaginated(filters, { page, limit });
         return reply.send(result);
       }
 
@@ -117,39 +87,6 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
         description:
           "Cria um novo caso de busca ativa para aluno evadido ou em risco de evasão",
         security: [{ bearerAuth: [] }],
-        body: {
-          type: "object",
-          required: ["matriculaId", "motivo", "responsavelId"],
-          properties: {
-            matriculaId: {
-              type: "string",
-              description: "ID da matrícula do aluno",
-            },
-            motivo: {
-              type: "string",
-              enum: [
-                "EVASAO",
-                "INFREQUENCIA",
-                "RISCO_ABANDONO",
-                "TRANSFERENCIA_NAO_CONFIRMADA",
-              ],
-              description: "Motivo da busca ativa",
-            },
-            descricao: {
-              type: "string",
-              description: "Descrição detalhada do caso",
-            },
-            responsavelId: {
-              type: "string",
-              description: "ID do profissional responsável",
-            },
-            prioridade: {
-              type: "string",
-              enum: ["BAIXA", "MEDIA", "ALTA", "URGENTE"],
-              description: "Prioridade do caso",
-            },
-          },
-        },
         response: {
           201: {
             description: "Caso de busca ativa criado com sucesso",
@@ -160,7 +97,7 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const data = request.body as any;
+      const data = createBuscaAtivaSchema.parse(request.body);
       const buscaAtiva = await service.create(data);
       return reply.status(201).send(buscaAtiva);
     },
@@ -182,21 +119,6 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
           },
           required: ["id"],
         },
-        body: {
-          type: "object",
-          properties: {
-            status: {
-              type: "string",
-              enum: ["ATIVA", "EM_ACOMPANHAMENTO", "RESOLVIDA", "CANCELADA"],
-            },
-            prioridade: {
-              type: "string",
-              enum: ["BAIXA", "MEDIA", "ALTA", "URGENTE"],
-            },
-            descricao: { type: "string" },
-            observacoes: { type: "string" },
-          },
-        },
         response: {
           200: { type: "object", additionalProperties: true },
           404: { type: "object", properties: { error: { type: "string" } } },
@@ -205,7 +127,7 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const data = request.body as any;
+      const data = updateBuscaAtivaSchema.parse(request.body);
       const buscaAtiva = await service.update(id, data);
       return reply.send(buscaAtiva);
     },
@@ -250,15 +172,6 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
         description:
           "Retorna estatísticas gerais ou por escola dos casos de busca ativa",
         security: [{ bearerAuth: [] }],
-        querystring: {
-          type: "object",
-          properties: {
-            escolaId: {
-              type: "string",
-              description: "ID da escola (opcional)",
-            },
-          },
-        },
         response: {
           200: {
             description: "Estatísticas",
@@ -274,7 +187,7 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { escolaId } = request.query as any;
+      const { escolaId } = escolaQuerySchema.parse(request.query);
       const estatisticas = await service.getEstatisticas(escolaId);
       return reply.send(estatisticas);
     },
@@ -292,49 +205,13 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
         description:
           "Registra uma visita domiciliar realizada para um caso de busca ativa",
         security: [{ bearerAuth: [] }],
-        body: {
-          type: "object",
-          required: ["buscaAtivaId", "data", "profissionalId"],
-          properties: {
-            buscaAtivaId: {
-              type: "string",
-              description: "ID do caso de busca ativa",
-            },
-            data: {
-              type: "string",
-              format: "date-time",
-              description: "Data e hora da visita",
-            },
-            profissionalId: {
-              type: "string",
-              description: "ID do profissional que realizou a visita",
-            },
-            observacoes: {
-              type: "string",
-              description: "Observações sobre a visita",
-            },
-            resultado: {
-              type: "string",
-              enum: [
-                "ALUNO_LOCALIZADO",
-                "NAO_LOCALIZADO",
-                "RECUSA",
-                "FAMILIA_AUSENTE",
-              ],
-            },
-            proximaAcao: {
-              type: "string",
-              description: "Próxima ação a ser tomada",
-            },
-          },
-        },
         response: {
           201: { type: "object", additionalProperties: true },
         },
       },
     },
     async (request, reply) => {
-      const data = request.body as any;
+      const data = createVisitaSchema.parse(request.body);
       const visita = await service.createVisita(data);
       return reply.status(201).send(visita);
     },
@@ -391,22 +268,6 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
           },
           required: ["id"],
         },
-        body: {
-          type: "object",
-          properties: {
-            observacoes: { type: "string" },
-            resultado: {
-              type: "string",
-              enum: [
-                "ALUNO_LOCALIZADO",
-                "NAO_LOCALIZADO",
-                "RECUSA",
-                "FAMILIA_AUSENTE",
-              ],
-            },
-            proximaAcao: { type: "string" },
-          },
-        },
         response: {
           200: { type: "object", additionalProperties: true },
         },
@@ -414,7 +275,7 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const data = request.body as any;
+      const data = updateVisitaSchema.parse(request.body);
       const visita = await service.updateVisita(id, data);
       return reply.send(visita);
     },
@@ -460,41 +321,13 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
         description:
           "Registra encaminhamento para órgãos externos (Conselho Tutelar, CRAS, etc.)",
         security: [{ bearerAuth: [] }],
-        body: {
-          type: "object",
-          required: ["buscaAtivaId", "orgao", "data"],
-          properties: {
-            buscaAtivaId: {
-              type: "string",
-              description: "ID do caso de busca ativa",
-            },
-            orgao: {
-              type: "string",
-              description: "Órgão de destino",
-              enum: [
-                "CONSELHO_TUTELAR",
-                "CRAS",
-                "CREAS",
-                "MINISTERIO_PUBLICO",
-                "OUTRO",
-              ],
-            },
-            data: {
-              type: "string",
-              format: "date-time",
-              description: "Data do encaminhamento",
-            },
-            motivo: { type: "string", description: "Motivo do encaminhamento" },
-            observacoes: { type: "string" },
-          },
-        },
         response: {
           201: { type: "object", additionalProperties: true },
         },
       },
     },
     async (request, reply) => {
-      const data = request.body as any;
+      const data = createEncaminhamentoSchema.parse(request.body);
       const encaminhamento = await service.createEncaminhamento(data);
       return reply.status(201).send(encaminhamento);
     },
@@ -552,13 +385,6 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
           },
           required: ["id"],
         },
-        body: {
-          type: "object",
-          properties: {
-            motivo: { type: "string" },
-            observacoes: { type: "string" },
-          },
-        },
         response: {
           200: { type: "object", additionalProperties: true },
         },
@@ -566,7 +392,7 @@ export async function buscaAtivaRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const data = request.body as any;
+      const data = updateEncaminhamentoSchema.parse(request.body);
       const encaminhamento = await service.updateEncaminhamento(id, data);
       return reply.send(encaminhamento);
     },

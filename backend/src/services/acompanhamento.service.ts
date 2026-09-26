@@ -84,7 +84,7 @@ export class AcompanhamentoService {
     status?: string;
     profissionalId?: string;
   }) {
-    const where: any = {};
+    const where: Prisma.AcompanhamentoIndividualizadoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.tipo) where.tipo = filters.tipo;
@@ -143,7 +143,7 @@ export class AcompanhamentoService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.AcompanhamentoIndividualizadoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.tipo) where.tipo = filters.tipo;
@@ -451,7 +451,7 @@ export class AcompanhamentoService {
   // ==================== RELATÓRIOS E ESTATÍSTICAS ====================
 
   async getEstatisticas(escolaId?: string) {
-    const where: any = {};
+    const where: Prisma.AcompanhamentoIndividualizadoWhereInput = {};
     if (escolaId) where.escolaId = escolaId;
 
     const total = await prisma.acompanhamentoIndividualizado.count({ where });

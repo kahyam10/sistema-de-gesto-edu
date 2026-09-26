@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
 
@@ -120,7 +121,7 @@ export class AEEService {
   }
 
   async findAllPEI(filters?: { escolaId?: string; anoLetivo?: number; status?: string }) {
-    const where: any = {};
+    const where: Prisma.PlanoEducacionalIndividualizadoWhereInput = {};
 
     if (filters?.anoLetivo) where.anoLetivo = filters.anoLetivo;
     if (filters?.status) where.status = filters.status;
@@ -173,7 +174,7 @@ export class AEEService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.PlanoEducacionalIndividualizadoWhereInput = {};
 
     if (filters?.anoLetivo) where.anoLetivo = filters.anoLetivo;
     if (filters?.status) where.status = filters.status;
@@ -369,7 +370,7 @@ export class AEEService {
   }
 
   async findAllSalasRecursos(filters?: { escolaId?: string; turno?: string }) {
-    const where: any = {};
+    const where: Prisma.SalaRecursosWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.turno) where.turno = filters.turno;
@@ -510,7 +511,7 @@ export class AEEService {
   }
 
   async findAtendimentosByPEI(peiId: string, filters?: { mes?: number; ano?: number }) {
-    const where: any = { peiId };
+    const where: Prisma.AtendimentoAEEWhereInput = { peiId };
 
     if (filters?.mes && filters?.ano) {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
@@ -544,7 +545,7 @@ export class AEEService {
   }
 
   async findAtendimentosBySala(salaRecursosId: string, filters?: { mes?: number; ano?: number }) {
-    const where: any = { salaRecursosId };
+    const where: Prisma.AtendimentoAEEWhereInput = { salaRecursosId };
 
     if (filters?.mes && filters?.ano) {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
@@ -625,7 +626,7 @@ export class AEEService {
   // ==================== RELATÓRIOS E ESTATÍSTICAS ====================
 
   async getEstatisticasAEE(escolaId?: string) {
-    const where: any = {};
+    const where: Prisma.PlanoEducacionalIndividualizadoWhereInput = {};
 
     if (escolaId) {
       where.matricula = {
