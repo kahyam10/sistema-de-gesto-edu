@@ -42,6 +42,10 @@ export const REGRAS: Record<string, Regra | "especial"> = {
   ConfiguracaoAvaliacao: { tipo: "escolaOpcional" },
   Cardapio: { tipo: "escolaOpcional" },
   Comunicado: { tipo: "escolaOpcional" },
+  ConteudoProgramatico: { tipo: "escolaOpcional" },
+  AtividadePedagogica: { tipo: "escolaOpcional" },
+  PlanoAula: via("turma", "turmaId", "Turma"),
+  PlanoAulaAtividade: via("plano", "planoId", "PlanoAula"),
   TurmaProfessor: via("turma", "turmaId", "Turma"),
   GradeHoraria: via("turma", "turmaId", "Turma"),
   Avaliacao: via("turma", "turmaId", "Turma"),
@@ -77,7 +81,10 @@ export const REGRAS: Record<string, Regra | "especial"> = {
   // Notificacao e ComunicadoDestinatario (filtrados por usuário).
 };
 
-const NADA = "__sem_acesso__"; // id impossível: filtro que não casa com nada
+const NADA = "__sem_acesso__";
+
+// Models "escolaOpcional" que o professor só lê da rede e das próprias escolas
+const ESCOLA_OPCIONAL_DO_PROFESSOR = new Set(["Comunicado", "ConteudoProgramatico", "AtividadePedagogica"]); // id impossível: filtro que não casa com nada
 
 /** Filtro de LEITURA de um model para o escopo. null = sem restrição. */
 export function filtroLeitura(model: string, e: Escopo): Where | null {
@@ -102,7 +109,10 @@ export function filtroLeitura(model: string, e: Escopo): Where | null {
   if (regra.tipo === "escola") return e.tipo === "ESCOLA" ? { escolaId: E } : null;
   if (regra.tipo === "escolaOpcional") {
     if (e.tipo === "ESCOLA") return { OR: [{ escolaId: null }, { escolaId: E }] };
-    return model === "Comunicado" ? { OR: [{ escolaId: null }, { escolaId: { in: e.escolaIds } }] } : null;
+    // Professor: registros da rede + os das escolas em que leciona
+    return ESCOLA_OPCIONAL_DO_PROFESSOR.has(model)
+      ? { OR: [{ escolaId: null }, { escolaId: { in: e.escolaIds } }] }
+      : null;
   }
   const doPai = filtroLeitura(regra.pai, e);
   return doPai ? { [regra.relacao]: doPai } : null;

@@ -51,6 +51,7 @@ import { aeeRoutes } from "./routes/aee.routes.js";
 import { acompanhamentoRoutes } from "./routes/acompanhamento.routes.js";
 import { atividadesComplementaresRoutes, lotacaoRoutes } from "./routes/rh-horarios.routes.js";
 import { aprendizagemRoutes } from "./routes/aprendizagem.routes.js";
+import { planejamentoRoutes } from "./routes/planejamento.routes.js";
 // Módulo 9 — Comunicação e Eventos
 import { comunicadoRoutes } from "./routes/comunicado.routes.js";
 import { notificacaoRoutes } from "./routes/notificacao.routes.js";
@@ -374,6 +375,7 @@ export async function buildApp() {
   app.register(lotacaoRoutes, { prefix: "/api/lotacao" });
   // Módulo 2 — acompanhamento de aprendizagens
   app.register(aprendizagemRoutes, { prefix: "/api/aprendizagem" });
+  app.register(planejamentoRoutes, { prefix: "/api/planejamento" });
   // Módulo 5 — Programas Especiais
   app.register(buscaAtivaRoutes, { prefix: "/api/busca-ativa" });
   app.register(aeeRoutes, { prefix: "/api/aee" });

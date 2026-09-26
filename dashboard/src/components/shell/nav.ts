@@ -20,6 +20,8 @@ const OPERACAO = ['ADMIN', 'SEMEC', 'DIRETOR', 'COORDENADOR', 'SECRETARIA'] as c
 // Equipe interna da rede — os papéis externos (RESPONSAVEL e USER sem função)
 // enxergam apenas o próprio portal.
 const EQUIPE = [...OPERACAO, 'PROFESSOR'] as const;
+// Planejamento pedagógico: quem orienta (sem a secretaria) e quem dá aula
+const COORDENACAO_E_PROFESSOR = ['ADMIN', 'SEMEC', 'DIRETOR', 'COORDENADOR', 'PROFESSOR'] as const;
 
 export const NAV_SECTIONS: readonly NavSection[] = [
   {
@@ -28,6 +30,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { href: '/portal', label: 'Meu Portal', icon: 'home', roles: 'all' },
       { href: '/', label: 'Dashboard', icon: 'dashboard', roles: EQUIPE },
       { href: '/pedagogico', label: 'Pedagógico', icon: 'book', roles: EQUIPE },
+      { href: '/planejamento', label: 'Planejamento', icon: 'notebook', roles: COORDENACAO_E_PROFESSOR },
       { href: '/cadastros/matriculas', label: 'Matrículas', icon: 'userPlus', roles: EQUIPE },
       { href: '/cadastros/escolas', label: 'Escolas', icon: 'building', roles: EQUIPE },
       { href: '/cadastros/profissionais', label: 'Profissionais', icon: 'users', roles: EQUIPE },

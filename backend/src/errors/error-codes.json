@@ -625,6 +625,42 @@
       "message": "O horário de fim deve ser depois do início",
       "statusCode": 400,
       "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_039": {
+      "code": "BIZ_039",
+      "message": "Transição de situação do plano de aula não permitida",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_040": {
+      "code": "BIZ_040",
+      "message": "A disciplina não pertence à etapa da turma ou da série",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_041": {
+      "code": "BIZ_041",
+      "message": "O conteúdo programático não corresponde à série, disciplina e ano da turma",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_042": {
+      "code": "BIZ_042",
+      "message": "Registro usado em planos de aula: desative em vez de excluir",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_043": {
+      "code": "BIZ_043",
+      "message": "Quem escreveu o plano de aula não pode revisá-lo",
+      "statusCode": 409,
+      "category": "REGRA_NEGOCIO"
+    },
+    "BIZ_044": {
+      "code": "BIZ_044",
+      "message": "Informe o parecer ao devolver o plano de aula",
+      "statusCode": 400,
+      "category": "REGRA_NEGOCIO"
     }
   },
   "DATABASE": {

@@ -40,6 +40,11 @@ model User {
   sessoes       SessaoRefresh[]
   eventosAuditoria AuditLog[]
 
+  // Módulo 2 — planejamento pedagógico
+  planosAulaAutor       PlanoAula[]           @relation("PlanoAulaAutor")
+  planosAulaRevisados   PlanoAula[]           @relation("PlanoAulaRevisor")
+  atividadesPedagogicas AtividadePedagogica[]
+
   @@map("users")
 }
 
@@ -169,6 +174,10 @@ model Serie {
   
   turmas Turma[]
 
+  // Módulo 2 — planejamento pedagógico
+  conteudosProgramaticos ConteudoProgramatico[]
+  atividadesPedagogicas  AtividadePedagogica[]
+
   @@map("series")
 }
 
@@ -233,6 +242,8 @@ model Escola {
   salas        Sala[]
   eventosCalendario EventoCalendario[]
   atividadesComplementares AtividadeComplementar[]
+  conteudosProgramaticos   ConteudoProgramatico[]
+  atividadesPedagogicas    AtividadePedagogica[]
   configuracoes ConfiguracaoAvaliacao[]
   buscasAtivas        BuscaAtiva[]
   salasRecursos       SalaRecursos[]
@@ -321,6 +332,7 @@ model Turma {
   reunioesPais        ReuniaoPais[]
   comunicados         Comunicado[]
   lideresTurma        LiderTurma[]
+  planosAula          PlanoAula[]
 
   @@map("turmas")
 }
@@ -707,6 +719,11 @@ model Disciplina {
   etapa      EtapaEnsino @relation(fields: [etapaId], references: [id], onDelete: Cascade)
 
   avaliacoes Avaliacao[]
+
+  // Módulo 2 — planejamento pedagógico
+  conteudosProgramaticos ConteudoProgramatico[]
+  planosAula             PlanoAula[]
+  atividadesPedagogicas  AtividadePedagogica[]
 
   @@index([etapaId])
   @@map("disciplinas")
@@ -1789,4 +1806,117 @@ model AcParticipante {
   @@unique([acId, profissionalId])
   @@index([profissionalId])
   @@map("ac_participantes")
+}
+
+// ==================== MÓDULO 2 — PLANEJAMENTO PEDAGÓGICO ====================
+// Habilidades da BNCC: só os códigos digitados pelo professor/coordenação.
+// A lista oficial NÃO está embutida (pode ser importada da fonte oficial depois).
+
+// Conteúdo programático previsto por série, disciplina e bimestre.
+// escolaId nulo = conteúdo da rede (SEMEC); com escola = complemento da escola.
+model ConteudoProgramatico {
+  id              String   @id @default(cuid())
+  anoLetivo       Int
+  bimestre        Int      // 1 a 4
+  titulo          String
+  descricao       String?
+  habilidadesBncc String[] @default([])
+  ordem           Int      @default(0)
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  serieId      String
+  serie        Serie      @relation(fields: [serieId], references: [id], onDelete: Cascade)
+  disciplinaId String
+  disciplina   Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+  escolaId     String?
+  escola       Escola?    @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+
+  planosAula PlanoAula[]
+
+  @@index([anoLetivo, serieId, disciplinaId, bimestre])
+  @@index([escolaId])
+  @@map("conteudos_programaticos")
+}
+
+// Plano de aula do professor para uma turma e disciplina.
+// Fluxo: RASCUNHO → ENVIADO → APROVADO | DEVOLVIDO (→ editado → ENVIADO de novo).
+model PlanoAula {
+  id              String    @id @default(cuid())
+  bimestre        Int
+  dataAula        DateTime
+  titulo          String
+  objetivos       String
+  desenvolvimento String?   // metodologia / sequência didática
+  recursos        String?
+  avaliacao       String?   // como a aprendizagem será verificada
+  habilidadesBncc String[]  @default([])
+  status          String    @default("RASCUNHO") // RASCUNHO, ENVIADO, APROVADO, DEVOLVIDO
+  enviadoEm       DateTime?
+  parecer         String?   // devolutiva da coordenação
+  revisadoEm      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  turmaId                String
+  turma                  Turma                 @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  disciplinaId           String
+  disciplina             Disciplina            @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+  autorId                String
+  autor                  User                  @relation("PlanoAulaAutor", fields: [autorId], references: [id])
+  revisadoPorId          String?
+  revisadoPor            User?                 @relation("PlanoAulaRevisor", fields: [revisadoPorId], references: [id], onDelete: SetNull)
+  conteudoProgramaticoId String?
+  conteudoProgramatico   ConteudoProgramatico? @relation(fields: [conteudoProgramaticoId], references: [id], onDelete: SetNull)
+
+  atividades PlanoAulaAtividade[]
+
+  @@index([turmaId, disciplinaId, bimestre])
+  @@index([autorId])
+  @@index([status])
+  @@index([conteudoProgramaticoId])
+  @@map("planos_aula")
+}
+
+// Banco de atividades. escolaId nulo = banco da rede (SEMEC).
+model AtividadePedagogica {
+  id              String   @id @default(cuid())
+  titulo          String
+  tipo            String   // EXERCICIO, LEITURA, PRODUCAO_TEXTO, PROJETO, JOGO, EXPERIMENTO, OUTRO
+  descricao       String   // enunciado e orientações
+  habilidadesBncc String[] @default([])
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  disciplinaId String
+  disciplina   Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+  serieId      String?
+  serie        Serie?     @relation(fields: [serieId], references: [id], onDelete: SetNull)
+  escolaId     String?
+  escola       Escola?    @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  autorId      String
+  autor        User       @relation(fields: [autorId], references: [id])
+
+  planos PlanoAulaAtividade[]
+
+  @@index([disciplinaId])
+  @@index([escolaId])
+  @@index([autorId])
+  @@map("atividades_pedagogicas")
+}
+
+model PlanoAulaAtividade {
+  id          String   @id @default(cuid())
+  planoId     String
+  atividadeId String
+  createdAt   DateTime @default(now())
+
+  plano     PlanoAula           @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  atividade AtividadePedagogica @relation(fields: [atividadeId], references: [id], onDelete: Restrict)
+
+  @@unique([planoId, atividadeId])
+  @@index([atividadeId])
+  @@map("planos_aula_atividades")
 }

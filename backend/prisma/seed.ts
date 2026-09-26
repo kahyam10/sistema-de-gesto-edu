@@ -701,7 +701,9 @@ async function main() {
           name: "Planejamento Pedagógico",
           description:
             "Planos de aula, conteúdos programáticos e banco de atividades",
-          status: "planning",
+          status: "completed",
+          observacao:
+            "Conteúdo programático (rede/escola), planos de aula com revisão da coordenação, banco de atividades e cobertura por turma",
           ordem: 4,
         },
       ],

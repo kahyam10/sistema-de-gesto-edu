@@ -21,6 +21,8 @@ export const GESTAO = ["ADMIN", "SEMEC"];
 export const OPERACAO = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA"];
 // Professores lançam frequência, notas e consultam/gerem sua grade
 export const PEDAGOGICO = [...OPERACAO, "PROFESSOR"];
+// Quem orienta o trabalho pedagógico da escola (sem a secretaria)
+export const COORDENACAO_PEDAGOGICA = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR"];
 // Ações pessoais (recibos de leitura) valem para qualquer autenticado
 export const TODOS = [...PEDAGOGICO, "USER", "RESPONSAVEL"];
 
@@ -67,6 +69,16 @@ export const REGRAS_ESCRITA: RegraEscrita[] = [
   {
     pattern: /^\/api\/(frequencia|notas|avaliacoes|grade-horaria)(\/|$)/,
     roles: PEDAGOGICO,
+  },
+  // Módulo 2 — planejamento: conteúdo programático e revisão de planos = coordenação/direção
+  {
+    pattern: /^\/api\/planejamento\/(conteudos(\/|$)|planos\/[^/]+\/revisar$)/,
+    roles: COORDENACAO_PEDAGOGICA,
+  },
+  // Módulo 2 — planos de aula e banco de atividades (inclui DELETE: autor, checado no service)
+  {
+    pattern: /^\/api\/planejamento(\/|$)/,
+    roles: [...COORDENACAO_PEDAGOGICA, "PROFESSOR"],
   },
   // Programas especiais: busca ativa, AEE e acompanhamento (equipe + professores AEE)
   {
@@ -133,6 +145,8 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/lotacao(\/|$)/, roles: OPERACAO },
   // Módulo 2 — acompanhamento de aprendizagens (notas e frequência da turma)
   { pattern: /^\/api\/aprendizagem(\/|$)/, roles: PEDAGOGICO },
+  // Módulo 2 — planejamento pedagógico (planos de aula de professores)
+  { pattern: /^\/api\/planejamento(\/|$)/, roles: [...COORDENACAO_PEDAGOGICA, "PROFESSOR"] },
   // Documentos pessoais de menores (LGPD) — PROFESSOR/USER não leem
   { pattern: /^\/api\/matriculas\/[^/]+\/documentos(\/|$)/, roles: OPERACAO },
   // Módulo 3 — emails/vínculos de responsáveis e resumos gerenciais

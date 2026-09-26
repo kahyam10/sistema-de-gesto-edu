@@ -116,3 +116,23 @@ describe("autorizar — escritas por módulo", () => {
     expect(autorizar("/api/frequencia", "POST", u("PROFESSOR"))).toBe("OK");
   });
 });
+
+describe("autorizar — planejamento pedagógico (Módulo 2)", () => {
+  it("professor escreve planos e atividades (inclusive DELETE, autoria no service), não conteúdos nem revisão", () => {
+    expect(autorizar("/api/planejamento/planos", "POST", u("PROFESSOR"))).toBe("OK");
+    expect(autorizar("/api/planejamento/planos/p1", "DELETE", u("PROFESSOR"))).toBe("OK");
+    expect(autorizar("/api/planejamento/planos/p1/enviar", "POST", u("PROFESSOR"))).toBe("OK");
+    expect(autorizar("/api/planejamento/atividades/a1", "DELETE", u("PROFESSOR"))).toBe("OK");
+    expect(autorizar("/api/planejamento/planos/p1/revisar", "POST", u("PROFESSOR"))).toBe("NEGADO");
+    expect(autorizar("/api/planejamento/conteudos", "POST", u("PROFESSOR"))).toBe("NEGADO");
+  });
+
+  it("coordenação revisa e mantém conteúdos; secretaria e externos ficam fora", () => {
+    expect(autorizar("/api/planejamento/planos/p1/revisar", "POST", u("COORDENADOR"))).toBe("OK");
+    expect(autorizar("/api/planejamento/conteudos/c1", "DELETE", u("DIRETOR"))).toBe("OK");
+    expect(autorizar("/api/planejamento/planos", "POST", u("SECRETARIA"))).toBe("NEGADO");
+    expect(autorizar("/api/planejamento/planos", "GET", u("SECRETARIA"))).toBe("NEGADO");
+    expect(autorizar("/api/planejamento/planos", "GET", u("USER"))).toBe("NEGADO");
+    expect(autorizar("/api/planejamento/planos", "GET", u("RESPONSAVEL"))).toBe("NEGADO");
+  });
+});
