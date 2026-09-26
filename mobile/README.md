@@ -1,8 +1,15 @@
 # App mobile — Gestão Educacional
 
-App Expo (SDK 54) para **professores** (chamada do dia, avaliações e notas) e
-**responsáveis/alunos** (boletim, frequência e comunicados). Direção, secretaria
-e SEMEC continuam no painel web.
+App Expo (SDK 54) para **professores** e **responsáveis/alunos**. Direção,
+secretaria e SEMEC continuam no painel web.
+
+| Perfil | Abas | O que tem |
+|---|---|---|
+| Responsável | Início · Agenda · Avisos · Perfil | cartão por aluno (frequência e média), boletim e frequência, merenda de hoje, agenda (calendário, reuniões de pais, plantões), cardápio da semana, comunicados com confirmação de leitura |
+| Professor | Hoje · Turmas · Agenda · Perfil | aulas do dia e chamadas pendentes (com horário do registro), turmas com % de presença por aluno, chamada P/F/J, avaliações e notas, comunicados para professores, agenda |
+| Ambos (Perfil) | — | notificações, "Privacidade e seus dados" (o que o sistema guarda) e contato das escolas |
+
+Tudo vem da API real, sempre filtrado pelo usuário da sessão no servidor.
 
 Fica fora dos workspaces npm da raiz (lock próprio) para não conflitar a versão
 do React com o dashboard.
@@ -15,6 +22,20 @@ do React com o dashboard.
    `http://10.0.2.2:3051` sem abrir a API para a rede.
 
 Para apontar para outra API: `EXPO_PUBLIC_API_URL=https://api.exemplo.gov.br npm start`.
+Link opcional da política de privacidade oficial (só `https://`):
+`EXPO_PUBLIC_POLITICA_PRIVACIDADE_URL`.
+
+### Dados de demonstração (só DEV)
+
+`backend/scripts/demo-apps.ts` cria uma escola "(demo)" completa (turma, alunos,
+frequência, notas, agenda, cardápio, comunicados e notificações) e os usuários
+`prof.e2e@teste.local` e `pais.e2e@teste.local`. A senha é gerada na hora e sai
+só no stdout — mande para um arquivo e não para o terminal:
+
+```bash
+umask 077
+docker compose -f docker-compose.dev.yml exec -T backend npx tsx scripts/demo-apps.ts > /tmp/gestao-edu-demo-senha
+```
 Build de produção **recusa** URL sem `https://` (ver `src/config.ts`).
 
 ## Sessão e segurança
@@ -44,7 +65,7 @@ src/
   api/         cliente HTTP, tokens (secure-store), endpoints e tipos
   auth/        AuthContext (login, reidratação, logout)
   navigation/  navegação por papel (professor × responsável)
-  screens/     telas (professor/, responsavel/)
+  screens/     telas (professor/, responsavel/, comum/)
   components/  UI compartilhada
 ```
 

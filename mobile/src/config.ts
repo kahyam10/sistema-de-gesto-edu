@@ -13,3 +13,10 @@ if (!__DEV__ && !API_URL.startsWith("https://")) {
   // Build de produção nunca fala com a API sem TLS
   throw new Error("EXPO_PUBLIC_API_URL precisa ser https:// em produção");
 }
+
+/**
+ * Link opcional para a política de privacidade oficial da prefeitura
+ * (EXPO_PUBLIC_POLITICA_PRIVACIDADE_URL). Só é exibido se for https://.
+ */
+const politica = process.env.EXPO_PUBLIC_POLITICA_PRIVACIDADE_URL ?? "";
+export const POLITICA_PRIVACIDADE_URL = politica.startsWith("https://") ? politica : null;

@@ -1,5 +1,5 @@
 import {
-  capitalizar, dataBR, iniciais, dataBRparaISO, dataPorExtenso, diaDaSemana, hojeISO, lerNumero, listaDeNomes, media, nota, saudacao,
+  capitalizar, dataBR, dataHoraBR, horaBR, iniciais, dataBRparaISO, dataPorExtenso, diaDaSemana, hojeISO, lerNumero, listaDeNomes, media, nota, saudacao,
 } from "../src/utils/formato";
 
 describe("formato", () => {
@@ -50,5 +50,10 @@ describe("formato", () => {
     expect(listaDeNomes(["Ana Clara Souza", "Pedro Souza"])).toBe("Ana e Pedro");
     expect(iniciais("João Miguel Ribeiro")).toBe("JR");
     expect(iniciais("Ana de Souza")).toBe("AS");
+  });
+
+  it("horaBR e dataHoraBR convertem para o horário da Bahia", () => {
+    expect(horaBR("2026-09-25T13:05:00.000Z")).toBe("10:05");
+    expect(dataHoraBR("2026-09-26T01:30:00.000Z")).toBe("25/09 às 22:30");
   });
 });

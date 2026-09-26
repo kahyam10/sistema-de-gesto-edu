@@ -2,23 +2,23 @@ import { useEffect, useRef } from "react";
 import { Alert } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { responsavelApi } from "../../api/endpoints";
+import { comumApi } from "../../api/endpoints";
 import { Aviso, Botao, Cabecalho, Cartao, Carregando, Erro, Tela, Texto } from "../../components/ui";
-import type { ResponsavelStack } from "../../navigation/tipos";
+import type { ComumStack } from "../../navigation/tipos";
 import { capitalizar, dataBR } from "../../utils/formato";
 
-type Props = NativeStackScreenProps<ResponsavelStack, "Comunicado">;
+type Props = NativeStackScreenProps<ComumStack, "Comunicado">;
 
 export function ComunicadoScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const queryClient = useQueryClient();
-  const q = useQuery({ queryKey: ["comunicados"], queryFn: responsavelApi.comunicados });
+  const q = useQuery({ queryKey: ["comunicados"], queryFn: comumApi.comunicados });
   const c = q.data?.find((x) => x.id === id);
 
   // Abrir = ler. Registra uma vez por abertura (o servidor usa o usuário da sessão).
   const marcou = useRef(false);
   const marcarLido = useMutation({
-    mutationFn: () => responsavelApi.marcarLido(id),
+    mutationFn: () => comumApi.marcarLido(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["comunicados"] }),
   });
   useEffect(() => {
@@ -29,7 +29,7 @@ export function ComunicadoScreen({ route, navigation }: Props) {
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const confirmar = useMutation({
-    mutationFn: () => responsavelApi.confirmarComunicado(id),
+    mutationFn: () => comumApi.confirmarComunicado(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["comunicados"] }),
     onError: (e) => Alert.alert("Não foi possível confirmar", e instanceof Error ? e.message : ""),
   });

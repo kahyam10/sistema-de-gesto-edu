@@ -31,6 +31,7 @@ export interface ResumoProfessor {
     totalAlunosAtivos: number;
   }>;
   aulasHoje: Array<{ turmaId: string; turmaNome: string; disciplina: string; horaInicio: string; horaFim: string }>;
+  chamadasRegistradasHoje: Array<{ turmaId: string; registradaEm: string | null }>;
   frequenciasPendentesHoje: Array<{ turmaId: string; turmaNome: string }>;
 }
 
@@ -40,6 +41,7 @@ export interface Chamada {
   turma: { id: string; nome: string; turno: string; escola: { nome: string } };
   data: string;
   jaRegistrada: boolean;
+  registradaEm: string | null;
   alunos: Array<{
     id: string;
     nomeAluno: string;
@@ -140,4 +142,48 @@ export interface Comunicado {
   escola: { nome: string } | null;
   lido: boolean;
   confirmado: boolean;
+}
+
+// ---------- Comum (pais e professores) ----------
+export interface Agenda {
+  de: string;
+  ate: string;
+  eventos: Array<{
+    id: string; titulo: string; descricao: string | null; dataInicio: string; dataFim: string | null;
+    horaInicio: string | null; horaFim: string | null; tipo: string; escola: { nome: string } | null;
+  }>;
+  reunioes: Array<{
+    id: string; titulo: string; descricao: string | null; data: string; horario: string; duracao: number | null;
+    local: string | null; tipo: string; finalidade: string | null; status: string;
+    escola: { nome: string }; turma: { nome: string } | null;
+  }>;
+  plantoes: Array<{
+    id: string; data: string; tipo: string; descricao: string | null; horarioInicio: string; horarioFim: string;
+    local: string | null; escola: { nome: string }; turma: { nome: string } | null;
+  }>;
+}
+
+export interface CardapioSemana {
+  de: string;
+  ate: string;
+  refeicoes: Array<{
+    id: string; data: string; turno: string; tipoRefeicao: string; descricao: string;
+    observacoesNutricionais: string | null; escola: { nome: string } | null;
+  }>;
+}
+
+export interface EscolaContato {
+  id: string; nome: string; telefone: string | null; email: string | null; endereco: string | null;
+}
+
+export interface MeusDados {
+  usuario: { nome: string; email: string; papel: string; cadastradoEm: string };
+  alunosVinculados: Array<{ nomeAluno: string; numeroMatricula: string; parentesco: string | null; escola: string; turma: string | null }>;
+  turmasQueLeciona: Array<{ turma: string; escola: string }>;
+  sessoesAtivas: number;
+}
+
+export interface Notificacao {
+  id: string; titulo: string; mensagem: string; tipo: string; prioridade: string;
+  acaoTipo: string | null; acaoId: string | null; lida: boolean; createdAt: string;
 }

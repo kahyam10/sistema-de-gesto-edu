@@ -105,3 +105,28 @@ export function iniciais(nome: string): string {
   const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
   return (partes[0][0] + ultima).toUpperCase();
 }
+
+/** Instante ISO → "14:05" no horário da Bahia (UTC-3). */
+export function horaBR(iso: string): string {
+  const d = new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/** Instante ISO → "25/09 às 14:05" (Bahia). */
+export function dataHoraBR(iso: string): string {
+  const d = new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000).toISOString();
+  return `${diaMes(d)} às ${horaBR(iso)}`;
+}
+
+export const rotuloEvento: Record<string, string> = {
+  INICIO_ANO_LETIVO: "Início do ano letivo", FIM_ANO_LETIVO: "Fim do ano letivo",
+  INICIO_AULAS_REGULARES: "Início das aulas", FIM_AULAS_REGULARES: "Fim das aulas",
+  FERIADO: "Feriado", RECESSO: "Recesso", SABADO_LETIVO: "Sábado letivo", EVENTO: "Evento", AC: "AC",
+  AVALIACAO: "Avaliação", REUNIAO: "Reunião", CONSELHO_CLASSE: "Conselho de classe",
+  PLANEJAMENTO: "Planejamento", FORMACAO: "Formação", OUTRO: "Outro",
+};
+
+export const rotuloRefeicao: Record<string, string> = {
+  CAFE_MANHA: "Café da manhã", LANCHE_MANHA: "Lanche da manhã", ALMOCO: "Almoço",
+  LANCHE_TARDE: "Lanche da tarde", JANTAR: "Jantar", CEIA: "Ceia",
+};

@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type {
+  Agenda, CardapioSemana, EscolaContato, MeusDados, Notificacao,
   AlunosDaTurma, AlunoVinculado, Boletim, Chamada, Comunicado, FrequenciaAluno, NotasDaTurma,
   ResumoProfessor, StatusFrequencia, TokensResposta, Usuario,
 } from "./types";
@@ -44,7 +45,20 @@ export const responsavelApi = {
   alunos: () => api<AlunoVinculado[]>("/api/portal/meu/alunos"),
   boletim: (matriculaId: string) => api<Boletim>(`/api/portal/meu/alunos/${matriculaId}/boletim`),
   frequencia: (matriculaId: string) => api<FrequenciaAluno>(`/api/portal/meu/alunos/${matriculaId}/frequencia`),
+};
+
+// ---------- Comum (pais e professores): sempre do usuário da sessão ----------
+export const comumApi = {
   comunicados: () => api<Comunicado[]>("/api/portal/meu/comunicados"),
   marcarLido: (id: string) => api<unknown>(`/api/comunicados/${id}/marcar-lido`, { method: "POST", body: {} }),
   confirmarComunicado: (id: string) => api<unknown>(`/api/comunicados/${id}/confirmar`, { method: "POST", body: {} }),
+  agenda: (dias = 60) => api<Agenda>(`/api/portal/meu/agenda?dias=${dias}`),
+  cardapio: () => api<CardapioSemana>("/api/portal/meu/cardapio"),
+  escolas: () => api<EscolaContato[]>("/api/portal/meu/escolas"),
+  meusDados: () => api<MeusDados>("/api/portal/meu/dados"),
+  // A API confere que o :userId é o da sessão (PERM_004)
+  notificacoes: (userId: string) => api<Notificacao[]>(`/api/notificacoes/usuario/${encodeURIComponent(userId)}`),
+  marcarNotificacaoLida: (id: string) => api<unknown>(`/api/notificacoes/${encodeURIComponent(id)}/marcar-lida`, { method: "POST", body: {} }),
+  marcarTodasLidas: (userId: string) =>
+    api<unknown>(`/api/notificacoes/usuario/${encodeURIComponent(userId)}/marcar-todas-lidas`, { method: "POST", body: {} }),
 };

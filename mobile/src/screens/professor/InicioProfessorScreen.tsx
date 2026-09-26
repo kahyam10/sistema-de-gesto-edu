@@ -1,24 +1,29 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { professorApi } from "../../api/endpoints";
+import { comumApi, professorApi } from "../../api/endpoints";
 import {
-  Aviso, Botao, Cabecalho, Cartao, Carregando, Erro, Estatistica, Selo, Subtitulo, Tela, Texto, Titulo, TopoCabecalho,
+  Aviso, Botao, Cabecalho, Cartao, Carregando, Erro, Estatistica, Secao, Selo, Subtitulo, Tela, Texto, Titulo, TopoCabecalho,
 } from "../../components/ui";
 import type { ProfessorStack } from "../../navigation/tipos";
 import { cores, espaco, fontes } from "../../theme";
-import { dataPorExtenso, hojeISO, saudacao } from "../../utils/formato";
+import { dataPorExtenso, hojeISO, horaBR, saudacao } from "../../utils/formato";
+import { ComunicadoItem } from "../responsavel/ComunicadosScreen";
 
 type Props = NativeStackScreenProps<ProfessorStack, "Inicio">;
 
 export function InicioProfessorScreen({ navigation }: Props) {
   const q = useQuery({ queryKey: ["professor", "resumo"], queryFn: professorApi.resumo });
+  const comunicados = useQuery({ queryKey: ["comunicados"], queryFn: comumApi.comunicados });
 
   if (q.isPending) return <Carregando />;
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
 
   const { profissional, turmas, aulasHoje, frequenciasPendentesHoje } = q.data;
   const pendentes = new Set(frequenciasPendentesHoje.map((p) => p.turmaId));
+  const horaChamada = new Map(
+    (q.data.chamadasRegistradasHoje ?? []).map((c) => [c.turmaId, c.registradaEm ? horaBR(c.registradaEm) : null])
+  );
   const turmaPorId = new Map(turmas.map((t) => [t.id, t]));
   const escolas = [...new Set(turmas.map((t) => t.escola.nome))];
   const disciplinas = [...new Set(turmas.map((t) => t.disciplina).filter((d): d is string => !!d))];
@@ -27,7 +32,7 @@ export function InicioProfessorScreen({ navigation }: Props) {
     <Tela
       sobrepor
       atualizando={q.isRefetching}
-      aoAtualizar={() => q.refetch()}
+      aoAtualizar={() => { void q.refetch(); void comunicados.refetch(); }}
       cabecalho={
         <Cabecalho
           sobreposto
@@ -67,7 +72,10 @@ export function InicioProfessorScreen({ navigation }: Props) {
                     {a.disciplina}{turma ? ` · ${turma.totalAlunosAtivos} alunos` : ""}
                   </Texto>
                 </View>
-                <Selo texto={pendente ? "Chamada pendente" : "Chamada feita"} tom={pendente ? "alerta" : "sucesso"} />
+                <Selo
+                  texto={pendente ? "Chamada pendente" : horaChamada.get(a.turmaId) ? `Chamada feita às ${horaChamada.get(a.turmaId)}` : "Chamada feita"}
+                  tom={pendente ? "alerta" : "sucesso"}
+                />
                 <Botao
                   compacto
                   titulo={pendente ? "Fazer chamada" : "Revisar chamada"}
@@ -80,6 +88,17 @@ export function InicioProfessorScreen({ navigation }: Props) {
         })
       )}
       {aulasHoje.length > 0 && pendentes.size === 0 ? <Aviso texto="Todas as chamadas de hoje foram registradas." /> : null}
+
+      <Secao titulo="Comunicados" acao="Ver todos" aoAcionar={() => navigation.navigate("Comunicados")} />
+      {comunicados.isError ? (
+        <Texto suave>Não foi possível carregar os comunicados.</Texto>
+      ) : (comunicados.data ?? []).length === 0 ? (
+        <Texto suave>{comunicados.isPending ? "Carregando…" : "Nenhum comunicado para professores no momento."}</Texto>
+      ) : (
+        comunicados.data!.slice(0, 2).map((c) => (
+          <ComunicadoItem key={c.id} resumo comunicado={c} onPress={() => navigation.navigate("Comunicado", { id: c.id })} />
+        ))
+      )}
     </Tela>
   );
 }

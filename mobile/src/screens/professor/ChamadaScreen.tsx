@@ -7,7 +7,7 @@ import type { StatusFrequencia } from "../../api/types";
 import { Aviso, Botao, Cabecalho, Carregando, Erro, Estatistica, Tela, Texto, Vazio } from "../../components/ui";
 import type { ProfessorStack } from "../../navigation/tipos";
 import { cores, espaco, fontes, raio } from "../../theme";
-import { dataPorExtenso, hojeISO } from "../../utils/formato";
+import { dataPorExtenso, hojeISO, horaBR } from "../../utils/formato";
 
 type Props = NativeStackScreenProps<ProfessorStack, "Chamada">;
 
@@ -86,7 +86,12 @@ export function ChamadaScreen({ route, navigation }: Props) {
         </>
       }
     >
-      {ja && !salvoAgora ? <Aviso tom="alerta" texto="A chamada de hoje já foi registrada. Salvar de novo substitui." /> : null}
+      {ja && !salvoAgora ? (
+        <Aviso
+          tom="alerta"
+          texto={`Chamada registrada${q.data.registradaEm ? ` às ${horaBR(q.data.registradaEm)}` : ""}. Salvar de novo substitui.`}
+        />
+      ) : null}
 
       <View style={{ flexDirection: "row", gap: espaco.sm }}>
         <Estatistica centro tom="sucesso" valor={cont.P} rotulo="Presentes" />

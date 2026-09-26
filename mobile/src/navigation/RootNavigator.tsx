@@ -4,7 +4,7 @@ import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-nav
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
-import { professorApi, responsavelApi } from "../api/endpoints";
+import { comumApi, professorApi } from "../api/endpoints";
 import { Carregando, NomeIcone } from "../components/ui";
 import { LoginScreen } from "../screens/LoginScreen";
 import { PerfilScreen } from "../screens/PerfilScreen";
@@ -20,6 +20,10 @@ import { MeusAlunosScreen } from "../screens/responsavel/MeusAlunosScreen";
 import { AlunoScreen } from "../screens/responsavel/AlunoScreen";
 import { ComunicadosScreen } from "../screens/responsavel/ComunicadosScreen";
 import { ComunicadoScreen } from "../screens/responsavel/ComunicadoScreen";
+import { AgendaScreen } from "../screens/comum/AgendaScreen";
+import { NotificacoesScreen, useNotificacoes } from "../screens/comum/NotificacoesScreen";
+import { PrivacidadeScreen } from "../screens/comum/PrivacidadeScreen";
+import { ContatosScreen } from "../screens/comum/ContatosScreen";
 import type { ProfessorStack, ResponsavelStack } from "./tipos";
 import { cores, fontes } from "../theme";
 
@@ -38,6 +42,28 @@ function ProfessorHoje() {
     <PStack.Navigator screenOptions={semCabecalho}>
       <PStack.Screen name="Inicio" component={InicioProfessorScreen} />
       <PStack.Screen name="Chamada" component={ChamadaScreen} />
+      <PStack.Screen name="Comunicados" component={ComunicadosScreen} />
+      <PStack.Screen name="Comunicado" component={ComunicadoScreen} />
+    </PStack.Navigator>
+  );
+}
+
+function ProfessorAgenda() {
+  return (
+    <PStack.Navigator screenOptions={semCabecalho}>
+      <PStack.Screen name="Agenda" component={AgendaScreen} />
+    </PStack.Navigator>
+  );
+}
+
+function ProfessorPerfil() {
+  return (
+    <PStack.Navigator screenOptions={semCabecalho}>
+      <PStack.Screen name="Perfil" component={PerfilScreen} />
+      <PStack.Screen name="Notificacoes" component={NotificacoesScreen} />
+      <PStack.Screen name="Privacidade" component={PrivacidadeScreen} />
+      <PStack.Screen name="Contatos" component={ContatosScreen} />
+      <PStack.Screen name="Comunicado" component={ComunicadoScreen} />
     </PStack.Navigator>
   );
 }
@@ -62,6 +88,26 @@ function ResponsavelInicio() {
     <RStack.Navigator screenOptions={semCabecalho}>
       <RStack.Screen name="Inicio" component={MeusAlunosScreen} />
       <RStack.Screen name="Aluno" component={AlunoScreen} />
+      <RStack.Screen name="Comunicado" component={ComunicadoScreen} />
+    </RStack.Navigator>
+  );
+}
+
+function ResponsavelAgenda() {
+  return (
+    <RStack.Navigator screenOptions={semCabecalho}>
+      <RStack.Screen name="Agenda" component={AgendaScreen} />
+    </RStack.Navigator>
+  );
+}
+
+function ResponsavelPerfil() {
+  return (
+    <RStack.Navigator screenOptions={semCabecalho}>
+      <RStack.Screen name="Perfil" component={PerfilScreen} />
+      <RStack.Screen name="Notificacoes" component={NotificacoesScreen} />
+      <RStack.Screen name="Privacidade" component={PrivacidadeScreen} />
+      <RStack.Screen name="Contatos" component={ContatosScreen} />
       <RStack.Screen name="Comunicado" component={ComunicadoScreen} />
     </RStack.Navigator>
   );
@@ -92,29 +138,35 @@ function AppProfessor() {
   // Mesmo cache da tela Hoje: o selo some assim que a chamada é registrada
   const resumo = useQuery({ queryKey: ["professor", "resumo"], queryFn: professorApi.resumo });
   const pendentes = resumo.data?.frequenciasPendentesHoje.length ?? 0;
+  const novas = useNotificacoes().data?.filter((n) => !n.lida).length ?? 0;
   return (
     <Tabs.Navigator screenOptions={abas}>
       <Tabs.Screen name="TabHoje" component={ProfessorHoje}
         options={{ title: "Hoje", tabBarIcon: icone("calendar-outline"), tabBarBadge: pendentes || undefined }} />
       <Tabs.Screen name="TabTurmas" component={ProfessorTurmas}
         options={{ title: "Turmas", tabBarIcon: icone("people-outline") }} />
-      <Tabs.Screen name="TabPerfil" component={PerfilScreen}
-        options={{ title: "Perfil", tabBarIcon: icone("person-circle-outline") }} />
+      <Tabs.Screen name="TabAgenda" component={ProfessorAgenda}
+        options={{ title: "Agenda", tabBarIcon: icone("calendar-number-outline") }} />
+      <Tabs.Screen name="TabPerfil" component={ProfessorPerfil}
+        options={{ title: "Perfil", tabBarIcon: icone("person-circle-outline"), tabBarBadge: novas || undefined }} />
     </Tabs.Navigator>
   );
 }
 
 function AppResponsavel() {
-  const comunicados = useQuery({ queryKey: ["comunicados"], queryFn: responsavelApi.comunicados });
+  const comunicados = useQuery({ queryKey: ["comunicados"], queryFn: comumApi.comunicados });
   const naoLidos = comunicados.data?.filter((c) => !c.lido).length ?? 0;
+  const novas = useNotificacoes().data?.filter((n) => !n.lida).length ?? 0;
   return (
     <Tabs.Navigator screenOptions={abas}>
       <Tabs.Screen name="TabInicio" component={ResponsavelInicio}
         options={{ title: "Início", tabBarIcon: icone("home-outline") }} />
+      <Tabs.Screen name="TabAgenda" component={ResponsavelAgenda}
+        options={{ title: "Agenda", tabBarIcon: icone("calendar-number-outline") }} />
       <Tabs.Screen name="TabComunicados" component={ResponsavelComunicados}
-        options={{ title: "Comunicados", tabBarIcon: icone("notifications-outline"), tabBarBadge: naoLidos || undefined }} />
-      <Tabs.Screen name="TabPerfil" component={PerfilScreen}
-        options={{ title: "Perfil", tabBarIcon: icone("person-circle-outline") }} />
+        options={{ title: "Avisos", tabBarIcon: icone("megaphone-outline"), tabBarBadge: naoLidos || undefined }} />
+      <Tabs.Screen name="TabPerfil" component={ResponsavelPerfil}
+        options={{ title: "Perfil", tabBarIcon: icone("person-circle-outline"), tabBarBadge: novas || undefined }} />
     </Tabs.Navigator>
   );
 }

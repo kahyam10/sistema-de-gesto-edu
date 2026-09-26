@@ -2,16 +2,17 @@ import { View } from "react-native";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { responsavelApi } from "../../api/endpoints";
+import { comumApi, responsavelApi } from "../../api/endpoints";
 import type { Boletim } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import {
-  Aviso, Avatar, Cabecalho, Cartao, Carregando, Erro, Estatistica, Secao, Subtitulo, Tela, Texto, TopoCabecalho, Vazio,
+  Aviso, Avatar, Cabecalho, Cartao, Carregando, Erro, Estatistica, Rotulo, Secao, Subtitulo, Tela, Texto, TopoCabecalho, Vazio,
 } from "../../components/ui";
 import type { ResponsavelStack } from "../../navigation/tipos";
 import { cores, espaco, LIMITE_PRESENCA } from "../../theme";
-import { capitalizar, dataPorExtenso, hojeISO, listaDeNomes, media, nota } from "../../utils/formato";
+import { capitalizar, dataPorExtenso, hojeISO, listaDeNomes, media, nota, rotuloRefeicao } from "../../utils/formato";
 import { ComunicadoItem } from "./ComunicadosScreen";
+import { CartaoAgenda, itensDaAgenda } from "../comum/AgendaScreen";
 
 type Props = NativeStackScreenProps<ResponsavelStack, "Inicio">;
 
@@ -24,7 +25,9 @@ export function mediaParcial(b: Boletim): number | null {
 export function MeusAlunosScreen({ navigation }: Props) {
   const { usuario } = useAuth();
   const alunos = useQuery({ queryKey: ["meus-alunos"], queryFn: responsavelApi.alunos });
-  const comunicados = useQuery({ queryKey: ["comunicados"], queryFn: responsavelApi.comunicados });
+  const comunicados = useQuery({ queryKey: ["comunicados"], queryFn: comumApi.comunicados });
+  const agenda = useQuery({ queryKey: ["agenda"], queryFn: () => comumApi.agenda(60) });
+  const cardapio = useQuery({ queryKey: ["cardapio"], queryFn: comumApi.cardapio });
   const boletins = useQueries({
     queries: (alunos.data ?? [])
       .filter((v) => v.matricula.turma)
@@ -42,10 +45,19 @@ export function MeusAlunosScreen({ navigation }: Props) {
   );
   const nomes = alunos.data.map((v) => v.matricula.nomeAluno);
   const recentes = (comunicados.data ?? []).slice(0, 2);
+  const proximos = agenda.data ? itensDaAgenda(agenda.data).slice(0, 2) : [];
+  // Merenda de hoje, só dos turnos em que os filhos estudam (se souber)
+  const turnos = new Set(alunos.data.map((v) => v.matricula.turma?.turno).filter(Boolean));
+  const merenda = (cardapio.data?.refeicoes ?? []).filter(
+    (r) => r.data.slice(0, 10) === hojeISO() && (turnos.size === 0 || turnos.has(r.turno) || r.turno === "INTEGRAL")
+  );
+  const irPara = (aba: string) => navigation.getParent()?.navigate(aba as never);
 
   const atualizar = () => {
     void alunos.refetch();
     void comunicados.refetch();
+    void agenda.refetch();
+    void cardapio.refetch();
     boletins.forEach((b) => void b.refetch());
   };
 
@@ -102,11 +114,33 @@ export function MeusAlunosScreen({ navigation }: Props) {
         })
       )}
 
-      <Secao
-        titulo="Comunicados"
-        acao="Ver todos"
-        aoAcionar={() => navigation.getParent()?.navigate("TabComunicados" as never)}
-      />
+      {merenda.length > 0 ? (
+        <Cartao>
+          <Rotulo>Merenda de hoje</Rotulo>
+          {merenda.map((r) => (
+            <View key={r.id} style={{ gap: 1 }}>
+              <Texto pequeno suave>{rotuloRefeicao[r.tipoRefeicao] ?? capitalizar(r.tipoRefeicao)} · {capitalizar(r.turno)}</Texto>
+              <Texto negrito>{r.descricao}</Texto>
+            </View>
+          ))}
+        </Cartao>
+      ) : null}
+
+      <Secao titulo="Próximos na agenda" acao="Ver agenda" aoAcionar={() => irPara("TabAgenda")} />
+      {agenda.isError ? (
+        <Texto suave>Não foi possível carregar a agenda.</Texto>
+      ) : proximos.length === 0 ? (
+        <Texto suave>{agenda.isPending ? "Carregando…" : "Nada agendado para os próximos dias."}</Texto>
+      ) : (
+        proximos.map((i) => (
+          <View key={i.chave} style={{ gap: 4 }}>
+            <Texto pequeno suave>{dataPorExtenso(i.data)}</Texto>
+            <CartaoAgenda item={i} />
+          </View>
+        ))
+      )}
+
+      <Secao titulo="Comunicados" acao="Ver todos" aoAcionar={() => irPara("TabComunicados")} />
       {comunicados.isError ? (
         <Texto suave>Não foi possível carregar os comunicados.</Texto>
       ) : recentes.length === 0 ? (

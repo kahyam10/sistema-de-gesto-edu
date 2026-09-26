@@ -1,14 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { responsavelApi } from "../../api/endpoints";
+import { comumApi } from "../../api/endpoints";
 import type { Comunicado } from "../../api/types";
 import { Cabecalho, Carregando, Erro, Selo, Tela, Vazio } from "../../components/ui";
-import type { ResponsavelStack } from "../../navigation/tipos";
+import type { ComumStack } from "../../navigation/tipos";
 import { cores, espaco, fontes, raio } from "../../theme";
 import { capitalizar, diaMes } from "../../utils/formato";
 
-type Props = NativeStackScreenProps<ResponsavelStack, "Comunicados">;
+type Props = NativeStackScreenProps<ComumStack, "Comunicados">;
 
 function primeiraLinha(texto: string, max = 90): string {
   const l = texto.split("\n").find((x) => x.trim()) ?? "";
@@ -43,7 +43,7 @@ export function ComunicadoItem({ comunicado: c, onPress, resumo = false }: {
 }
 
 export function ComunicadosScreen({ navigation }: Props) {
-  const q = useQuery({ queryKey: ["comunicados"], queryFn: responsavelApi.comunicados });
+  const q = useQuery({ queryKey: ["comunicados"], queryFn: comumApi.comunicados });
   if (q.isPending) return <Carregando />;
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
 
@@ -54,6 +54,7 @@ export function ComunicadosScreen({ navigation }: Props) {
       aoAtualizar={() => q.refetch()}
       cabecalho={
         <Cabecalho
+          aoVoltar={navigation.canGoBack() ? () => navigation.goBack() : undefined}
           titulo="Comunicados"
           subtitulo={naoLidos === 0 ? "Tudo lido por aqui." : naoLidos === 1 ? "1 comunicado não lido" : `${naoLidos} comunicados não lidos`}
         />
