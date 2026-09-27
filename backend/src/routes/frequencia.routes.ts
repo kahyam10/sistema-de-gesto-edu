@@ -1091,21 +1091,7 @@ Permite verificar se a frequência já foi registrada para aquela data.
           },
         },
         response: {
-          200: {
-            description: "Lista de frequências da data",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                matriculaId: { type: "string" },
-                nomeAluno: { type: "string" },
-                status: { type: "string", enum: ["PRESENTE", "FALTA", "JUSTIFICADA"] },
-                justificativa: { type: "string" },
-                observacao: { type: "string" },
-              },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao buscar frequências",
             type: "object",

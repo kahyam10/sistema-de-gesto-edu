@@ -22,10 +22,10 @@ export class TurmaService {
           },
         },
         matriculas: {
-          select: { id: true, nomeAluno: true, possuiDeficiencia: true },
+          select: { id: true, nomeAluno: true, numeroMatricula: true, status: true, possuiDeficiencia: true },
         },
         professores: {
-          include: { profissional: true },
+          include: { profissional: { select: { id: true, nome: true, tipo: true } } },
         },
       },
       orderBy: [{ escola: { nome: "asc" } }, { nome: "asc" }],
@@ -48,7 +48,7 @@ export class TurmaService {
         },
         matriculas: true,
         professores: {
-          include: { profissional: true },
+          include: { profissional: { select: { id: true, nome: true, tipo: true } } },
         },
       },
     });
@@ -69,7 +69,7 @@ export class TurmaService {
           },
         },
         matriculas: {
-          select: { id: true, nomeAluno: true, possuiDeficiencia: true },
+          select: { id: true, nomeAluno: true, numeroMatricula: true, status: true, possuiDeficiencia: true },
         },
       },
       orderBy: { nome: "asc" },
@@ -189,7 +189,7 @@ export class TurmaService {
         tipo,
         disciplina,
       },
-      include: { profissional: true },
+      include: { profissional: { select: { id: true, nome: true, tipo: true } } },
     });
   }
 

@@ -676,44 +676,33 @@ Gera relatório completo de ponto de um profissional em um mês específico.
         },
         response: {
           200: {
+            // Formato de PontoService.getRelatorioMensal. Latitude/longitude do
+            // registro ficam de fora (localização não é necessária no relatório).
             description: "Relatório mensal de ponto",
             type: "object",
             properties: {
-              profissional: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  nome: { type: "string" },
-                  cargo: { type: "string" },
-                  matricula: { type: "string" },
-                },
-              },
-              periodo: { type: "string", example: "Fevereiro/2026" },
-              mes: { type: "number", example: 2 },
-              ano: { type: "number", example: 2026 },
-              diasTrabalhados: { type: "number", example: 20 },
-              totalHoras: { type: "string", example: "160:00" },
-              cargaHorariaEsperada: { type: "string", example: "160:00" },
-              registros: {
+              totalHoras: { type: "number", example: 160.5 },
+              diasTrabalhados: { type: "integer" },
+              faltas: { type: "integer" },
+              atrasos: { type: "integer" },
+              pontos: {
                 type: "array",
                 items: {
                   type: "object",
                   properties: {
-                    data: { type: "string", format: "date" },
-                    entrada: { type: "string", example: "08:00" },
-                    saida: { type: "string", example: "17:00" },
-                    totalHoras: { type: "string", example: "08:00" },
-                    observacoes: { type: "string", nullable: true },
+                    id: { type: "string" },
+                    profissionalId: { type: "string" },
+                    escolaId: { type: ["string", "null"] },
+                    data: { type: "string", format: "date-time" },
+                    entrada: { type: ["string", "null"] },
+                    saida: { type: ["string", "null"] },
+                    entrada2: { type: ["string", "null"] },
+                    saida2: { type: ["string", "null"] },
+                    horasTrabalhadas: { type: ["number", "null"] },
+                    tipoRegistro: { type: "string" },
+                    observacoes: { type: ["string", "null"] },
+                    justificativa: { type: ["string", "null"] },
                   },
-                },
-              },
-              estatisticas: {
-                type: "object",
-                properties: {
-                  presencas: { type: "number", example: 20 },
-                  faltas: { type: "number", example: 0 },
-                  atrasos: { type: "number", example: 2 },
-                  percentualFrequencia: { type: "number", example: 100 },
                 },
               },
             },

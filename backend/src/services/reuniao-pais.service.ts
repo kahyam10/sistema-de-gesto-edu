@@ -75,7 +75,7 @@ export class ReuniaoPaisService {
             },
           },
         },
-        profissional: true,
+        profissional: { select: { id: true, nome: true, tipo: true } },
         presencas: true,
       },
     });
@@ -121,7 +121,7 @@ export class ReuniaoPaisService {
             },
           },
         },
-        profissional: true,
+        profissional: { select: { id: true, nome: true, tipo: true } },
         presencas: true,
         _count: {
           select: {
@@ -177,7 +177,7 @@ export class ReuniaoPaisService {
           },
         },
       },
-      profissional: true,
+      profissional: { select: { id: true, nome: true, tipo: true } },
       presencas: true,
       _count: {
         select: {
@@ -237,7 +237,7 @@ export class ReuniaoPaisService {
             },
           },
         },
-        profissional: true,
+        profissional: { select: { id: true, nome: true, tipo: true } },
         presencas: {
           include: {
             matricula: {
@@ -317,7 +317,7 @@ export class ReuniaoPaisService {
             },
           },
         },
-        profissional: true,
+        profissional: { select: { id: true, nome: true, tipo: true } },
         presencas: true,
         _count: {
           select: {

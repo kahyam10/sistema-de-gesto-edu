@@ -92,7 +92,7 @@ export class ComunicadoService {
           },
         },
         etapa: true,
-        autor: true,
+        autor: { select: { id: true, nome: true, tipo: true } },
         _count: {
           select: {
             destinatariosLeitura: true,
@@ -148,7 +148,7 @@ export class ComunicadoService {
           },
         },
         etapa: true,
-        autor: true,
+        autor: { select: { id: true, nome: true, tipo: true } },
         _count: {
           select: {
             destinatariosLeitura: true,
@@ -210,7 +210,7 @@ export class ComunicadoService {
         },
       },
       etapa: true,
-      autor: true,
+      autor: { select: { id: true, nome: true, tipo: true } },
       _count: {
         select: {
           destinatariosLeitura: true,
@@ -261,7 +261,7 @@ export class ComunicadoService {
           },
         },
         etapa: true,
-        autor: true,
+        autor: { select: { id: true, nome: true, tipo: true } },
         destinatariosLeitura: true,
         _count: {
           select: {
@@ -340,7 +340,7 @@ export class ComunicadoService {
           },
         },
         etapa: true,
-        autor: true,
+        autor: { select: { id: true, nome: true, tipo: true } },
         _count: {
           select: {
             destinatariosLeitura: true,
@@ -488,7 +488,7 @@ export class ComunicadoService {
         escola: true,
         turma: true,
         etapa: true,
-        autor: true,
+        autor: { select: { id: true, nome: true, tipo: true } },
         destinatariosLeitura: {
           where: {
             userId,

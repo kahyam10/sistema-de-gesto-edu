@@ -35,6 +35,7 @@ beforeAll(async () => {
   const prof = await prisma.profissionalEducacao.create({
     data: { nome: "Prof RS", cpf: "00000009927", tipo: "PROFESSOR", banco: "000", agencia: "0000", conta: "00000-0", pix: "pix-ficticio-rs" },
   });
+  await prisma.turmaProfessor.create({ data: { turmaId: turma.id, profissionalId: prof.id, tipo: "PROFESSOR" } });
   await prisma.gradeHoraria.create({
     data: { turmaId: turma.id, diaSemana: "SEGUNDA", horaInicio: "07:30", horaFim: "08:20", disciplina: "Ciências RS", profissionalId: prof.id },
   });
@@ -79,6 +80,8 @@ describe("respostas completas (schema de resposta = formato do service)", () => 
     const baixa = (await get(`/api/frequencia/turma/${ids.turma}/baixa-frequencia`)).json();
     expect(baixa).toHaveLength(1);
     expect(baixa[0].matricula.numeroMatricula).toBe("RS000001");
+    const doDia = (await get(`/api/frequencia/turma/${ids.turma}/data/2032-03-03`)).json();
+    expect(doDia[0]).toMatchObject({ status: "PRESENTE", justificativa: null, matricula: { nomeAluno: "Aluno Fictício RS" } });
     const est = (await get(`/api/frequencia/estatisticas/${ids.aluno}/${ids.turma}`)).json();
     expect(est).toMatchObject({ percentualPresenca: 50, abaixoDoLimite: true });
   });
@@ -91,6 +94,18 @@ describe("respostas completas (schema de resposta = formato do service)", () => 
     expect(b.turma.nome).toBe("2A-RS");
     const cie = b.disciplinas.find((d: { disciplinaNome: string }) => d.disciplinaNome === "Ciências RS");
     expect(cie.bimestres.find((x: { bimestre: number }) => x.bimestre === 1).media).toBe(8); // 4 de 5
+  });
+
+  it("turmas trazem a situação das matrículas (chamada/notas) e só o nome do professor", async () => {
+    const res = await get(`/api/turmas?anoLetivo=2032`);
+    expect(res.statusCode).toBe(200);
+    const turmas = res.json();
+    const t = (Array.isArray(turmas) ? turmas : turmas.data).find((x: { id: string }) => x.id === ids.turma);
+    expect(t.matriculas[0]).toMatchObject({ nomeAluno: "Aluno Fictício RS", numeroMatricula: "RS000001", status: "ATIVA" });
+    expect(t.professores[0].profissional).toEqual({ id: expect.any(String), nome: "Prof RS", tipo: "PROFESSOR" });
+    expect(res.body).not.toMatch(/00000009927|pix-ficticio-rs/);
+    const uma = await get(`/api/turmas/${ids.turma}`);
+    expect(uma.json().professores[0].profissional).not.toHaveProperty("cpf");
   });
 
   it("disciplinas trazem a etapa e mantêm null", async () => {

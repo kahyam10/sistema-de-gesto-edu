@@ -7,7 +7,7 @@ export class EscolaService {
     return prisma.escola.findMany({
       include: {
         etapas: { include: { etapa: true } },
-        diretor: true,
+        diretor: { select: { id: true, nome: true, tipo: true, email: true, telefone: true, dadosCenso: true } },
       },
       orderBy: { nome: "asc" },
     });
@@ -20,7 +20,7 @@ export class EscolaService {
         etapas: { include: { etapa: true } },
         turmas: { include: { serie: true } },
         profissionais: true,
-        diretor: true,
+        diretor: { select: { id: true, nome: true, tipo: true, email: true, telefone: true, dadosCenso: true } },
       },
     });
   }
@@ -49,7 +49,7 @@ export class EscolaService {
       },
       include: {
         etapas: { include: { etapa: true } },
-        diretor: true,
+        diretor: { select: { id: true, nome: true, tipo: true, email: true, telefone: true, dadosCenso: true } },
       },
     });
   }
@@ -85,7 +85,7 @@ export class EscolaService {
         },
         include: {
           etapas: { include: { etapa: true } },
-          diretor: true,
+          diretor: { select: { id: true, nome: true, tipo: true, email: true, telefone: true, dadosCenso: true } },
         },
       });
     });

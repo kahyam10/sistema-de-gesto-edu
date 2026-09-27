@@ -223,7 +223,7 @@ export class AcompanhamentoService {
             },
           },
         },
-        profissional: true,
+        profissional: { select: { id: true, nome: true, tipo: true } },
         escola: true,
       },
     });
