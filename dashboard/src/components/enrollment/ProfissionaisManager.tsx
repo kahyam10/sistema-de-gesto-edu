@@ -57,6 +57,7 @@ import {
 } from "@/hooks/useApi";
 import type { ProfissionalEducacao } from "@/lib/api";
 import { ProfissionalDetails } from "./ProfissionalDetails";
+import { useEhGestao } from "@/hooks/use-papel";
 
 type TipoProfissional = "PROFESSOR" | "AUXILIAR" | "COORDENADOR" | "DIRETOR";
 
@@ -101,6 +102,7 @@ const tipoBadgeColors: Record<TipoProfissional, string> = {
 };
 
 export function ProfissionaisManager() {
+  const ehGestao = useEhGestao(); // excluir profissional = gestão (o servidor recusa os demais)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProfissionalForm>(initialForm);
@@ -659,18 +661,22 @@ export function ProfissionaisManager() {
                       <Button
                         size="sm"
                         variant="outline"
+                        aria-label={`Editar ${profissional.nome}`}
                         onClick={() => handleEdit(profissional)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(profissional.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {ehGestao && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label={`Excluir ${profissional.nome}`}
+                          onClick={() => handleDelete(profissional.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

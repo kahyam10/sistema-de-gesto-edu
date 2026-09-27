@@ -236,6 +236,7 @@ export function LiderTurmaManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(lider.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>

@@ -408,6 +408,7 @@ export function ComunicadoManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenForm(comunicado)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -415,6 +416,7 @@ export function ComunicadoManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(comunicado.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>

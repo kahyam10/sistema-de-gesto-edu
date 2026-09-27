@@ -46,6 +46,7 @@ import {
   useDeleteDisciplina,
 } from "@/hooks/useApi";
 import { Plus, Pencil, Trash, BookOpen } from "@phosphor-icons/react";
+import { useEhGestao } from "@/hooks/use-papel";
 import type { Disciplina } from "@/lib/api";
 
 interface DisciplinaForm {
@@ -71,6 +72,8 @@ const emptyForm: DisciplinaForm = {
 };
 
 export function DisciplinasManager() {
+  // Disciplinas são estrutura da rede: só a gestão altera (o servidor recusa os demais)
+  const ehGestao = useEhGestao();
   const [filtroEtapa, setFiltroEtapa] = useState<string>("todas");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -160,10 +163,12 @@ export function DisciplinasManager() {
                 Gerencie as disciplinas por etapa de ensino
               </CardDescription>
             </div>
-            <Button onClick={handleOpenCreate}>
-              <Plus size={16} className="mr-2" />
-              Nova Disciplina
-            </Button>
+            {ehGestao && (
+              <Button onClick={handleOpenCreate}>
+                <Plus size={16} className="mr-2" />
+                Nova Disciplina
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -241,22 +246,28 @@ export function DisciplinasManager() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleOpenEdit(d)}
-                            >
-                              <Pencil size={14} />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDelete(d.id)}
-                            >
-                              <Trash size={14} />
-                            </Button>
-                          </div>
+                          {ehGestao ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Editar ${d.nome}`}
+                                onClick={() => handleOpenEdit(d)}
+                              >
+                                <Pencil size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Excluir ${d.nome}`}
+                                onClick={() => handleDelete(d.id)}
+                              >
+                                <Trash size={14} />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

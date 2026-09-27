@@ -3,6 +3,7 @@ import { BusinessError, NotFoundError, PermissionError } from "../errors/index.j
 import { frequenciaService } from "./frequencia.service.js";
 import { notaService } from "./nota.service.js";
 import { expandir } from "../lib/recorrencia.js";
+import { hojeNaRede } from "../lib/datas.js";
 
 const DIAS_SEMANA = ["DOMINGO", "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"] as const;
 
@@ -638,7 +639,7 @@ export class PortalService {
 
   /** Início do dia de hoje na Bahia, como a frequência grava (meia-noite UTC de AAAA-MM-DD). */
   private hojeBahia(): Date {
-    return new Date(new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bahia" }).format(new Date()));
+    return hojeNaRede();
   }
 
   /**

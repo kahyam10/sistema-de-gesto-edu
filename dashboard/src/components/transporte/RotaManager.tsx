@@ -374,6 +374,7 @@ export function RotaManager() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleAbrirDetalhe(rota)}
+                          aria-label="Ver detalhes"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -381,6 +382,7 @@ export function RotaManager() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenForm(rota)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -388,6 +390,7 @@ export function RotaManager() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(rota.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -503,6 +506,7 @@ export function RotaManager() {
                               onClick={() =>
                                 handleDesvincularEscola(vinculo.escola.id)
                               }
+                              aria-label="Excluir"
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
@@ -603,6 +607,7 @@ export function RotaManager() {
                               onClick={() =>
                                 handleDesvincularAluno(vinculo.matricula.id)
                               }
+                              aria-label="Excluir"
                             >
                               <Trash className="h-4 w-4" />
                             </Button>

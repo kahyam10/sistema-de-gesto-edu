@@ -197,10 +197,10 @@ export function DevelopmentTab() {
                         <p className="text-sm text-muted-foreground">{subModule.description}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditForm(subModule)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditForm(subModule)} aria-label="Editar">
                           <Pencil size={14} />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(subModule.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(subModule.id)} aria-label="Excluir">
                           <Trash size={14} />
                         </Button>
                       </div>

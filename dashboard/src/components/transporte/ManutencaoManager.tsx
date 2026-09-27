@@ -48,6 +48,7 @@ import {
 } from "@/hooks/useTransporte";
 import { ManutencaoVeiculo } from "@/lib/api-transporte";
 import { toast } from "sonner";
+import { hojeNaRede } from "@/lib/utils";
 
 const tipoManutencaoLabels: Record<string, string> = {
   PREVENTIVA: "Preventiva",
@@ -123,15 +124,11 @@ export function ManutencaoManager() {
 
   // Stat cards
   const agendadas = manutencoes.filter((m) => m.status === "AGENDADA").length;
-  const agora = new Date();
-  const concluidasNoMes = manutencoes.filter((m) => {
-    if (m.status !== "CONCLUIDA") return false;
-    const data = new Date(m.dataRealizada || m.dataAgendada);
-    return (
-      data.getMonth() === agora.getMonth() &&
-      data.getFullYear() === agora.getFullYear()
-    );
-  }).length;
+  // Mês corrente no fuso da rede; datas puras comparadas por AAAA-MM (sem fuso)
+  const mesAtual = hojeNaRede().slice(0, 7);
+  const concluidasNoMes = manutencoes.filter(
+    (m) => m.status === "CONCLUIDA" && (m.dataRealizada || m.dataAgendada).slice(0, 7) === mesAtual
+  ).length;
   const custoTotal = manutencoes
     .filter((m) => m.status === "CONCLUIDA")
     .reduce((acc, m) => acc + (m.custo || 0), 0);
@@ -373,6 +370,7 @@ export function ManutencaoManager() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenForm(manutencao)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -380,6 +378,7 @@ export function ManutencaoManager() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(manutencao.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>

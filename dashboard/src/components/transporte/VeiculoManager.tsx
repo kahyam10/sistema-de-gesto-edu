@@ -48,8 +48,8 @@ import {
 } from "@/hooks/useTransporte";
 import { Veiculo } from "@/lib/api-transporte";
 import { toast } from "sonner";
+import { diasAte } from "@/lib/utils";
 
-const DIA_MS = 86400000;
 
 const tipoVeiculoLabels: Record<string, string> = {
   ONIBUS: "Ônibus",
@@ -82,19 +82,18 @@ function BadgeVencimento({
     );
   }
 
-  const data = new Date(vencimento);
-  const dataBR = data.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // data pura (meia-noite UTC)
-  const agora = new Date();
-  const em30Dias = new Date(agora.getTime() + 30 * DIA_MS);
+  const dataBR = new Date(vencimento).toLocaleDateString("pt-BR", { timeZone: "UTC" }); // data pura (meia-noite UTC)
+  // Conta por dia no fuso da rede: vale até o fim do dia do vencimento
+  const dias = diasAte(vencimento);
 
-  if (data < agora) {
+  if (dias < 0) {
     return (
       <Badge className="bg-red-100 text-red-800">
         {rotulo} vencido em {dataBR}
       </Badge>
     );
   }
-  if (data <= em30Dias) {
+  if (dias <= 30) {
     return (
       <Badge className="bg-yellow-100 text-yellow-800">
         {rotulo} vence em {dataBR}
@@ -439,6 +438,7 @@ export function VeiculoManager() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenForm(veiculo)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -446,6 +446,7 @@ export function VeiculoManager() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(veiculo.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>

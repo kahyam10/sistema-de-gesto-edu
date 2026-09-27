@@ -249,7 +249,7 @@ export function SalasManager({ escola, onBack }: SalasManagerProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -367,7 +367,7 @@ export function SalasManager({ escola, onBack }: SalasManagerProps) {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(sala)}>
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(sala)} aria-label="Editar">
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
@@ -375,6 +375,7 @@ export function SalasManager({ escola, onBack }: SalasManagerProps) {
                     size="icon"
                     onClick={() => handleDelete(sala)}
                     className="text-destructive hover:text-destructive"
+                    aria-label="Excluir"
                   >
                     <Trash className="h-4 w-4" />
                   </Button>

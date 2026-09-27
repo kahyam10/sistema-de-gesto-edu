@@ -210,19 +210,8 @@ Cria um registro de ponto manual (uso administrativo).
           },
         },
         response: {
-          201: {
-            description: "Ponto criado com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              profissionalId: { type: "string" },
-              escolaId: { type: "string" },
-              data: { type: "string", format: "date-time" },
-              tipoRegistro: { type: "string" },
-              horario: { type: "string" },
-              createdAt: { type: "string", format: "date-time" },
-            },
-          },          400: {
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -307,23 +296,7 @@ Registra entrada ou saída do profissional em tempo real.
           },
         },
         response: {
-          201: {
-            description: "Ponto registrado com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              profissionalId: { type: "string" },
-              escolaId: { type: "string" },
-              data: { type: "string", format: "date-time" },
-              tipoRegistro: { type: "string" },
-              horario: { type: "string", example: "08:15" },
-              localizacao: { type: "string", nullable: true },
-              message: {
-                type: "string",
-                example: "Entrada registrada às 08:15",
-              },
-            },
-          },
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro de validação",
             type: "object",
@@ -492,16 +465,8 @@ Atualiza um registro de ponto existente.
           },
         },
         response: {
-          200: {
-            description: "Ponto atualizado com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              horario: { type: "string" },
-              observacoes: { type: "string" },
-              updatedAt: { type: "string", format: "date-time" },
-            },
-          },          404: {
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {

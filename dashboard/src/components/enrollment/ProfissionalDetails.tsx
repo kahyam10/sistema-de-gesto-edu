@@ -93,7 +93,7 @@ function EscolasVinculadasView({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -167,7 +167,7 @@ function TurmasVinculadasView({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -520,7 +520,7 @@ function FormacaoView({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -813,7 +813,7 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -860,7 +860,7 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
     <div className="space-y-6">
       {/* Header com botão voltar - estilo igual ao EscolaDetails */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">

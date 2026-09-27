@@ -729,6 +729,7 @@ export default function QuestionarioGestorEscolaPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeCursoSuperior(index)}
+                          aria-label="Excluir"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -828,6 +829,7 @@ export default function QuestionarioGestorEscolaPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removePosGraduacao(index)}
+                          aria-label="Excluir"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

@@ -56,6 +56,7 @@ import {
 } from "@/hooks/useApi";
 import { toast } from "sonner";
 import { DocumentosMatricula } from "./DocumentosMatricula";
+import { idadeEm } from "@/lib/utils";
 
 interface AlunoDetailsProps {
   matriculaId: string;
@@ -111,16 +112,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
   );
 
   // Calcular idade
-  const calcularIdade = (dataNascimento: string): number => {
-    const nascimento = new Date(dataNascimento);
-    const hoje = new Date();
-    let idade = hoje.getFullYear() - nascimento.getFullYear();
-    const mes = hoje.getMonth() - nascimento.getMonth();
-    if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
-      idade--;
-    }
-    return idade;
-  };
+  const calcularIdade = (dataNascimento: string): number => idadeEm(dataNascimento);
 
   // Formatar data
   const formatarData = (data: string): string => {
@@ -204,7 +196,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -281,7 +273,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
     <div className="space-y-6">
       {/* Header com botão voltar - estilo igual ao EscolaDetails */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">

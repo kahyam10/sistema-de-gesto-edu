@@ -242,25 +242,7 @@ Cria uma nova solicitação de licença ou afastamento.
           },
         },
         response: {
-          201: {
-            description: "Licença solicitada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              profissionalId: { type: "string" },
-              tipo: { type: "string" },
-              status: { type: "string", example: "PENDENTE" },
-              dataInicio: { type: "string", format: "date" },
-              dataFim: { type: "string", format: "date" },
-              diasAfastamento: { type: "number", example: 3 },
-              motivo: { type: "string" },
-              message: {
-                type: "string",
-                example: "Licença solicitada. Aguardando aprovação da direção.",
-              },
-              createdAt: { type: "string", format: "date-time" },
-            },
-          },
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Dados inválidos ou conflito de datas",
             type: "object",
@@ -416,17 +398,7 @@ Atualiza uma solicitação de licença.
           },
         },
         response: {
-          200: {
-            description: "Licença atualizada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              dataInicio: { type: "string", format: "date" },
-              dataFim: { type: "string", format: "date" },
-              diasAfastamento: { type: "number" },
-              updatedAt: { type: "string", format: "date-time" },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao atualizar",
             type: "object",
@@ -517,25 +489,8 @@ Aprova ou rejeita uma solicitação de licença.
           },
         },
         response: {
-          200: {
-            description: "Licença processada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              status: {
-                type: "string",
-                example: "APROVADA",
-                enum: ["APROVADA", "REJEITADA"],
-              },
-              aprovadoPor: { type: "string" },
-              dataAprovacao: { type: "string", format: "date-time" },
-              motivoRejeicao: { type: "string", nullable: true },
-              message: {
-                type: "string",
-                example: "Licença aprovada com sucesso",
-              },
-            },
-          },          400: {
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -632,16 +587,7 @@ Cancela uma licença aprovada ou pendente.
           },
         },
         response: {
-          200: {
-            description: "Licença cancelada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              status: { type: "string", example: "CANCELADA" },
-              message: { type: "string", example: "Licença cancelada com sucesso" },
-              updatedAt: { type: "string", format: "date-time" },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao cancelar",
             type: "object",

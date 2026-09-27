@@ -15,6 +15,8 @@ let app: FastifyInstance;
 let token = "";
 const ids: Record<string, string> = {};
 const get = (url: string) => app.inject({ method: "GET", url, headers: { authorization: `Bearer ${token}` } });
+const post = (url: string, payload: object) =>
+  app.inject({ method: "POST", url, payload, headers: { authorization: `Bearer ${token}` } });
 
 beforeAll(async () => {
   _resetarLimiteLogin();
@@ -50,7 +52,7 @@ beforeAll(async () => {
   await prisma.user.create({
     data: { email: "semec-rs@teste.local", nome: "SEMEC RS", role: "SEMEC", password: await bcrypt.hash(SENHA, 10) },
   });
-  Object.assign(ids, { turma: turma.id, aluno: aluno.id, etapa: etapa.id });
+  Object.assign(ids, { turma: turma.id, aluno: aluno.id, etapa: etapa.id, avaliacao: av.id });
 
   app = await buildApp();
   await app.ready();
@@ -112,5 +114,16 @@ describe("respostas completas (schema de resposta = formato do service)", () => 
     const lista = (await get(`/api/disciplinas?etapaId=${ids.etapa}`)).json();
     expect(lista[0].etapa.nome).toBe("Fundamental RS");
     expect(lista[0].descricao).toBeNull();
+  });
+
+  it("escritas devolvem o que o service monta (chamada e notas da turma)", async () => {
+    const chamada = await post("/api/frequencia/turma", {
+      turmaId: ids.turma, data: "2032-03-10", presencas: [{ matriculaId: ids.aluno, status: "PRESENTE" }],
+    });
+    expect(chamada.statusCode).toBe(201);
+    expect(chamada.json()).toMatchObject({ message: expect.stringContaining("1 aluno"), registros: [expect.objectContaining({ status: "PRESENTE" })] });
+    const notas = await post("/api/notas/turma", { avaliacaoId: ids.avaliacao, notas: [{ matriculaId: ids.aluno, valor: 5 }] });
+    expect(notas.statusCode).toBe(201);
+    expect(notas.json()).toMatchObject({ message: expect.stringContaining("1 aluno"), notas: [expect.objectContaining({ valor: 5 })] });
   });
 });

@@ -7,6 +7,7 @@ import {
   UpdateLicencaInput,
   AprovarLicencaInput,
 } from "../schemas/index.js";
+import { hojeNaRede } from "../lib/datas.js";
 
 
 export class LicencaService {
@@ -56,7 +57,6 @@ export class LicencaService {
           select: {
             id: true,
             nome: true,
-            cpf: true,
             tipo: true,
             matricula: true,
           },
@@ -95,7 +95,6 @@ export class LicencaService {
         select: {
           id: true,
           nome: true,
-          cpf: true,
           tipo: true,
           matricula: true,
         },
@@ -133,7 +132,6 @@ export class LicencaService {
           select: {
             id: true,
             nome: true,
-            cpf: true,
             tipo: true,
             matricula: true,
             email: true,
@@ -231,8 +229,7 @@ export class LicencaService {
 
   // Busca licenças ativas (aprovadas e dentro do período)
   async findLicencasAtivas(): Promise<Licenca[]> {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hoje = hojeNaRede();
 
     return await prisma.licenca.findMany({
       where: {

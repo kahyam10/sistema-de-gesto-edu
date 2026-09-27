@@ -326,17 +326,8 @@ Cria um novo registro de frequência para um aluno.
           },
         },
         response: {
-          201: {
-            description: "Frequência criada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              matriculaId: { type: "string" },
-              turmaId: { type: "string" },
-              data: { type: "string", format: "date-time" },
-              status: { type: "string" },
-            },
-          },          400: {
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -453,16 +444,8 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
           },
         },
         response: {
-          201: {
-            description: "Frequência registrada com sucesso",
-            type: "object",
-            properties: {
-              total: { type: "integer", example: 25 },
-              presentes: { type: "integer", example: 23 },
-              faltas: { type: "integer", example: 1 },
-              justificadas: { type: "integer", example: 1 },
-            },
-          },          400: {
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -570,16 +553,8 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
           },
         },
         response: {
-          200: {
-            description: "Frequência atualizada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              status: { type: "string" },
-              justificativa: { type: "string" },
-              observacao: { type: "string" },
-            },
-          },          400: {
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {

@@ -385,6 +385,7 @@ export function NotificacaoManager() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(notificacao.id)}
+                            aria-label="Excluir"
                           >
                             <Trash className="h-4 w-4" />
                           </Button>

@@ -331,6 +331,7 @@ export function ReuniaoDemocraticaManager() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleOpenForm(reuniao)}
+                              aria-label="Editar"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -348,6 +349,7 @@ export function ReuniaoDemocraticaManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(reuniao.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -609,6 +611,7 @@ function RegistrarAtaDialog({ reuniao, onClose }: RegistrarAtaDialogProps) {
                   onClick={() =>
                     setDecisoes(decisoes.filter((_, i) => i !== index))
                   }
+                  aria-label="Excluir"
                 >
                   <Trash className="h-4 w-4" />
                 </Button>
@@ -694,6 +697,7 @@ function RegistrarAtaDialog({ reuniao, onClose }: RegistrarAtaDialogProps) {
                   onClick={() =>
                     setPresencas(presencas.filter((_, i) => i !== index))
                   }
+                  aria-label="Excluir"
                 >
                   <Trash className="h-4 w-4" />
                 </Button>

@@ -55,6 +55,7 @@ import {
 import { Matricula } from "@/lib/api";
 import { AlunoDetails } from "./AlunoDetails";
 import { useAuth } from "@/lib/auth";
+import { idadeEm } from "@/lib/utils";
 
 export function MatriculasManager() {
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
@@ -120,17 +121,7 @@ export function MatriculasManager() {
   const isLoading = loadingEscolas || loadingEtapas || loadingSeries || loadingMatriculas;
 
   // Função para calcular idade a partir da data de nascimento
-  const calcularIdade = (dataNascimento: string): number => {
-    const hoje = new Date();
-    const nascimento = new Date(dataNascimento);
-    let idade = hoje.getFullYear() - nascimento.getFullYear();
-    const mesAtual = hoje.getMonth();
-    const mesNascimento = nascimento.getMonth();
-    if (mesAtual < mesNascimento || (mesAtual === mesNascimento && hoje.getDate() < nascimento.getDate())) {
-      idade--;
-    }
-    return idade;
-  };
+  const calcularIdade = (dataNascimento: string): number => idadeEm(dataNascimento);
 
   // Filtrar matrículas com base nos critérios
   const matriculasFiltradas = (matriculas || []).filter((matricula) => {

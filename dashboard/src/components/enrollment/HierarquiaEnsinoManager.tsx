@@ -366,6 +366,7 @@ export function HierarquiaEnsinoManager() {
                             e.stopPropagation();
                             openModal("etapa", "create", { tipoId: tipo.id });
                           }}
+                          aria-label="Adicionar"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -377,6 +378,7 @@ export function HierarquiaEnsinoManager() {
                             e.stopPropagation();
                             openModal("tipo", "edit", { item: tipo });
                           }}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -388,6 +390,7 @@ export function HierarquiaEnsinoManager() {
                             e.stopPropagation();
                             handleDelete("tipo", tipo.id, tipo.nome);
                           }}
+                          aria-label="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -431,6 +434,7 @@ export function HierarquiaEnsinoManager() {
                                         e.stopPropagation();
                                         openModal("nivel", "create", { etapaId: etapa.id });
                                       }}
+                                      aria-label="Adicionar"
                                     >
                                       <Plus className="h-3 w-3" />
                                     </Button>
@@ -442,6 +446,7 @@ export function HierarquiaEnsinoManager() {
                                         e.stopPropagation();
                                         openModal("etapa", "edit", { item: etapa });
                                       }}
+                                      aria-label="Editar"
                                     >
                                       <Pencil className="h-3 w-3" />
                                     </Button>
@@ -453,6 +458,7 @@ export function HierarquiaEnsinoManager() {
                                         e.stopPropagation();
                                         handleDelete("etapa", etapa.id, etapa.nome);
                                       }}
+                                      aria-label="Excluir"
                                     >
                                       <Trash2 className="h-3 w-3" />
                                     </Button>
@@ -496,6 +502,7 @@ export function HierarquiaEnsinoManager() {
                                                     e.stopPropagation();
                                                     openModal("serie", "create", { nivelId: nivel.id });
                                                   }}
+                                                  aria-label="Adicionar"
                                                 >
                                                   <Plus className="h-3 w-3" />
                                                 </Button>
@@ -507,6 +514,7 @@ export function HierarquiaEnsinoManager() {
                                                     e.stopPropagation();
                                                     openModal("nivel", "edit", { item: nivel });
                                                   }}
+                                                  aria-label="Editar"
                                                 >
                                                   <Pencil className="h-3 w-3" />
                                                 </Button>
@@ -518,6 +526,7 @@ export function HierarquiaEnsinoManager() {
                                                     e.stopPropagation();
                                                     handleDelete("nivel", nivel.id, nivel.nome);
                                                   }}
+                                                  aria-label="Excluir"
                                                 >
                                                   <Trash2 className="h-3 w-3" />
                                                 </Button>
@@ -549,6 +558,7 @@ export function HierarquiaEnsinoManager() {
                                                           onClick={() =>
                                                             openModal("serie", "edit", { item: serie })
                                                           }
+                                                          aria-label="Editar"
                                                         >
                                                           <Pencil className="h-2.5 w-2.5" />
                                                         </Button>
@@ -559,6 +569,7 @@ export function HierarquiaEnsinoManager() {
                                                           onClick={() =>
                                                             handleDelete("serie", serie.id, serie.nome)
                                                           }
+                                                          aria-label="Excluir"
                                                         >
                                                           <Trash2 className="h-2.5 w-2.5" />
                                                         </Button>

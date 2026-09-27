@@ -109,8 +109,8 @@ export function TimelineTab() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenPhaseDialog(phase)}><Pencil className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => { setPhaseToDelete(phase); setDeleteDialogOpen(true) }}><Trash className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenPhaseDialog(phase)} aria-label="Editar"><Pencil className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { setPhaseToDelete(phase); setDeleteDialogOpen(true) }} aria-label="Excluir"><Trash className="w-4 h-4" /></Button>
                   </div>
                 </div>
                 <Badge className={`${statusColors[phase.status as keyof typeof statusColors]} mb-4`}>{statusLabels[phase.status as keyof typeof statusLabels]}</Badge>

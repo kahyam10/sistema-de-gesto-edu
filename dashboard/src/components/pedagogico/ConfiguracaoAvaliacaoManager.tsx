@@ -46,6 +46,7 @@ import {
   useDeleteConfiguracaoAvaliacao,
 } from "@/hooks/useApi";
 import { GearSix, Plus, Pencil, Trash } from "@phosphor-icons/react";
+import { useEhGestao } from "@/hooks/use-papel";
 import type { ConfiguracaoAvaliacao } from "@/lib/api";
 
 interface ConfigForm {
@@ -73,6 +74,8 @@ const emptyForm: ConfigForm = {
 };
 
 export function ConfiguracaoAvaliacaoManager() {
+  // Regras de avaliação são da rede: só a gestão altera (o servidor recusa os demais)
+  const ehGestao = useEhGestao();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ConfigForm>(emptyForm);
@@ -167,10 +170,12 @@ export function ConfiguracaoAvaliacaoManager() {
                 Defina parametros do sistema de avaliacao (media, frequencia, periodos)
               </CardDescription>
             </div>
-            <Button onClick={handleOpenCreate}>
-              <Plus size={16} className="mr-2" />
-              Nova Configuracao
-            </Button>
+            {ehGestao && (
+              <Button onClick={handleOpenCreate}>
+                <Plus size={16} className="mr-2" />
+                Nova Configuração
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -235,22 +240,28 @@ export function ConfiguracaoAvaliacaoManager() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleOpenEdit(c)}
-                          >
-                            <Pencil size={14} />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(c.id)}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        </div>
+                        {ehGestao ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              aria-label="Editar configuração"
+                              onClick={() => handleOpenEdit(c)}
+                            >
+                              <Pencil size={14} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              aria-label="Excluir configuração"
+                              onClick={() => handleDelete(c.id)}
+                            >
+                              <Trash size={14} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -266,7 +277,7 @@ export function ConfiguracaoAvaliacaoManager() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? "Editar Configuracao" : "Nova Configuracao"}
+              {editingId ? "Editar Configuração" : "Nova Configuração"}
             </DialogTitle>
             <DialogDescription>
               Defina os parametros de avaliacao. Configuracoes mais especificas tem prioridade.

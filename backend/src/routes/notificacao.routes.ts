@@ -196,7 +196,7 @@ export async function notificacaoRoutes(app: FastifyInstance) {
         required: ["userId"],
       },
       response: {
-        200: { description: "Todas as notificações marcadas como lidas", type: "object", properties: { count: { type: "number" } } },
+        // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
       },
     },
   }, async (request, reply) => {

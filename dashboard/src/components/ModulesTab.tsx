@@ -232,8 +232,8 @@ export function ModulesTab() {
                   </div>
                 </div>
                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" onClick={() => handleOpenModuleDialog(module)}><Pencil className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => { setModuleToDelete(module); setDeleteModuleDialogOpen(true) }}><Trash className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleOpenModuleDialog(module)} aria-label="Editar"><Pencil className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => { setModuleToDelete(module); setDeleteModuleDialogOpen(true) }} aria-label="Excluir"><Trash className="w-4 h-4" /></Button>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{module.description}</p>
@@ -316,8 +316,8 @@ export function ModulesTab() {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenSubModuleDialog(selectedModule.id, subModule)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => { setSubModuleToDelete(subModule); setDeleteSubModuleDialogOpen(true) }}><Trash className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenSubModuleDialog(selectedModule.id, subModule)} aria-label="Editar"><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => { setSubModuleToDelete(subModule); setDeleteSubModuleDialogOpen(true) }} aria-label="Excluir"><Trash className="w-4 h-4" /></Button>
                       </div>
                     </div>
                   ))}

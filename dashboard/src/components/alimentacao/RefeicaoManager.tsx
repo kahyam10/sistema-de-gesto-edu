@@ -306,6 +306,7 @@ export function RefeicaoManager() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleOpenForm(refeicao)}
+                            aria-label="Editar"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -313,6 +314,7 @@ export function RefeicaoManager() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(refeicao.id)}
+                            aria-label="Excluir"
                           >
                             <Trash className="h-4 w-4" />
                           </Button>

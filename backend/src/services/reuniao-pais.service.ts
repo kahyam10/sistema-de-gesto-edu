@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/AppError.js";
+import { hojeNaRede } from "../lib/datas.js";
 
 
 export class ReuniaoPaisService {
@@ -521,8 +522,7 @@ export class ReuniaoPaisService {
       _count: true,
     });
 
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hoje = hojeNaRede();
 
     const proximas = await prisma.reuniaoPais.count({
       where: {

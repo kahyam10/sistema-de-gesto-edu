@@ -276,6 +276,7 @@ export function ColegiadoManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenForm(colegiado)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -283,6 +284,7 @@ export function ColegiadoManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(colegiado.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -586,6 +588,7 @@ function MembrosDialog({ colegiado, onClose }: MembrosDialogProps) {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEditMembro(membro)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -593,6 +596,7 @@ function MembrosDialog({ colegiado, onClose }: MembrosDialogProps) {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveMembro(membro.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>

@@ -383,23 +383,7 @@ Cria uma nova configuração de avaliação para um ano letivo.
           },
         },
         response: {
-          201: {
-            description: "Configuração criada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              anoLetivo: { type: "number" },
-              sistemaAvaliacao: { type: "string" },
-              numeroPeriodos: { type: "number" },
-              mediaMinima: { type: "number" },
-              percentualFrequenciaMinima: { type: "number" },
-              recuperacaoParalela: { type: "boolean" },
-              recuperacaoFinal: { type: "boolean" },
-              escolaId: { type: "string" },
-              etapaId: { type: "string" },
-              createdAt: { type: "string", format: "date-time" },
-            },
-          },
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Dados inválidos",
             type: "object",
@@ -523,23 +507,7 @@ Atualiza uma configuração de avaliação existente.
           },
         },
         response: {
-          200: {
-            description: "Configuração atualizada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              anoLetivo: { type: "number" },
-              sistemaAvaliacao: { type: "string" },
-              numeroPeriodos: { type: "number" },
-              mediaMinima: { type: "number" },
-              percentualFrequenciaMinima: { type: "number" },
-              recuperacaoParalela: { type: "boolean" },
-              recuperacaoFinal: { type: "boolean" },
-              escolaId: { type: "string" },
-              etapaId: { type: "string" },
-              updatedAt: { type: "string", format: "date-time" },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Dados inválidos",
             type: "object",

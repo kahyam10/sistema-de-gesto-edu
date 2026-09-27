@@ -125,7 +125,7 @@ export function TurmaDetails({ turma, onBack }: TurmaDetailsProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={onBack}>
+        <Button variant="outline" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">

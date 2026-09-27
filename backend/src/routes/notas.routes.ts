@@ -223,17 +223,8 @@ Ideal para lançar notas de recuperação ou notas avulsas não vinculadas a uma
           },
         },
         response: {
-          201: {
-            description: "Nota criada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              valor: { type: "number" },
-              matriculaId: { type: "string" },
-              disciplina: { type: "string" },
-              bimestre: { type: "integer" },
-            },
-          },          400: {
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -401,15 +392,8 @@ Ideal para lançar notas após correção de provas/trabalhos. Permite registrar
           },
         },
         response: {
-          201: {
-            description: "Notas lançadas com sucesso",
-            type: "object",
-            properties: {
-              total: { type: "integer", example: 25 },
-              sucesso: { type: "integer", example: 25 },
-              erros: { type: "integer", example: 0 },
-            },
-          },          400: {
+          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -486,15 +470,8 @@ Atualiza uma nota existente.
           },
         },
         response: {
-          200: {
-            description: "Nota atualizada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              valor: { type: "number" },
-              observacao: { type: "string" },
-            },
-          },          400: {
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {

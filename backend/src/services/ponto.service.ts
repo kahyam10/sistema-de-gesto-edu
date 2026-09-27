@@ -6,6 +6,7 @@ import {
   UpdatePontoInput,
   RegistrarPontoInput,
 } from "../schemas/index.js";
+import { hojeNaRede } from "../lib/datas.js";
 
 
 export class PontoService {
@@ -26,8 +27,7 @@ export class PontoService {
   // Atômico: find + update/create em transação, com backstop no
   // @@unique([profissionalId, data]) contra registros duplicados no dia.
   async registrarPonto(data: RegistrarPontoInput): Promise<Ponto> {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hoje = hojeNaRede();
 
     return prisma.$transaction(async (tx) => {
     // Busca se já existe registro para hoje
@@ -111,7 +111,6 @@ export class PontoService {
           select: {
             id: true,
             nome: true,
-            cpf: true,
             tipo: true,
           },
         },
@@ -149,7 +148,6 @@ export class PontoService {
         select: {
           id: true,
           nome: true,
-          cpf: true,
           tipo: true,
         },
       },
@@ -186,7 +184,6 @@ export class PontoService {
           select: {
             id: true,
             nome: true,
-            cpf: true,
             tipo: true,
             matricula: true,
           },

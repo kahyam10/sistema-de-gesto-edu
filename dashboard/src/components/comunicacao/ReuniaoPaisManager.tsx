@@ -355,6 +355,7 @@ export function ReuniaoPaisManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenForm(reuniao)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -362,6 +363,7 @@ export function ReuniaoPaisManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(reuniao.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -695,6 +697,7 @@ function PresencasDialog({ reuniao, onClose }: PresencasDialogProps) {
                         onClick={() =>
                           deletePresenca.mutateAsync({ id: p.id, reuniaoId: reuniao.id })
                         }
+                        aria-label="Excluir"
                       >
                         <Trash className="h-4 w-4" />
                       </Button>

@@ -338,6 +338,7 @@ export function CardapioManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenForm(cardapio)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -345,6 +346,7 @@ export function CardapioManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(cardapio.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -519,6 +521,7 @@ export function CardapioManager() {
                         itens: formData.itens.filter((_, i) => i !== index),
                       })
                     }
+                    aria-label="Remover"
                   >
                     <X className="h-4 w-4" />
                   </Button>

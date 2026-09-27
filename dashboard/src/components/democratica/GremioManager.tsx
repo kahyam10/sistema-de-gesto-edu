@@ -275,6 +275,7 @@ export function GremioManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenForm(gremio)}
+                          aria-label="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -282,6 +283,7 @@ export function GremioManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(gremio.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -617,6 +619,7 @@ function GremioDetalheDialog({ gremio, onClose }: GremioDetalheDialogProps) {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteChapa(chapa.id)}
+                          aria-label="Excluir"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -703,6 +706,7 @@ function GremioDetalheDialog({ gremio, onClose }: GremioDetalheDialogProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteAtividade(atividade.id)}
+                            aria-label="Excluir"
                           >
                             <Trash className="h-4 w-4" />
                           </Button>

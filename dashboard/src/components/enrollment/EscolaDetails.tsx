@@ -81,6 +81,7 @@ import { TurmaDetails } from "./TurmaDetails";
 import { SalasManager } from "./SalasManager";
 import { CalendarioLetivoManager } from "./CalendarioLetivoManager";
 import { toast } from "sonner";
+import { useEhGestao } from "@/hooks/use-papel";
 
 interface EscolaDetailsProps {
   escolaId: string;
@@ -118,6 +119,7 @@ const tipoBadgeColors: Record<string, string> = {
 };
 
 export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
+  const ehGestao = useEhGestao(); // excluir turma = gestão (o servidor recusa os demais)
   const router = useRouter();
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: allTurmas, isLoading: loadingTurmas } = useTurmas();
@@ -403,7 +405,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setViewingCalendario(false)}>
+          <Button variant="ghost" size="icon" onClick={() => setViewingCalendario(false)} aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -446,7 +448,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -464,7 +466,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     <div className="space-y-6">
       {/* Header com botão voltar */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Voltar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -715,6 +717,7 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsEditEscolaOpen(true)}
+                  aria-label="Editar"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -966,14 +969,16 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDelete(turma)}
-                            title="Excluir turma"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
+                          {ehGestao && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDelete(turma)}
+                              title="Excluir turma"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
