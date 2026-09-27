@@ -275,9 +275,9 @@ export function FrequenciaManager() {
 
       {/* Alerta de Alunos com Baixa Frequência */}
       {turmaId && alunosBaixaFreq.length > 0 && (
-        <Card className="border-amber-300 bg-amber-50">
+        <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-amber-900">
+            <CardTitle className="text-lg flex items-center gap-2 text-amber-900 dark:text-amber-200">
               <Warning size={20} />
               Alunos com Frequência Abaixo de 75%
             </CardTitle>
@@ -287,7 +287,7 @@ export function FrequenciaManager() {
               {alunosBaixaFreq.map((item) => (
                 <div
                   key={item.matricula.id}
-                  className="flex items-center justify-between p-2 bg-surface-card rounded border border-amber-200"
+                  className="flex items-center justify-between p-2 bg-surface-card rounded border border-amber-200 dark:border-amber-800"
                 >
                   <div>
                     <p className="font-medium text-sm">{item.matricula.nomeAluno}</p>

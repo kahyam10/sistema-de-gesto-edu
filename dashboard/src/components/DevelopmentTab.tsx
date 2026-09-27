@@ -30,11 +30,11 @@ const moduleIcons: Record<string, React.ReactNode> = {
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode; badgeVariant: "outline" | "secondary" | "default" | "destructive" }> = {
   planning: { label: "Planejamento", color: "bg-slate-100 text-slate-700 border-slate-300", icon: <Circle size={16} weight="duotone" />, badgeVariant: "outline" },
-  "in-progress": { label: "Em Progresso", color: "bg-blue-100 text-blue-700 border-blue-300", icon: <Clock size={16} weight="duotone" />, badgeVariant: "secondary" },
+  "in-progress": { label: "Em Progresso", color: "bg-blue-100 text-blue-700 border-blue-300 dark:border-blue-800", icon: <Clock size={16} weight="duotone" />, badgeVariant: "secondary" },
   review: { label: "Em Revisão", color: "bg-purple-100 text-purple-700 border-purple-300", icon: <Clock size={16} weight="duotone" />, badgeVariant: "secondary" },
   correction: { label: "Precisa de Correção", color: "bg-orange-100 text-orange-700 border-orange-300", icon: <Warning size={16} weight="duotone" />, badgeVariant: "destructive" },
   homologated: { label: "Homologado", color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: <CheckCircle size={16} weight="duotone" />, badgeVariant: "default" },
-  completed: { label: "Concluído", color: "bg-green-100 text-green-700 border-green-300", icon: <CheckCircle size={16} weight="duotone" />, badgeVariant: "default" },
+  completed: { label: "Concluído", color: "bg-green-100 text-green-700 border-green-300 dark:border-green-800", icon: <CheckCircle size={16} weight="duotone" />, badgeVariant: "default" },
 };
 
 export function DevelopmentTab() {
@@ -173,7 +173,7 @@ export function DevelopmentTab() {
             const isCompleted = subModule.status === "completed" || subModule.status === "homologated";
             const currentStatus = statusConfig[subModule.status] || statusConfig.planning;
             return (
-              <Card key={subModule.id} className={`transition-all ${isCompleted ? "bg-green-50 border-green-200" : ""}`}>
+              <Card key={subModule.id} className={`transition-all ${isCompleted ? "bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800" : ""}`}>
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-4">

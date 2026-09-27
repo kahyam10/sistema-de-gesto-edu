@@ -435,7 +435,7 @@ export function RelatorioFrequenciaMensal() {
           <CardContent>
             {/* Resumo */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card className="bg-blue-50">
+              <Card className="bg-blue-50 dark:bg-blue-950/40">
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">Total de Aulas</p>
@@ -444,7 +444,7 @@ export function RelatorioFrequenciaMensal() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-green-50">
+              <Card className="bg-green-50 dark:bg-green-950/40">
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">Média de Presença</p>
@@ -461,7 +461,7 @@ export function RelatorioFrequenciaMensal() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-red-50">
+              <Card className="bg-red-50 dark:bg-red-950/40">
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">Alunos Abaixo de 75%</p>

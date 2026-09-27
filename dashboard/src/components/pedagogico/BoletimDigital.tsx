@@ -49,7 +49,7 @@ function getSituacaoBadge(situacao: string, size: "sm" | "lg" = "sm") {
     case "REPROVADO":
       return <Badge variant="destructive" className={className}>Reprovado</Badge>;
     case "RECUPERACAO":
-      return <Badge className={`bg-yellow-500 text-black ${className}`}>Recuperacao</Badge>;
+      return <Badge className={`bg-yellow-500 text-black ${className}`}>Recuperação</Badge>;
     case "EM_CURSO":
       return <Badge variant="secondary" className={className}>Em Curso</Badge>;
     default:
@@ -225,7 +225,7 @@ export function BoletimDigital() {
                   </CardTitle>
                   <CardDescription className="mt-1 space-y-1">
                     <div>
-                      Matricula: {boletim.matricula.numeroMatricula}
+                      Matrícula: {boletim.matricula.numeroMatricula}
                     </div>
                     {boletim.turma && (
                       <div>
@@ -239,13 +239,13 @@ export function BoletimDigital() {
                 <div className="flex flex-col items-end gap-2">
                   {boletim.situacaoGeral && (
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Situacao Geral</p>
+                      <p className="text-xs text-muted-foreground mb-1">Situação Geral</p>
                       {getSituacaoBadge(boletim.situacaoGeral, "lg")}
                     </div>
                   )}
                   {mediaGeral !== null && (
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Media Geral</p>
+                      <p className="text-xs text-muted-foreground">Média Geral</p>
                       <p className={`text-2xl font-bold ${getNotaColor(mediaGeral)}`}>
                         {mediaGeral.toFixed(1)}
                       </p>
@@ -271,12 +271,12 @@ export function BoletimDigital() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Disciplina</TableHead>
-                        <TableHead className="text-center">1o Bim</TableHead>
-                        <TableHead className="text-center">2o Bim</TableHead>
-                        <TableHead className="text-center">3o Bim</TableHead>
-                        <TableHead className="text-center">4o Bim</TableHead>
-                        <TableHead className="text-center">Media Final</TableHead>
-                        <TableHead className="text-center">Situacao</TableHead>
+                        <TableHead className="text-center">1º Bim</TableHead>
+                        <TableHead className="text-center">2º Bim</TableHead>
+                        <TableHead className="text-center">3º Bim</TableHead>
+                        <TableHead className="text-center">4º Bim</TableHead>
+                        <TableHead className="text-center">Média Final</TableHead>
+                        <TableHead className="text-center">Situação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -315,7 +315,7 @@ export function BoletimDigital() {
                     </TableBody>
                     <TableFooter>
                       <TableRow className="bg-muted/50 font-semibold">
-                        <TableCell>Media Geral</TableCell>
+                        <TableCell>Média Geral</TableCell>
                         {mediasPorBimestre.map((media, idx) => (
                           <TableCell
                             key={idx}
@@ -357,7 +357,7 @@ export function BoletimDigital() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock size={18} />
-                  Frequencia
+                  Frequência
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -408,8 +408,8 @@ export function BoletimDigital() {
                     </div>
                   </div>
                   {boletim.frequencia.abaixoDoLimite && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                      Atencao: Frequencia abaixo do minimo exigido de 75%. O aluno pode ser reprovado por faltas.
+                    <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-200">
+                      Atenção: frequência abaixo do mínimo exigido de 75%. O aluno pode ser reprovado por faltas.
                     </div>
                   )}
                 </div>

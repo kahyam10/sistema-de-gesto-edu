@@ -63,10 +63,10 @@ interface NotaAluno {
 }
 
 const BIMESTRES = [
-  { value: "1", label: "1o Bimestre" },
-  { value: "2", label: "2o Bimestre" },
-  { value: "3", label: "3o Bimestre" },
-  { value: "4", label: "4o Bimestre" },
+  { value: "1", label: "1º bimestre" },
+  { value: "2", label: "2º bimestre" },
+  { value: "3", label: "3º bimestre" },
+  { value: "4", label: "4º bimestre" },
 ];
 
 const TIPOS_AVALIACAO = [
@@ -158,7 +158,8 @@ export function NotasManager() {
 
   const handleNotaChange = (matriculaId: string, valor: string) => {
     const num = parseFloat(valor);
-    if (valor !== "" && (isNaN(num) || num < 0 || num > 10)) return;
+    const maximo = avaliacaoSelecionada?.valorMaximo ?? 10;
+    if (valor !== "" && (isNaN(num) || num < 0 || num > maximo)) return;
     setNotas((prev) =>
       prev.map((n) => (n.matriculaId === matriculaId ? { ...n, valor } : n))
     );
@@ -228,7 +229,7 @@ export function NotasManager() {
 
   const handleSalvarNotas = () => {
     if (!avaliacaoId) {
-      toast.error("Selecione uma avaliacao");
+      toast.error("Selecione uma avaliação");
       return;
     }
 
@@ -267,10 +268,10 @@ export function NotasManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PencilLine size={20} />
-            Lancamento de Notas
+            Lançamento de Notas
           </CardTitle>
           <CardDescription>
-            Selecione turma, disciplina, bimestre e avaliacao para lancar as notas
+            Selecione turma, disciplina, bimestre e avaliação para lançar as notas
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -346,7 +347,7 @@ export function NotasManager() {
 
             {/* Avaliacao */}
             <div className="space-y-2">
-              <Label>Avaliacao</Label>
+              <Label>Avaliação</Label>
               <div className="flex gap-2">
                 <Select
                   value={avaliacaoId}
@@ -359,7 +360,7 @@ export function NotasManager() {
                         !bimestre
                           ? "Selecione o bimestre"
                           : avaliacoes.length === 0
-                            ? "Nenhuma avaliacao"
+                            ? "Nenhuma avaliação"
                             : "Selecione"
                       }
                     />
@@ -377,7 +378,7 @@ export function NotasManager() {
                   variant="outline"
                   onClick={() => setDialogNovaAvaliacao(true)}
                   disabled={!bimestre}
-                  title="Nova avaliacao"
+                  title="Nova avaliação"
                 >
                   <Plus size={16} />
                 </Button>
@@ -398,7 +399,7 @@ export function NotasManager() {
                   {avaliacaoSelecionada?.peso}
                 </CardTitle>
                 <CardDescription>
-                  Valor maximo: {avaliacaoSelecionada?.valorMaximo} |{" "}
+                  Valor máximo: {avaliacaoSelecionada?.valorMaximo} |{" "}
                   {notas.length} alunos
                 </CardDescription>
               </div>
@@ -418,10 +419,10 @@ export function NotasManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-28">Matricula</TableHead>
+                    <TableHead className="w-28">Matrícula</TableHead>
                     <TableHead>Aluno</TableHead>
                     <TableHead className="w-28 text-center">Nota</TableHead>
-                    <TableHead className="w-48">Observacao</TableHead>
+                    <TableHead className="w-48">Observação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -436,8 +437,9 @@ export function NotasManager() {
                       <TableCell className="text-center">
                         <Input
                           type="number"
+                          aria-label={`Nota de ${n.nomeAluno}`}
                           min="0"
-                          max="10"
+                          max={avaliacaoSelecionada?.valorMaximo ?? 10}
                           step="0.1"
                           value={n.valor}
                           onChange={(e) =>
@@ -454,6 +456,7 @@ export function NotasManager() {
                             handleObsChange(n.matriculaId, e.target.value)
                           }
                           placeholder="Obs..."
+                          aria-label={`Observação sobre ${n.nomeAluno}`}
                           className="text-sm"
                         />
                       </TableCell>
@@ -469,7 +472,7 @@ export function NotasManager() {
                 <ChartBar size={20} className="text-muted-foreground" />
                 <div className="flex gap-6 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Media: </span>
+                    <span className="text-muted-foreground">Média: </span>
                     <span className="font-semibold">
                       {estatisticas.media.toFixed(1)}
                     </span>
@@ -506,13 +509,13 @@ export function NotasManager() {
             <PencilLine size={48} className="text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">
               {avaliacoes.length === 0
-                ? "Nenhuma avaliacao cadastrada para este filtro"
-                : "Selecione uma avaliacao para lancar as notas"}
+                ? "Nenhuma avaliação cadastrada para este filtro"
+                : "Selecione uma avaliação para lançar as notas"}
             </p>
             {avaliacoes.length === 0 && (
               <Button onClick={() => setDialogNovaAvaliacao(true)}>
                 <Plus size={16} className="mr-2" />
-                Criar Avaliacao
+                Criar Avaliação
               </Button>
             )}
           </CardContent>
@@ -526,9 +529,9 @@ export function NotasManager() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Nova Avaliacao</DialogTitle>
+            <DialogTitle>Nova Avaliação</DialogTitle>
             <DialogDescription>
-              Crie uma nova avaliacao para {BIMESTRES.find((b) => b.value === bimestre)?.label || ""}
+              Crie uma nova avaliação para {BIMESTRES.find((b) => b.value === bimestre)?.label || ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -591,7 +594,7 @@ export function NotasManager() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="av-max">Valor Maximo</Label>
+                <Label htmlFor="av-max">Valor máximo</Label>
                 <Input
                   id="av-max"
                   type="number"

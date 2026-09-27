@@ -356,7 +356,7 @@ export function MatriculasManager() {
       </div>
 
       {escolasAtivas.length === 0 && (
-        <Card className="border-yellow-500/50 bg-yellow-50/50">
+        <Card className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/40">
           <CardContent className="pt-6">
             <p className="text-sm text-yellow-800">
               ⚠️ Nenhuma escola ativa cadastrada. Cadastre escolas, etapas e

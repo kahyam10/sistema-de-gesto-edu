@@ -597,10 +597,10 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
                   key={notif.id}
                   className={`flex items-start gap-3 p-3 rounded-lg border ${
                     notif.tipo === "error"
-                      ? "bg-red-50 border-red-200"
+                      ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800"
                       : notif.tipo === "warning"
-                      ? "bg-amber-50 border-amber-200"
-                      : "bg-blue-50 border-blue-200"
+                      ? "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800"
+                      : "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800"
                   }`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
