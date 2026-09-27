@@ -163,7 +163,7 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/auditoria(\/|$)/, roles: GESTAO },
 ];
 
-// Módulo 3 — RESPONSAVEL lê APENAS o próprio portal (allowlist; tudo fora dela = 403)
+// Módulo 3 — RESPONSAVEL, USER e papéis desconhecidos leem APENAS o próprio portal (allowlist; tudo fora dela = 403)
 export const LEITURA_RESPONSAVEL: RegExp[] = [
   /^\/api\/auth\/me$/,
   /^\/api\/portal\/meu(\/|$)/,
@@ -182,7 +182,10 @@ export function autorizar(
   user: { id: string; role: string }
 ): "OK" | "NEGADO" {
   if (!WRITE_METHODS.has(method)) {
-    if (user.role === "RESPONSAVEL") {
+    // Negar por padrão: fora da equipe (RESPONSAVEL, USER "sem função" — o papel
+    // padrão de usuário novo — ou qualquer papel desconhecido) só lê o próprio
+    // portal. Antes, USER lia matrículas, notas e frequência da rede inteira.
+    if (!PEDAGOGICO.includes(user.role)) {
       const permitido = LEITURA_RESPONSAVEL.some((p) => p.test(url));
       if (!permitido) return "NEGADO";
       // Notificações são pessoais: só as do próprio usuário

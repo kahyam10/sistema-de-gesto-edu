@@ -7,8 +7,8 @@ import { autorizar } from "../src/lib/rbac.js";
 const u = (role: string, id = "user-1") => ({ id, role });
 
 describe("autorizar — leituras", () => {
-  it("GET comum é liberado a qualquer autenticado", () => {
-    expect(autorizar("/api/escolas", "GET", u("USER"))).toBe("OK");
+  it("GET comum é liberado à equipe (fora dela: ver 'negar por padrão')", () => {
+    expect(autorizar("/api/escolas", "GET", u("SECRETARIA"))).toBe("OK");
     expect(autorizar("/api/turmas/t1", "GET", u("PROFESSOR"))).toBe("OK");
   });
 
@@ -134,5 +134,22 @@ describe("autorizar — planejamento pedagógico (Módulo 2)", () => {
     expect(autorizar("/api/planejamento/planos", "GET", u("SECRETARIA"))).toBe("NEGADO");
     expect(autorizar("/api/planejamento/planos", "GET", u("USER"))).toBe("NEGADO");
     expect(autorizar("/api/planejamento/planos", "GET", u("RESPONSAVEL"))).toBe("NEGADO");
+  });
+});
+
+describe("autorizar — fora da equipe, negar por padrão", () => {
+  it("USER (papel padrão de usuário novo) só lê o próprio portal", () => {
+    for (const url of ["/api/matriculas", "/api/profissionais", "/api/notas", "/api/frequencia", "/api/escolas", "/api/turmas"]) {
+      expect(autorizar(url, "GET", u("USER"))).toBe("NEGADO");
+    }
+    expect(autorizar("/api/auth/me", "GET", u("USER"))).toBe("OK");
+    expect(autorizar("/api/portal/meu/agenda", "GET", u("USER"))).toBe("OK");
+    expect(autorizar("/api/notificacoes/usuario/user-1", "GET", u("USER"))).toBe("OK");
+    expect(autorizar("/api/notificacoes/usuario/outro", "GET", u("USER"))).toBe("NEGADO");
+  });
+
+  it("papel desconhecido não lê nada fora do portal", () => {
+    expect(autorizar("/api/matriculas", "GET", u("ESTAGIARIO"))).toBe("NEGADO");
+    expect(autorizar("/api/escolas", "GET", u(""))).toBe("NEGADO");
   });
 });
