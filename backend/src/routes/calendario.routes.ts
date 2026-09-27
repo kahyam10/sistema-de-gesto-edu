@@ -5,8 +5,8 @@ import { calendarioService } from "../services/calendario.service.js";
 import {
   createAnoLetivoSchema,
   updateAnoLetivoSchema,
-  createEventoSchema,
-  updateEventoSchema,
+  createEventoRecorrenteSchema,
+  updateEventoRecorrenteSchema,
 } from "../schemas/index.js";
 
 export async function calendarioRoutes(app: FastifyInstance) {
@@ -308,7 +308,7 @@ export async function calendarioRoutes(app: FastifyInstance) {
     "/eventos",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const data = createEventoSchema.parse(request.body);
+        const data = createEventoRecorrenteSchema.parse(request.body);
         const evento = await calendarioService.createEvento(data);
         return reply.status(201).send(evento);
       } catch (error: unknown) {
@@ -334,7 +334,7 @@ export async function calendarioRoutes(app: FastifyInstance) {
     ) => {
       try {
         const { id } = request.params;
-        const data = updateEventoSchema.parse(request.body);
+        const data = updateEventoRecorrenteSchema.parse(request.body);
         const evento = await calendarioService.updateEvento(id, data);
         return reply.send(evento);
       } catch (error: unknown) {

@@ -26,6 +26,8 @@ export interface ItemAgenda {
   cancelado: boolean;
 }
 
+const REPETICAO = { SEMANAL: "Toda semana", MENSAL: "Todo mês", ANUAL: "Todo ano" } as const;
+
 /** Junta eventos, reuniões e plantões numa lista só, em ordem de data. */
 export function itensDaAgenda(a: Agenda): ItemAgenda[] {
   const itens: ItemAgenda[] = [
@@ -39,6 +41,7 @@ export function itensDaAgenda(a: Agenda): ItemAgenda[] {
       horario: e.horaInicio ? `${e.horaInicio}${e.horaFim ? `–${e.horaFim}` : ""}` : null,
       detalhes: [
         e.dataFim && e.dataFim.slice(0, 10) !== e.dataInicio.slice(0, 10) ? `até ${diaMes(e.dataFim)}` : null,
+        e.tipoRecorrencia ? REPETICAO[e.tipoRecorrencia] : null,
         e.escola?.nome ?? "Toda a rede",
       ].filter((x): x is string => !!x),
       descricao: e.descricao,

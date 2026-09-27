@@ -350,15 +350,11 @@ export function ManutencaoManager() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {new Date(manutencao.dataAgendada).toLocaleDateString(
-                        "pt-BR"
-                      )}
+                      {new Date(manutencao.dataAgendada).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                     </TableCell>
                     <TableCell>
                       {manutencao.dataRealizada
-                        ? new Date(manutencao.dataRealizada).toLocaleDateString(
-                            "pt-BR"
-                          )
+                        ? new Date(manutencao.dataRealizada).toLocaleDateString("pt-BR", { timeZone: "UTC" })
                         : "—"}
                     </TableCell>
                     <TableCell>

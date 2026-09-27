@@ -244,7 +244,7 @@ export function PontoDigitalManager() {
                     {relatorio.pontos.map((ponto) => (
                       <TableRow key={ponto.id}>
                         <TableCell className="font-medium">
-                          {new Date(ponto.data).toLocaleDateString("pt-BR")}
+                          {new Date(ponto.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                         </TableCell>
                         <TableCell>
                           {ponto.entrada || <span className="text-muted-foreground">-</span>}

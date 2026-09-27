@@ -151,6 +151,8 @@ export interface Agenda {
   eventos: Array<{
     id: string; titulo: string; descricao: string | null; dataInicio: string; dataFim: string | null;
     horaInicio: string | null; horaFim: string | null; tipo: string; escola: { nome: string } | null;
+    /** Evento que se repete: cada ocorrência vem como uma entrada (id "<id>@AAAA-MM-DD"). */
+    tipoRecorrencia?: "SEMANAL" | "MENSAL" | "ANUAL" | null;
   }>;
   reunioes: Array<{
     id: string; titulo: string; descricao: string | null; data: string; horario: string; duracao: number | null;

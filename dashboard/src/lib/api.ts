@@ -1297,6 +1297,9 @@ export interface EventoCalendario {
   escola?: Escola;
   createdAt: string;
   updatedAt: string;
+  /** Na visão do mês, cada ocorrência de um evento recorrente vem como cópia
+   *  (id "<id>@AAAA-MM-DD"); editar/excluir vale para o evento base. */
+  ocorrenciaDe?: { id: string; dataInicio: string; dataFim?: string | null };
 }
 
 export interface EstatisticasCalendario {

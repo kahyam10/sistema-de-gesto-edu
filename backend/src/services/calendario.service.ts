@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { expandir } from "../lib/recorrencia.js";
 
 export interface CreateAnoLetivoInput {
   ano: number;
@@ -823,38 +824,30 @@ export class CalendarioService {
         ],
       },
     ];
+    // Com escolaId: eventos globais + os da escola. Sem: só os globais.
+    const daEscola = escolaId ? { OR: [{ escolaId: null }, { escolaId }] } : { escolaId: null };
 
-    if (escolaId) {
-      // Com escolaId: retorna eventos globais + eventos específicos da escola
-      return prisma.eventoCalendario.findMany({
-        where: {
-          anoLetivoId,
-          OR: dateCondition,
-          AND: [
-            {
-              OR: [{ escolaId: null }, { escolaId }],
-            },
-          ],
-        },
-        include: {
-          escola: true,
-        },
+    const [unicos, recorrentes, fimAno] = await Promise.all([
+      prisma.eventoCalendario.findMany({
+        where: { anoLetivoId, recorrente: false, OR: dateCondition, AND: [daEscola] },
+        include: { escola: true },
         orderBy: { dataInicio: "asc" },
-      });
-    }
-
-    // Sem escolaId: retorna apenas eventos globais
-    return prisma.eventoCalendario.findMany({
-      where: {
-        anoLetivoId,
-        escolaId: null,
-        OR: dateCondition,
-      },
-      include: {
-        escola: true,
-      },
-      orderBy: { dataInicio: "asc" },
-    });
+      }),
+      prisma.eventoCalendario.findMany({
+        where: { anoLetivoId, recorrente: true, tipoRecorrencia: { not: null }, dataInicio: { lte: endOfMonth }, AND: [daEscola] },
+        include: { escola: true },
+      }),
+      prisma.eventoCalendario.findFirst({
+        where: { anoLetivoId, tipo: "FIM_ANO_LETIVO", escolaId: null },
+        select: { dataInicio: true },
+      }),
+    ]);
+    // Recorrentes: uma entrada por ocorrência no mês (id "<id>@AAAA-MM-DD" e
+    // ocorrenciaDe = evento base, que é o que se edita/exclui). lib/recorrencia.ts
+    const inicioUTC = new Date(Date.UTC(ano, mes - 1, 1));
+    const fimUTC = new Date(Date.UTC(ano, mes, 0));
+    const ocorrencias = recorrentes.flatMap((e) => expandir(e, inicioUTC, fimUTC, fimAno?.dataInicio ?? null));
+    return [...unicos, ...ocorrencias].sort((a, b) => a.dataInicio.getTime() - b.dataInicio.getTime());
   }
 }
 

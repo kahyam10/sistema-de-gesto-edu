@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import { BusinessError, NotFoundError, PermissionError } from "../errors/index.js";
 import { frequenciaService } from "./frequencia.service.js";
 import { notaService } from "./nota.service.js";
+import { expandir } from "../lib/recorrencia.js";
 
 const DIAS_SEMANA = ["DOMINGO", "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"] as const;
 
@@ -642,7 +643,8 @@ export class PortalService {
 
   /**
    * Agenda dos próximos `dias`: eventos do calendário (rede + escolas do
-   * usuário; os recorrentes ficam de fora por ora), reuniões de pais e
+   * usuário; os recorrentes viram uma entrada por ocorrência, até o fim do
+   * ano letivo — ver lib/recorrencia.ts), reuniões de pais e
    * plantões pedagógicos (gerais da escola ou das turmas do usuário).
    * Sem ata, pauta interna, encaminhamentos ou lista de profissionais.
    */
@@ -652,7 +654,12 @@ export class PortalService {
     const fim = new Date(inicio.getTime() + dias * 24 * 60 * 60 * 1000 - 1);
     const turmas = [...new Set([...c.turmasAluno, ...c.turmasProfessor])];
     const daTurma = { OR: [{ turmaId: null }, { turmaId: { in: turmas } }] };
-    const [eventos, reunioes, plantoes] = await Promise.all([
+    const doUsuario = { OR: [{ escolaId: null }, { escolaId: { in: c.escolaIds } }] };
+    const camposEvento = {
+      id: true, titulo: true, descricao: true, dataInicio: true, dataFim: true,
+      horaInicio: true, horaFim: true, tipo: true, escola: { select: { nome: true } },
+    } as const;
+    const [unicos, recorrentes, reunioes, plantoes] = await Promise.all([
       prisma.eventoCalendario.findMany({
         where: {
           recorrente: false,
@@ -662,12 +669,14 @@ export class PortalService {
             { OR: [{ dataFim: { gte: inicio } }, { dataFim: null, dataInicio: { gte: inicio } }] },
           ],
         },
-        select: {
-          id: true, titulo: true, descricao: true, dataInicio: true, dataFim: true,
-          horaInicio: true, horaFim: true, tipo: true, escola: { select: { nome: true } },
-        },
+        select: camposEvento,
         orderBy: { dataInicio: "asc" },
         take: 100,
+      }),
+      prisma.eventoCalendario.findMany({
+        where: { recorrente: true, tipoRecorrencia: { not: null }, dataInicio: { lte: fim }, ...doUsuario },
+        select: { ...camposEvento, anoLetivoId: true, tipoRecorrencia: true, diaRecorrencia: true },
+        take: 50,
       }),
       c.escolaIds.length
         ? prisma.reuniaoPais.findMany({
@@ -693,6 +702,20 @@ export class PortalService {
           })
         : Promise.resolve([]),
     ]);
+    // A repetição para no fim do ano letivo de cada evento
+    const fins = recorrentes.length
+      ? await prisma.eventoCalendario.findMany({
+          where: { tipo: "FIM_ANO_LETIVO", anoLetivoId: { in: [...new Set(recorrentes.map((e) => e.anoLetivoId))] } },
+          select: { anoLetivoId: true, dataInicio: true },
+        })
+      : [];
+    const fimDoAno = new Map(fins.map((f) => [f.anoLetivoId, f.dataInicio]));
+    const ocorrencias = recorrentes.flatMap(({ anoLetivoId, ...e }) =>
+      expandir(e, inicio, fim, fimDoAno.get(anoLetivoId) ?? null).map(({ ocorrenciaDe: _o, diaRecorrencia: _d, ...x }) => x)
+    );
+    const eventos = [...unicos.map((e) => ({ ...e, tipoRecorrencia: null as string | null })), ...ocorrencias]
+      .sort((a, b) => a.dataInicio.getTime() - b.dataInicio.getTime())
+      .slice(0, 100);
     return { de: inicio.toISOString().slice(0, 10), ate: fim.toISOString().slice(0, 10), eventos, reunioes, plantoes };
   }
 

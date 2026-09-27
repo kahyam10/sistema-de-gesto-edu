@@ -125,7 +125,7 @@ export function AlunoDetails({ matriculaId, onBack }: AlunoDetailsProps) {
 
   // Formatar data
   const formatarData = (data: string): string => {
-    return new Date(data).toLocaleDateString("pt-BR");
+    return new Date(data).toLocaleDateString("pt-BR", { timeZone: "UTC" });
   };
 
   // Abrir modal de edição

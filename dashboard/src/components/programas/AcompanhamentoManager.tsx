@@ -284,7 +284,7 @@ export function AcompanhamentoManager() {
                       {acomp.profissional?.nome || "-"}
                     </TableCell>
                     <TableCell>
-                      {new Date(acomp.dataInicio).toLocaleDateString("pt-BR")}
+                      {new Date(acomp.dataInicio).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                     </TableCell>
                     <TableCell>{getStatusBadge(acomp.status)}</TableCell>
                   </TableRow>

@@ -102,11 +102,13 @@ export const DeclaracaoMatriculaPDF: React.FC<DeclaracaoMatriculaPDFProps> = ({
   turmaNome,
   turnoNome,
 }) => {
+  // String = data pura do banco (meia-noite UTC); Date = agora, no fuso da rede
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
+      timeZone: typeof date === 'string' ? 'UTC' : 'America/Bahia',
     });
   };
 

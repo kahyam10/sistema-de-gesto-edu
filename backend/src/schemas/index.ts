@@ -316,9 +316,39 @@ export const createEventoSchema = z.object({
   escolaId: z.string().optional(),
 });
 
+// Datas que estruturam o ano letivo não se repetem
+const TIPOS_SEM_RECORRENCIA = ["INICIO_ANO_LETIVO", "FIM_ANO_LETIVO", "INICIO_AULAS_REGULARES", "FIM_AULAS_REGULARES"];
+const DIAS_SEMANA_EVENTO = ["DOMINGO", "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"];
+/** Regras de recorrência (lib/recorrencia.ts); valem na criação e na edição. */
+function conferirRecorrencia(
+  d: { recorrente?: boolean; tipoRecorrencia?: string; diaRecorrencia?: string; tipo?: string; reduzDiaLetivo?: boolean },
+  ctx: z.RefinementCtx
+) {
+  if (!d.recorrente) return;
+  if (d.tipo && TIPOS_SEM_RECORRENCIA.includes(d.tipo)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["recorrente"], message: "Este tipo de evento não pode se repetir" });
+  }
+  if (d.reduzDiaLetivo) {
+    // A contagem de dias letivos (calcularDiasLetivos) não expande repetições
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["reduzDiaLetivo"], message: "Evento que se repete não pode reduzir dia letivo: cadastre cada data" });
+  }
+  if (!d.tipoRecorrencia) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tipoRecorrencia"], message: "Informe se repete toda semana, todo mês ou todo ano" });
+  }
+  const dia = d.diaRecorrencia;
+  if (dia && d.tipoRecorrencia === "SEMANAL" && !DIAS_SEMANA_EVENTO.includes(dia)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["diaRecorrencia"], message: "Dia da semana inválido (ex.: SEGUNDA)" });
+  }
+  if (dia && d.tipoRecorrencia === "MENSAL" && !/^([1-9]|[12]\d|3[01])$/.test(dia)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["diaRecorrencia"], message: "Dia do mês inválido (1 a 31)" });
+  }
+}
+export const createEventoRecorrenteSchema = createEventoSchema.superRefine(conferirRecorrencia);
+
 export const updateEventoSchema = createEventoSchema
   .omit({ anoLetivoId: true })
   .partial();
+export const updateEventoRecorrenteSchema = updateEventoSchema.superRefine(conferirRecorrencia);
 
 // ==================== PHASES ====================
 

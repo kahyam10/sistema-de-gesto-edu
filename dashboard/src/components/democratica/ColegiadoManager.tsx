@@ -256,9 +256,9 @@ export function ColegiadoManager() {
                             <CalendarBlank className="h-4 w-4 text-muted-foreground" />
                             <span>
                               Mandato:{" "}
-                              {new Date(colegiado.dataInicioMandato).toLocaleDateString("pt-BR")}{" "}
+                              {new Date(colegiado.dataInicioMandato).toLocaleDateString("pt-BR", { timeZone: "UTC" })}{" "}
                               a{" "}
-                              {new Date(colegiado.dataFimMandato).toLocaleDateString("pt-BR")}
+                              {new Date(colegiado.dataFimMandato).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                             </span>
                           </div>
                         </div>

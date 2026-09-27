@@ -122,10 +122,25 @@ const meses = [
 // Dias da semana
 const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+/**
+ * Datas do calendário são dias "puros" (gravados à meia-noite UTC). Ler com
+ * new Date(iso) no fuso da Bahia (UTC-3) cai às 21h do dia ANTERIOR — por isso
+ * usamos só a parte AAAA-MM-DD e montamos a data local.
+ */
+const diaLocal = (data: string | Date): Date => {
+  if (data instanceof Date) return data;
+  const [a, m, d] = data.slice(0, 10).split("-").map(Number);
+  return new Date(a, m - 1, d);
+};
+
+/** Date local → "AAAA-MM-DD" (sem passar por UTC). */
+const isoLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 // Função para formatar data no padrão brasileiro (dd/mm/aaaa)
 const formatarDataBR = (data: string | Date | null | undefined): string => {
   if (!data) return "";
-  const d = typeof data === "string" ? new Date(data) : data;
+  const d = diaLocal(data);
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -136,7 +151,7 @@ const formatarDataBR = (data: string | Date | null | undefined): string => {
 // Função para formatar data curta (dd/mm)
 const formatarDataCurtaBR = (data: string | Date | null | undefined): string => {
   if (!data) return "";
-  const d = typeof data === "string" ? new Date(data) : data;
+  const d = diaLocal(data);
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -146,6 +161,20 @@ const formatarDataCurtaBR = (data: string | Date | null | undefined): string => 
 interface CalendarioLetivoManagerProps {
   escolaId?: string;
 }
+
+/** Ocorrência de evento recorrente → o evento base (datas e id originais). */
+function eventoBase(e: EventoCalendario): EventoCalendario {
+  return e.ocorrenciaDe
+    ? { ...e, id: e.ocorrenciaDe.id, dataInicio: e.ocorrenciaDe.dataInicio, dataFim: e.ocorrenciaDe.dataFim ?? undefined, ocorrenciaDe: undefined }
+    : e;
+}
+
+const OPCAO_MESMO_DIA = "__mesmo_dia__";
+const DIAS_SEMANA_FORM = [
+  { value: "SEGUNDA", label: "Segunda" }, { value: "TERCA", label: "Terça" }, { value: "QUARTA", label: "Quarta" },
+  { value: "QUINTA", label: "Quinta" }, { value: "SEXTA", label: "Sexta" }, { value: "SABADO", label: "Sábado" },
+  { value: "DOMINGO", label: "Domingo" },
+];
 
 export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerProps) {
   const { data: anosLetivos, isLoading: loadingAnos } = useAnosLetivos();
@@ -282,7 +311,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
     setEventoForm({
       titulo: tipoEventoMap[tipoDefault]?.label || "",
       descricao: "",
-      dataInicio: dataSelecionada ? dataSelecionada.toISOString().split("T")[0] : "",
+      dataInicio: dataSelecionada ? isoLocal(dataSelecionada) : "",
       dataFim: "",
       horaInicio: "",
       horaFim: "",
@@ -361,7 +390,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
       setEventoForm({
         titulo: tipoEventoMap[tipoDefault]?.label || "",
         descricao: "",
-        dataInicio: eventoOuData.toISOString().split("T")[0],
+        dataInicio: isoLocal(eventoOuData),
         dataFim: "",
         horaInicio: "",
         horaFim: "",
@@ -376,8 +405,8 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
       });
       setEditingEvento(null);
     } else if (eventoOuData) {
-      // Editando evento existente
-      const evento = eventoOuData;
+      // Editando evento existente (ocorrência de recorrente → edita o evento base)
+      const evento = eventoBase(eventoOuData);
       setEditingEvento(evento);
       setEventoForm({
         titulo: evento.titulo,
@@ -520,18 +549,18 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
   // Verificar se uma data tem eventos
   const getEventosData = (data: Date) => {
     return eventosMes.filter((evento) => {
-      const dataEvento = new Date(evento.dataInicio);
-      const dataFimEvento = evento.dataFim ? new Date(evento.dataFim) : dataEvento;
-      return data >= new Date(dataEvento.setHours(0,0,0,0)) && 
-             data <= new Date(dataFimEvento.setHours(23,59,59,999));
+      const dataEvento = diaLocal(evento.dataInicio);
+      const dataFimEvento = evento.dataFim ? diaLocal(evento.dataFim) : dataEvento;
+      return data >= dataEvento &&
+             data <= new Date(dataFimEvento.getFullYear(), dataFimEvento.getMonth(), dataFimEvento.getDate(), 23, 59, 59, 999);
     });
   };
 
   // Verificar se data está dentro do período do ano letivo
   const isDataDentroPeriodo = (data: Date) => {
     if (!status?.dataInicio || !status?.dataFim) return true;
-    const inicio = new Date(status.dataInicio);
-    const fim = new Date(status.dataFim);
+    const inicio = diaLocal(status.dataInicio);
+    const fim = diaLocal(status.dataFim);
     return data >= inicio && data <= fim;
   };
 
@@ -899,7 +928,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
                           className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEventoToDelete(evento);
+                            setEventoToDelete(eventoBase(evento));
                             setIsDeleteEventoDialogOpen(true);
                           }}
                         >
@@ -1121,8 +1150,80 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
               </div>
             )}
 
-            {/* Reduz dia letivo (apenas para tipos normais) */}
-            {!["INICIO_ANO_LETIVO", "FIM_ANO_LETIVO", "SABADO_LETIVO"].includes(eventoForm.tipo) && (
+            {/* Repetição (não vale para as datas que estruturam o ano letivo) */}
+            {!["INICIO_ANO_LETIVO", "FIM_ANO_LETIVO", "INICIO_AULAS_REGULARES", "FIM_AULAS_REGULARES"].includes(eventoForm.tipo) && (
+              <div className="space-y-3 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="recorrente">Repetir</Label>
+                    <p className="text-xs text-muted-foreground">Até o fim do ano letivo, a partir da data de início</p>
+                  </div>
+                  <Switch
+                    id="recorrente"
+                    checked={eventoForm.recorrente}
+                    onCheckedChange={(checked) =>
+                      setEventoForm({
+                        ...eventoForm,
+                        recorrente: checked,
+                        tipoRecorrencia: checked ? eventoForm.tipoRecorrencia || "SEMANAL" : eventoForm.tipoRecorrencia,
+                        reduzDiaLetivo: checked ? false : eventoForm.reduzDiaLetivo,
+                      })
+                    }
+                  />
+                </div>
+                {eventoForm.recorrente && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="tipoRecorrencia">Frequência</Label>
+                      <Select
+                        value={eventoForm.tipoRecorrencia || "SEMANAL"}
+                        onValueChange={(v) => setEventoForm({ ...eventoForm, tipoRecorrencia: v, diaRecorrencia: "" })}
+                      >
+                        <SelectTrigger id="tipoRecorrencia"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SEMANAL">Toda semana</SelectItem>
+                          <SelectItem value="MENSAL">Todo mês</SelectItem>
+                          <SelectItem value="ANUAL">Todo ano</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {eventoForm.tipoRecorrencia === "SEMANAL" && (
+                      <div className="space-y-1">
+                        <Label htmlFor="diaRecorrencia">Dia da semana</Label>
+                        <Select
+                          value={eventoForm.diaRecorrencia || OPCAO_MESMO_DIA}
+                          onValueChange={(v) => setEventoForm({ ...eventoForm, diaRecorrencia: v === OPCAO_MESMO_DIA ? "" : v })}
+                        >
+                          <SelectTrigger id="diaRecorrencia"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={OPCAO_MESMO_DIA}>O da data de início</SelectItem>
+                            {DIAS_SEMANA_FORM.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {eventoForm.tipoRecorrencia === "MENSAL" && (
+                      <div className="space-y-1">
+                        <Label htmlFor="diaRecorrencia">Dia do mês</Label>
+                        <Input
+                          id="diaRecorrencia"
+                          type="number"
+                          min={1}
+                          max={31}
+                          placeholder="O da data de início"
+                          value={eventoForm.diaRecorrencia}
+                          onChange={(e) => setEventoForm({ ...eventoForm, diaRecorrencia: e.target.value })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Reduz dia letivo (apenas para tipos normais e eventos que não se repetem:
+                a contagem de dias letivos não expande repetições) */}
+            {!["INICIO_ANO_LETIVO", "FIM_ANO_LETIVO", "SABADO_LETIVO"].includes(eventoForm.tipo) && !eventoForm.recorrente && (
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="reduzDiaLetivo">Reduz dia letivo</Label>

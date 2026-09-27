@@ -110,7 +110,7 @@ export function FrequenciaAluno({ matriculaId }: { matriculaId: string }) {
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-mono text-[12px]">
-                        {new Date(r.data).toLocaleDateString("pt-BR")}
+                        {new Date(r.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                       </TableCell>
                       <TableCell>
                         <Badge variant={config.variant}>{config.label}</Badge>

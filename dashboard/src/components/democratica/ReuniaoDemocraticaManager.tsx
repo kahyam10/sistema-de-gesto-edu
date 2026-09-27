@@ -309,7 +309,7 @@ export function ReuniaoDemocraticaManager() {
                           <div className="flex items-center gap-2">
                             <CalendarBlank className="h-4 w-4 text-muted-foreground" />
                             <span>
-                              {new Date(reuniao.data).toLocaleDateString("pt-BR")}
+                              {new Date(reuniao.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                             </span>
                             <Clock className="h-4 w-4 text-muted-foreground ml-2" />
                             <span>{reuniao.horario}</span>
@@ -554,7 +554,7 @@ function RegistrarAtaDialog({ reuniao, onClose }: RegistrarAtaDialogProps) {
         <DialogHeader>
           <DialogTitle>Registrar Ata — {reuniao.titulo}</DialogTitle>
           <DialogDescription>
-            {new Date(reuniao.data).toLocaleDateString("pt-BR")} às{" "}
+            {new Date(reuniao.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })} às{" "}
             {reuniao.horario}. Ao salvar, a reunião é marcada como REALIZADA e
             as presenças enviadas substituem as anteriores.
           </DialogDescription>

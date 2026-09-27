@@ -683,7 +683,7 @@ function GremioDetalheDialog({ gremio, onClose }: GremioDetalheDialogProps) {
                               {statusAtividadeLabels[atividade.status]}
                             </Badge>
                             <span>
-                              {new Date(atividade.dataInicio).toLocaleDateString("pt-BR")}
+                              {new Date(atividade.dataInicio).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                             </span>
                           </div>
                         </div>

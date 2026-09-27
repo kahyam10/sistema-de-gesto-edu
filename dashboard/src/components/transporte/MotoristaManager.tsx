@@ -74,7 +74,7 @@ function BadgeValidade({
   if (!vencimento) return null;
 
   const data = new Date(vencimento);
-  const dataBR = data.toLocaleDateString("pt-BR");
+  const dataBR = data.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // data pura (meia-noite UTC)
   const agora = new Date();
   const em30Dias = new Date(Date.now() + 30 * DIA_MS);
 
@@ -315,7 +315,7 @@ export function MotoristaManager() {
                     }
                   >
                     {doc.documento}:{" "}
-                    {new Date(doc.vencimento).toLocaleDateString("pt-BR")}
+                    {new Date(doc.vencimento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                   </Badge>
                 ))}
               </div>

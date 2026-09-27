@@ -111,8 +111,9 @@ export const FichaMatriculaPDF: React.FC<FichaMatriculaPDFProps> = ({
   serieName,
   turmaNome,
 }) => {
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('pt-BR');
+  // Datas puras do banco (nascimento) ficam em UTC; momentos (createdAt) no fuso da rede
+  const formatDate = (date: string | Date, fuso: 'UTC' | 'America/Bahia' = 'UTC') => {
+    return new Date(date).toLocaleDateString('pt-BR', { timeZone: fuso });
   };
 
   return (
@@ -142,7 +143,7 @@ export const FichaMatriculaPDF: React.FC<FichaMatriculaPDFProps> = ({
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Data de Matrícula:</Text>
-            <Text style={styles.value}>{formatDate(matricula.createdAt)}</Text>
+            <Text style={styles.value}>{formatDate(matricula.createdAt, 'America/Bahia')}</Text>
           </View>
         </View>
 

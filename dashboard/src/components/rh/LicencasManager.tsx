@@ -337,9 +337,9 @@ export function LicencasManager() {
                     </TableCell>
                     <TableCell>{getTipoLabel(licenca.tipo)}</TableCell>
                     <TableCell>
-                      {new Date(licenca.dataInicio).toLocaleDateString("pt-BR")}
+                      {new Date(licenca.dataInicio).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                       {" → "}
-                      {new Date(licenca.dataFim).toLocaleDateString("pt-BR")}
+                      {new Date(licenca.dataFim).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
@@ -445,7 +445,7 @@ export function LicencasManager() {
             <p>
               <strong>Período:</strong>{" "}
               {selectedLicenca &&
-                `${new Date(selectedLicenca.dataInicio).toLocaleDateString("pt-BR")} até ${new Date(selectedLicenca.dataFim).toLocaleDateString("pt-BR")}`}
+                `${new Date(selectedLicenca.dataInicio).toLocaleDateString("pt-BR", { timeZone: "UTC" })} até ${new Date(selectedLicenca.dataFim).toLocaleDateString("pt-BR", { timeZone: "UTC" })}`}
             </p>
             <p>
               <strong>Dias:</strong> {selectedLicenca?.diasCorridos} dias corridos

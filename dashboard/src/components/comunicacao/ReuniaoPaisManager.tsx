@@ -341,7 +341,7 @@ export function ReuniaoPaisManager() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{new Date(reuniao.data).toLocaleDateString("pt-BR")}</span>
+                            <span>{new Date(reuniao.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -598,7 +598,7 @@ function PresencasDialog({ reuniao, onClose }: PresencasDialogProps) {
         <DialogHeader>
           <DialogTitle>Presenças - {reuniao.titulo}</DialogTitle>
           <DialogDescription>
-            {new Date(reuniao.data).toLocaleDateString("pt-BR")} às {reuniao.horario}
+            {new Date(reuniao.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })} às {reuniao.horario}
           </DialogDescription>
         </DialogHeader>
 
