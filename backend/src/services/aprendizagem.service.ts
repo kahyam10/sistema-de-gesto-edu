@@ -1,29 +1,21 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
+import { mediaPonderada } from "../lib/media.js";
 
 type Nota = { matriculaId: string; valor: number };
-type Av = { id: string; disciplinaId: string; bimestre: number; peso: number; notas: Nota[] };
+type Av = { id: string; disciplinaId: string; bimestre: number; peso: number; valorMaximo: number; notas: Nota[] };
 
 const arred = (n: number) => Math.round(n * 10) / 10;
 const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
-/**
- * Média ponderada do aluno num conjunto de avaliações — mesma conta do
- * boletim (nota.service getBoletim): soma(valor × peso) / soma(pesos das
- * avaliações em que ele tem nota).
- */
-function mediaPonderada(avs: Av[], matriculaId: string): number | null {
-  let soma = 0;
-  let pesos = 0;
-  for (const av of avs) {
+/** Média do aluno num conjunto de avaliações — mesma conta do boletim (lib/media). */
+function mediaDoAluno(avs: Av[], matriculaId: string): number | null {
+  const notas = avs.flatMap((av) => {
     const n = av.notas.find((x) => x.matriculaId === matriculaId);
-    if (n) {
-      soma += n.valor * av.peso;
-      pesos += av.peso;
-    }
-  }
-  return pesos ? Math.round((soma / pesos) * 100) / 100 : null;
+    return n ? [{ valor: n.valor, valorMaximo: av.valorMaximo, peso: av.peso }] : [];
+  });
+  return mediaPonderada(notas);
 }
 
 /**
@@ -66,7 +58,7 @@ export class AprendizagemService {
       prisma.avaliacao.findMany({
         where: { turmaId },
         select: {
-          id: true, disciplinaId: true, bimestre: true, peso: true,
+          id: true, disciplinaId: true, bimestre: true, peso: true, valorMaximo: true,
           notas: { select: { matriculaId: true, valor: true } },
         },
       }),
@@ -91,8 +83,8 @@ export class AprendizagemService {
       const frequencia = f && f.total ? Math.round((f.presencas / f.total) * 100) : null;
       const porDisciplina = disciplinas.map((d) => {
         const avs = doBim(d.id, bimestre);
-        const atual = mediaPonderada(avs, a.id);
-        const anterior = bimestre > 1 ? mediaPonderada(doBim(d.id, bimestre - 1), a.id) : null;
+        const atual = mediaDoAluno(avs, a.id);
+        const anterior = bimestre > 1 ? mediaDoAluno(doBim(d.id, bimestre - 1), a.id) : null;
         const semNota = avs.filter((av) => !av.notas.some((n) => n.matriculaId === a.id)).length;
         return { disciplinaId: d.id, media: atual, mediaAnterior: anterior, avaliacoesSemNota: semNota };
       });

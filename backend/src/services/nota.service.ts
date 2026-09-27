@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { mediaPonderada } from "../lib/media.js";
 import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
 import { NotFoundError } from "../errors/index.js";
 import { CreateNotaInput, LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
@@ -337,22 +338,12 @@ export class NotaService {
 
     if (avaliacoes.length === 0) return null;
 
-    let somaPonderada = 0;
-    let somaPesos = 0;
-    let temNota = false;
-
-    for (const avaliacao of avaliacoes) {
-      const nota = avaliacao.notas[0];
-      if (nota) {
-        somaPonderada += nota.valor * avaliacao.peso;
-        somaPesos += avaliacao.peso;
-        temNota = true;
-      }
-    }
-
-    if (!temNota || somaPesos === 0) return null;
-
-    return Math.round((somaPonderada / somaPesos) * 100) / 100;
+    // Notas convertidas para a escala 0–10 pelo valorMaximo (lib/media)
+    return mediaPonderada(
+      avaliacoes
+        .filter((av) => av.notas[0])
+        .map((av) => ({ valor: av.notas[0].valor, valorMaximo: av.valorMaximo, peso: av.peso }))
+    );
   }
 
   /**
@@ -481,19 +472,11 @@ export class NotaService {
 
     const mediaDe = (avaliacoes: typeof todasAvaliacoes): number | null => {
       if (avaliacoes.length === 0) return null;
-      let somaPonderada = 0;
-      let somaPesos = 0;
-      let temNota = false;
-      for (const avaliacao of avaliacoes) {
-        const nota = avaliacao.notas[0];
-        if (nota) {
-          somaPonderada += nota.valor * avaliacao.peso;
-          somaPesos += avaliacao.peso;
-          temNota = true;
-        }
-      }
-      if (!temNota || somaPesos === 0) return null;
-      return Math.round((somaPonderada / somaPesos) * 100) / 100;
+      return mediaPonderada(
+        avaliacoes
+          .filter((av) => av.notas[0])
+          .map((av) => ({ valor: av.notas[0].valor, valorMaximo: av.valorMaximo, peso: av.peso }))
+      );
     };
 
     // Regras da configuração de avaliação vigente (antes fixas em 6,0 e 75%)
