@@ -68,7 +68,7 @@ export function ExportacaoEducacenso() {
   );
   const download = useDownloadEducacenso();
 
-  const pendencias = previa.data?.pendencias ?? [];
+  const pendencias = useMemo(() => previa.data?.pendencias ?? [], [previa.data]);
   const totalPaginas = Math.max(
     1,
     Math.ceil(pendencias.length / ITENS_POR_PAGINA)

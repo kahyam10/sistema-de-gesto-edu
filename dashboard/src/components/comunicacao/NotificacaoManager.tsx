@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import {
   Plus,
-  Pencil,
   Trash,
   Bell,
   Envelope,
@@ -45,30 +44,12 @@ import {
   useCreateNotificacao,
   useDeleteNotificacao,
   useMarcarNotificacaoLida,
-  useMarcarTodasNotificacoesLidas,
   useEstatisticasNotificacao,
 } from "@/hooks/useApi";
 import { usePagination } from "@/hooks/usePagination";
 import { PaginationControls } from "@/components/ui/pagination";
 import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import { toast } from "sonner";
-
-interface Notificacao {
-  id: string;
-  userId: string;
-  titulo: string;
-  mensagem: string;
-  tipo: string;
-  prioridade: string;
-  canais: string[];
-  lida: boolean;
-  enviadaEmail: boolean;
-  enviadaSMS: boolean;
-  enviadaPush: boolean;
-  dataLeitura?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface NotificacaoFormData {
   userId: string;
@@ -123,7 +104,7 @@ const tipoIcons = {
 
 export function NotificacaoManager() {
   // Pagination
-  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+  const { limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
 
   const { data: notificacoesData, isLoading } = useNotificacoesPaginated({}, pagination);
   const { data: estatisticas } = useEstatisticasNotificacao();
@@ -135,7 +116,6 @@ export function NotificacaoManager() {
   const createNotificacao = useCreateNotificacao();
   const deleteNotificacao = useDeleteNotificacao();
   const marcarLida = useMarcarNotificacaoLida();
-  const marcarTodasLidas = useMarcarTodasNotificacoesLidas();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState<NotificacaoFormData>(initialFormData);
@@ -175,7 +155,7 @@ export function NotificacaoManager() {
         canais: formData.canais,
       });
       handleCloseForm();
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -185,7 +165,7 @@ export function NotificacaoManager() {
 
     try {
       await deleteNotificacao.mutateAsync(id);
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -193,7 +173,7 @@ export function NotificacaoManager() {
   const handleMarcarLida = async (id: string) => {
     try {
       await marcarLida.mutateAsync(id);
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };

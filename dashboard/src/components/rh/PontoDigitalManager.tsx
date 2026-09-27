@@ -26,10 +26,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { ComponentProps } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useProfissionais,
-  usePontos,
   useRelatorioMensal,
 } from "@/hooks/useApi";
 import { Clock, Download, CalendarBlank } from "@phosphor-icons/react";
@@ -52,7 +52,7 @@ export function PontoDigitalManager() {
   );
 
   const getTipoRegistroBadge = (tipo: string) => {
-    const badges: Record<string, { variant: any; label: string }> = {
+    const badges: Record<string, { variant: ComponentProps<typeof Badge>["variant"]; label: string }> = {
       NORMAL: { variant: "default", label: "Normal" },
       ATESTADO: { variant: "secondary", label: "Atestado" },
       FALTA: { variant: "destructive", label: "Falta" },

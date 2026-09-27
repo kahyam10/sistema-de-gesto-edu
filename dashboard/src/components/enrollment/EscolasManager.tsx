@@ -140,10 +140,6 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
 
   const getEtapaNome = (etapaId: string) => etapas?.find((e) => e.id === etapaId)?.nome || "Etapa";
 
-  const getDiretorNome = (diretorId: string | undefined) => {
-    if (!diretorId || !profissionais) return null;
-    return profissionais.find((p) => p.id === diretorId)?.nome || null;
-  };
 
   const isLoading = loadingEscolas || loadingEtapas || loadingTurmas || loadingProfissionais;
 
@@ -288,9 +284,9 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
           <CardContent className="py-12 text-center">
             <Buildings className="mx-auto mb-4 text-muted-foreground" size={48} weight="duotone" />
             {searchTerm ? (
-              <><p className="text-muted-foreground">Nenhuma escola encontrada para "{searchTerm}"</p><Button variant="link" onClick={() => setSearchTerm("")} className="mt-2">Limpar busca</Button></>
+              <><p className="text-muted-foreground">Nenhuma escola encontrada para &quot;{searchTerm}&quot;</p><Button variant="link" onClick={() => setSearchTerm("")} className="mt-2">Limpar busca</Button></>
             ) : (
-              <><p className="text-muted-foreground">Nenhuma escola cadastrada ainda</p>{ehGestao && <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Escola" para começar</p>}</>
+              <><p className="text-muted-foreground">Nenhuma escola cadastrada ainda</p>{ehGestao && <p className="text-sm text-muted-foreground mt-1">Clique em &quot;Nova Escola&quot; para começar</p>}</>
             )}
           </CardContent>
         </Card>

@@ -27,7 +27,6 @@ import {
   TableFooter,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useTurmas } from "@/hooks/useApi";
 import { CalendarCheck, FileText, Users } from "@phosphor-icons/react";
@@ -221,10 +220,10 @@ export function RelatorioFrequenciaMensal() {
   const [turmaId, setTurmaId] = useState<string>("");
   const [mes, setMes] = useState<string>(mesAtual.toString());
   const [ano, setAno] = useState<number>(anoAtual);
-  const [frequencias, setFrequencias] = useState<any[]>([]);
+  const [frequencias, setFrequencias] = useState<Awaited<ReturnType<typeof frequenciaApi.list>>>([]);
   const [loading, setLoading] = useState(false);
 
-  const { data: turmas = [], isLoading: loadingTurmas } = useTurmas({ anoLetivo: ano });
+  const { data: turmas = [] } = useTurmas({ anoLetivo: ano });
 
   const turmaSelecionada = turmas.find((t) => t.id === turmaId);
 

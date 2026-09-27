@@ -214,6 +214,7 @@ export default function QuestionarioGestorEscolaPage() {
       } else if (brutoCenso && typeof brutoCenso === "object") {
         censoSalvo = brutoCenso as Partial<QuestionarioGestorFormData>;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- estado editável inicializado com os dados do servidor
       setFormData((prev) => ({
         ...prev,
         ...censoSalvo,

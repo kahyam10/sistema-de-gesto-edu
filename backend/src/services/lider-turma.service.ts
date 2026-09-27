@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
 import {
@@ -18,7 +19,7 @@ export class LiderTurmaService {
     escolaId?: string;
     ativo?: boolean;
   }) {
-    const where: any = {};
+    const where: Prisma.LiderTurmaWhereInput = {};
 
     if (filters?.turmaId) where.turmaId = filters.turmaId;
     if (filters?.anoLetivo) where.anoLetivo = filters.anoLetivo;

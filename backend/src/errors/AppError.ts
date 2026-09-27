@@ -8,7 +8,7 @@ export interface ErrorDetail {
 }
 
 export interface ErrorContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -47,7 +47,7 @@ export class AppError extends Error {
   private static getErrorDetail(code: string): ErrorDetail {
     // Procura o erro em todas as categorias
     for (const category of Object.values(errorCodes)) {
-      const categoryObj = category as Record<string, any>;
+      const categoryObj = category as Record<string, unknown>;
       if (categoryObj[code]) {
         return categoryObj[code] as ErrorDetail;
       }

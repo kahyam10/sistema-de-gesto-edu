@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { RotaTransporte } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
@@ -22,7 +23,7 @@ export class RotaTransporteService {
     escolaId?: string;
     ativo?: boolean;
   }) {
-    const where: any = {};
+    const where: Prisma.RotaTransporteWhereInput = {};
     if (filters?.turno) where.turno = filters.turno;
     if (filters?.tipo) where.tipo = filters.tipo;
     if (filters?.ativo !== undefined) where.ativo = filters.ativo;

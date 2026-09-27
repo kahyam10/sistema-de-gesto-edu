@@ -65,7 +65,7 @@ export async function manutencaoRoutes(app: FastifyInstance) {
         const { veiculoId, status, tipo, dataInicio, dataFim, page, limit } =
           request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof manutencaoService.findAllPaginated>[0]> = {};
         if (veiculoId) filters.veiculoId = veiculoId;
         if (status) filters.status = status;
         if (tipo) filters.tipo = tipo;
@@ -121,7 +121,7 @@ export async function manutencaoRoutes(app: FastifyInstance) {
     ) => {
       try {
         const { dataInicio, dataFim } = request.query;
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof manutencaoService.custoTotalPorVeiculo>[0]> = {};
         if (dataInicio) filters.dataInicio = new Date(dataInicio);
         if (dataFim) filters.dataFim = new Date(dataFim);
 

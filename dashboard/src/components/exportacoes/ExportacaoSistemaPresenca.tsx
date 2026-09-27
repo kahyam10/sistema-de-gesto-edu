@@ -76,7 +76,7 @@ export function ExportacaoSistemaPresenca() {
   );
   const download = useDownloadSistemaPresenca();
 
-  const linhas = previa.data?.linhas ?? [];
+  const linhas = useMemo(() => previa.data?.linhas ?? [], [previa.data]);
   const totalPaginas = Math.max(1, Math.ceil(linhas.length / ITENS_POR_PAGINA));
   const linhasVisiveis = useMemo(
     () =>

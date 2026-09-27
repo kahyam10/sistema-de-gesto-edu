@@ -185,7 +185,7 @@ export function PlantaoPedagogicoManager() {
         await createPlantao.mutateAsync(dataToSubmit);
       }
       handleCloseForm();
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -195,7 +195,7 @@ export function PlantaoPedagogicoManager() {
 
     try {
       await deletePlantao.mutateAsync(id);
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -215,10 +215,10 @@ export function PlantaoPedagogicoManager() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Plantões Ativos</CardTitle>
+              <CardTitle className="text-sm font-medium">Próximos</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{estatisticas.ativos || 0}</p>
+              <p className="text-2xl font-bold">{estatisticas.proximos}</p>
             </CardContent>
           </Card>
           <Card>

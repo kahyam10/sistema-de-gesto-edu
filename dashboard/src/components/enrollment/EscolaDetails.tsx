@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -29,7 +29,6 @@ import {
   Buildings,
   GraduationCap,
   UserPlus,
-  Eye,
   Spinner,
   Phone,
   Envelope,
@@ -38,8 +37,6 @@ import {
   Users,
   Warning,
   User,
-  Chalkboard,
-  BookOpen,
   Door,
   CalendarDots,
   UserCircle,
@@ -51,7 +48,7 @@ import {
   FileText,
   IdentificationCard,
 } from "@phosphor-icons/react";
-import { Escola, Turma, ProfissionalEducacao, EtapaEnsino } from "@/lib/api";
+import { Turma } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -62,9 +59,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   useTurmas,
@@ -270,12 +265,6 @@ export function EscolaDetails({ escolaId, onBack }: EscolaDetailsProps) {
     });
   }
 
-  // Determinar status geral da escola
-  const statusEscola = notificacoes.some((n) => n.tipo === "error")
-    ? "pendente"
-    : notificacoes.some((n) => n.tipo === "warning")
-    ? "incompleto"
-    : "ok";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

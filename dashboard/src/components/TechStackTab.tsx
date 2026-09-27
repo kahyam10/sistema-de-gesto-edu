@@ -7,12 +7,13 @@ import {
   Package, Key, Shield, HardDrive, CheckCircle, TestTube,
   FileText, Cloud, FolderOpen, MagnifyingGlass, Lightning, Cpu
 } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 
 interface TechStackTabProps {
   techStack?: TechStack[]
 }
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, Icon> = {
   Code, FileCode, Palette, Server: Cpu, Zap: Lightning, Database,
   Box: Package, Key, Shield, HardDrive, CheckCircle, TestTube,
   FileText, Cloud, FolderOpen, FileSearch: MagnifyingGlass

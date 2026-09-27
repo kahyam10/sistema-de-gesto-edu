@@ -37,7 +37,6 @@ import {
   Users,
   Clock,
 } from "@phosphor-icons/react";
-import { Matricula } from "@/lib/api";
 import {
   Dialog,
   DialogContent,

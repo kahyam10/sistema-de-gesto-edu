@@ -64,7 +64,7 @@ export function errorHandler(
   }
 
   // Erro de autenticação do Fastify
-  if ((error as any).statusCode === 401) {
+  if ((error as { statusCode?: number }).statusCode === 401) {
     return reply.status(401).send({
       error: {
         code: "AUTH_002",

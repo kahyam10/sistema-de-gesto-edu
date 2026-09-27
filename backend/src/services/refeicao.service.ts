@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import type {
@@ -23,7 +24,7 @@ const includePadrao = {
 };
 
 function montarWhere(filters?: RefeicaoFilters) {
-  const where: any = {};
+  const where: Prisma.RegistroRefeicaoWhereInput = {};
 
   if (filters?.escolaId) where.escolaId = filters.escolaId;
   if (filters?.turno) where.turno = filters.turno;

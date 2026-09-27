@@ -1,16 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useHidratado } from '@/hooks/use-hidratado';
 import { Icon } from '@/components/ui/icons';
 
 /** Alterna claro/escuro. Renderiza só após a montagem para evitar
  *  divergência de hidratação (o tema vem do localStorage). */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useHidratado();
 
   const isDark = resolvedTheme === 'dark';
 

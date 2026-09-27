@@ -18,7 +18,7 @@ export class GremioService {
     anoLetivo?: number;
     status?: string;
   }) {
-    const where: any = {};
+    const where: Prisma.GremioEstudantilWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.anoLetivo) where.anoLetivo = filters.anoLetivo;

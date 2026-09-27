@@ -27,7 +27,6 @@ import {
   Clock,
   Spinner,
   UserList,
-  FileText,
   CheckCircle,
 } from "@phosphor-icons/react";
 import {
@@ -40,12 +39,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import {
   useReunioesPais,
   useCreateReuniaoPais,
@@ -198,7 +191,7 @@ export function ReuniaoPaisManager() {
         await createReuniao.mutateAsync(dataToSubmit);
       }
       handleCloseForm();
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -208,7 +201,7 @@ export function ReuniaoPaisManager() {
 
     try {
       await deleteReuniao.mutateAsync(id);
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -587,7 +580,7 @@ function PresencasDialog({ reuniao, onClose }: PresencasDialogProps) {
       setNomeResponsavel("");
       setPresente(true);
       setObservacoes("");
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -617,7 +610,7 @@ function PresencasDialog({ reuniao, onClose }: PresencasDialogProps) {
                       <SelectValue placeholder="Selecione o aluno" />
                     </SelectTrigger>
                     <SelectContent>
-                      {turma.matriculas.map((m: any) => (
+                      {turma.matriculas.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.nomeAluno}
                         </SelectItem>
@@ -680,7 +673,7 @@ function PresencasDialog({ reuniao, onClose }: PresencasDialogProps) {
               </p>
             ) : (
               <div className="space-y-2">
-                {presencas.map((p: any) => (
+                {presencas.map((p) => (
                   <Card key={p.id}>
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">

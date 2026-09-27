@@ -234,6 +234,7 @@ export default function QuestionarioTurmaIdPage() {
         censoSalvo = brutoCenso as Partial<QuestionarioTurmaFormData>;
       }
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- estado editável inicializado com os dados do servidor
       setFormData((prev) => ({
         ...prev,
         tipoMediacaoPedagogica: "Presencial",

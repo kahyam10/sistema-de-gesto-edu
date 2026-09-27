@@ -65,7 +65,7 @@ Cardápio com \`escolaId\` nulo é da rede (publicado pela SEMEC).
         const { escolaId, turno, tipoRefeicao, dataInicio, dataFim, ativo, page, limit } =
           request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof cardapioService.findAllPaginated>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (turno) filters.turno = turno;
         if (tipoRefeicao) filters.tipoRefeicao = tipoRefeicao;

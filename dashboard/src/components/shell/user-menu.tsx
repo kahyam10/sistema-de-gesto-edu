@@ -58,6 +58,7 @@ export function UserMenu() {
         className="flex items-center gap-2.5 rounded-md pl-3 pr-1.5 py-1 transition-colors duration-180 hover:bg-surface-alt"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={`Menu do usuário: ${user.nome}`}
       >
         <div className="hidden text-right leading-tight sm:block">
           <div className="text-[12.5px] font-semibold tracking-[-0.1px] text-ink">{user.nome}</div>

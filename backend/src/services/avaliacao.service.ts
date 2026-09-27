@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import {
@@ -20,7 +21,7 @@ export class AvaliacaoService {
     disciplinaId?: string;
     bimestre?: number;
   }) {
-    const where: any = {};
+    const where: Prisma.AvaliacaoWhereInput = {};
     if (filters?.turmaId) where.turmaId = filters.turmaId;
     if (filters?.disciplinaId) where.disciplinaId = filters.disciplinaId;
     if (filters?.bimestre) where.bimestre = filters.bimestre;
@@ -41,7 +42,7 @@ export class AvaliacaoService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.AvaliacaoWhereInput = {};
     if (filters?.turmaId) where.turmaId = filters.turmaId;
     if (filters?.disciplinaId) where.disciplinaId = filters.disciplinaId;
     if (filters?.bimestre) where.bimestre = filters.bimestre;
@@ -90,7 +91,7 @@ export class AvaliacaoService {
     disciplinaId: string,
     bimestre?: number
   ) {
-    const where: any = { turmaId, disciplinaId };
+    const where: Prisma.AvaliacaoWhereInput = { turmaId, disciplinaId };
     if (bimestre) where.bimestre = bimestre;
 
     return prisma.avaliacao.findMany({

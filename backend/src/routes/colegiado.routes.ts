@@ -41,7 +41,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
       try {
         const { escolaId, ativo } = request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof colegiadoService.findAll>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (ativo !== undefined) filters.ativo = ativo === "true";
 

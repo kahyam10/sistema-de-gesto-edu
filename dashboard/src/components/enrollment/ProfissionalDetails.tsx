@@ -35,7 +35,7 @@ import {
   Certificate,
   Trash,
 } from "@phosphor-icons/react";
-import { ProfissionalEducacao, Escola, Turma, FormacaoProfissional } from "@/lib/api";
+import { ProfissionalEducacao, Turma, FormacaoProfissional } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -70,14 +70,6 @@ const tipoLabels: Record<TipoProfissional, string> = {
   COORDENADOR: "Coordenador(a)",
   DIRETOR: "Diretor(a)",
   SECRETARIO: "Secretário(a)",
-};
-
-const tipoBadgeColors: Record<TipoProfissional, string> = {
-  PROFESSOR: "bg-blue-100 text-blue-800",
-  AUXILIAR: "bg-green-100 text-green-800",
-  COORDENADOR: "bg-purple-100 text-purple-800",
-  DIRETOR: "bg-orange-100 text-orange-800",
-  SECRETARIO: "bg-teal-100 text-teal-800",
 };
 
 const turnoLabels: Record<string, string> = {
@@ -162,7 +154,7 @@ function EscolasVinculadasView({
 // Subcomponente: Lista de Turmas Vinculadas
 function TurmasVinculadasView({ 
   profissional, 
-  allTurmas,
+  allTurmas: _allTurmas,
   onBack 
 }: { 
   profissional: ProfissionalEducacao;
@@ -400,7 +392,9 @@ function FormacaoView({
     (a, b) => (ordemTipo[a.tipo] || 99) - (ordemTipo[b.tipo] || 99)
   );
 
-  const FormDialog = ({ 
+  // Função de renderização (não componente): um componente criado a cada render
+  // remontava o diálogo e o campo perdia o foco a cada tecla
+  const formDialog = ({ 
     open, 
     onOpenChange, 
     title, 
@@ -644,22 +638,10 @@ function FormacaoView({
       )}
 
       {/* Diálogo Adicionar */}
-      <FormDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        title="Adicionar Formação"
-        onSubmit={handleAdd}
-        isLoading={addFormacao.isPending}
-      />
+      {formDialog({ open: isAddDialogOpen, onOpenChange: setIsAddDialogOpen, title: "Adicionar Formação", onSubmit: handleAdd, isLoading: addFormacao.isPending })}
 
       {/* Diálogo Editar */}
-      <FormDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        title="Editar Formação"
-        onSubmit={handleEdit}
-        isLoading={updateFormacao.isPending}
-      />
+      {formDialog({ open: isEditDialogOpen, onOpenChange: setIsEditDialogOpen, title: "Editar Formação", onSubmit: handleEdit, isLoading: updateFormacao.isPending })}
 
       {/* Diálogo Confirmar Exclusão */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

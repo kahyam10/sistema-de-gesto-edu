@@ -147,9 +147,9 @@ export const DeclaracaoMatriculaPDF: React.FC<DeclaracaoMatriculaPDFProps> = ({
             A Secretaria Municipal de Educação de Ibirapitanga, Estado da Bahia, declara para os devidos fins que{' '}
             <Text style={styles.highlight}>{matricula.nomeAluno}</Text>, nascido(a) em{' '}
             <Text style={styles.highlight}>{formatDate(matricula.dataNascimento)}</Text>
-            {(matricula as any).cpf && (
+            {matricula.cpfAluno && (
               <>
-                , portador(a) do CPF nº <Text style={styles.highlight}>{(matricula as any).cpf}</Text>
+                , portador(a) do CPF nº <Text style={styles.highlight}>{matricula.cpfAluno}</Text>
               </>
             )}
             , está devidamente matriculado(a) nesta rede municipal de ensino.

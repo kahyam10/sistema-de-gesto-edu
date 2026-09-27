@@ -28,10 +28,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTurmas, useNotas, useDisciplinas, useUpdateMatricula } from "@/hooks/useApi";
-import { GraduationCap, CheckCircle, XCircle, Warning, Users } from "@phosphor-icons/react";
+import { useTurmas, useNotas, useUpdateMatricula } from "@/hooks/useApi";
+import { CheckCircle, XCircle, Warning, Users } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import type { Matricula } from "@/lib/api";
 
 interface AlunoConselho {
   matriculaId: string;
@@ -50,7 +49,6 @@ export function ConselhoClasseManager() {
   const [novoStatus, setNovoStatus] = useState<"ATIVA" | "CONCLUIDA" | "CANCELADA">("CONCLUIDA");
 
   const { data: turmas = [], isLoading: loadingTurmas } = useTurmas({ anoLetivo: anoAtual });
-  const { data: disciplinas = [] } = useDisciplinas();
   const { data: notas = [], isLoading: loadingNotas } = useNotas(turmaId ? { turmaId } : undefined);
   const updateMatricula = useUpdateMatricula();
 
@@ -236,7 +234,7 @@ export function ConselhoClasseManager() {
 
             <div className="space-y-2">
               <Label>Filtrar por Status</Label>
-              <Select value={filtroStatus} onValueChange={(v: any) => setFiltroStatus(v)}>
+              <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v as typeof filtroStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -317,7 +315,7 @@ export function ConselhoClasseManager() {
                 </div>
                 {alunosSelecionados.size > 0 && (
                   <div className="flex items-center gap-2">
-                    <Select value={novoStatus} onValueChange={(v: any) => setNovoStatus(v)}>
+                    <Select value={novoStatus} onValueChange={(v) => setNovoStatus(v as typeof novoStatus)}>
                       <SelectTrigger className="w-[180px]">
                         <SelectValue />
                       </SelectTrigger>

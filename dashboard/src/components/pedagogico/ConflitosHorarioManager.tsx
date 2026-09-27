@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -62,53 +63,33 @@ const DIAS_SEMANA = [
 ] as const;
 
 export function ConflitosHorarioManager() {
-  const anoAtual = new Date().getFullYear();
   const [selectedEscolaId, setSelectedEscolaId] = useState<string>("");
-  const [gradeHoraria, setGradeHoraria] = useState<GradeHorario[]>([]);
-  const [loadingGrade, setLoadingGrade] = useState(false);
-
   const { data: escolas = [], isLoading: loadingEscolas } = useEscolas();
   const { data: turmas = [] } = useTurmas(
     selectedEscolaId ? { escolaId: selectedEscolaId } : undefined
   );
   const { data: profissionais = [] } = useProfissionais();
 
-  // Buscar grade horária de todas as turmas da escola
-  const fetchGradeEscola = async (escolaId: string) => {
-    setLoadingGrade(true);
-    try {
-      const turmasDaEscola = turmas.filter((t) => t.escolaId === escolaId);
-
-      // Cliente central: sessão por cookie + prefixo /api (antes: token de
-      // chave errada e URL sem /api → toda consulta falhava)
-      const promises = turmasDaEscola.map(async (turma) => {
-        const grade = await gradeHorariaApi
-          .list({ turmaId: turma.id })
-          .catch(() => [] as GradeHorario[]);
-        return grade.map((g) => ({
-          ...g,
-          turma: { nome: turma.nome, turno: turma.turno },
-        }));
-      });
-
-      const results = await Promise.all(promises);
-      setGradeHoraria(results.flat());
-    } catch (error) {
-      console.error("Erro ao buscar grade horária:", error);
-      setGradeHoraria([]);
-    } finally {
-      setLoadingGrade(false);
-    }
-  };
-
-  // Atualiza grade quando escola é selecionada
-  useMemo(() => {
-    if (selectedEscolaId && turmas.length > 0) {
-      fetchGradeEscola(selectedEscolaId);
-    } else {
-      setGradeHoraria([]);
-    }
-  }, [selectedEscolaId, turmas]);
+  // Grade de todas as turmas da escola (uma consulta por turma)
+  const turmasDaEscola = turmas.filter((t) => t.escolaId === selectedEscolaId);
+  const gradeQ = useQuery({
+    queryKey: ["grade-horaria", "escola", selectedEscolaId, turmasDaEscola.map((t) => t.id).join(",")],
+    enabled: !!selectedEscolaId && turmasDaEscola.length > 0,
+    queryFn: async () => {
+      const resultados = await Promise.all(
+        turmasDaEscola.map(async (turma) => {
+          const grade = await gradeHorariaApi.list({ turmaId: turma.id }).catch(() => [] as GradeHorario[]);
+          return grade.map((g) => ({ ...g, turma: { ...g.turma, nome: turma.nome, turno: turma.turno } }) as GradeHorario);
+        })
+      );
+      return resultados.flat();
+    },
+  });
+  const gradeHoraria = useMemo(
+    () => (selectedEscolaId && turmasDaEscola.length > 0 ? gradeQ.data ?? [] : []),
+    [selectedEscolaId, turmasDaEscola.length, gradeQ.data]
+  );
+  const loadingGrade = gradeQ.isFetching;
 
   // Detecta conflitos
   const conflitos = useMemo(() => {
@@ -137,7 +118,7 @@ export function ConflitosHorarioManager() {
       }
     });
 
-    profsPorHorario.forEach((horarios, key) => {
+    profsPorHorario.forEach((horarios) => {
       if (horarios.length > 1) {
         const profId = horarios[0].profissionalId;
         const prof = profissionais.find((p) => p.id === profId);
@@ -182,7 +163,7 @@ export function ConflitosHorarioManager() {
       turmasPorId.get(h.turmaId)!.push(h);
     });
 
-    turmasPorId.forEach((horarios, turmaId) => {
+    turmasPorId.forEach((horarios) => {
       for (let i = 0; i < horarios.length; i++) {
         for (let j = i + 1; j < horarios.length; j++) {
           if (horariosColidem(horarios[i], horarios[j])) {

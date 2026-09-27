@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
 import type {
@@ -27,7 +28,7 @@ const includeEscola = {
  * (escolaId null = cardápio da rede, publicado pela SEMEC).
  */
 function montarWhere(filters?: CardapioFilters) {
-  const where: any = {};
+  const where: Prisma.CardapioWhereInput = {};
 
   if (filters?.escolaId) {
     where.OR = [{ escolaId: filters.escolaId }, { escolaId: null }];

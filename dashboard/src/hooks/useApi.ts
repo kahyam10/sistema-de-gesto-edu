@@ -36,7 +36,6 @@ import {
   BuscaAtiva,
   PlantaoPedagogico,
   ReuniaoPais,
-  PresencaReuniao,
   Comunicado,
   Notificacao,
   VisitaDomiciliar,
@@ -45,18 +44,7 @@ import {
   SalaRecursos,
   AtendimentoAEE,
   AcompanhamentoIndividualizado,
-  TipoEducacao,
-  EtapaEnsino,
-  NivelEnsino,
-  Serie,
-  Escola,
-  Turma,
-  Matricula,
   TipoDocumentoMatricula,
-  ProfissionalEducacao,
-  Module,
-  SubModule,
-  Phase,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -1375,7 +1363,6 @@ export function useUpdateSala() {
   return useMutation({
     mutationFn: ({
       id,
-      escolaId,
       data,
     }: {
       id: string;
@@ -1422,7 +1409,7 @@ export function useDeleteSala() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, escolaId }: { id: string; escolaId: string }) =>
+    mutationFn: ({ id }: { id: string; escolaId: string }) =>
       salasApi.delete(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -1584,7 +1571,7 @@ export function useCreateEvento() {
   return useMutation({
     mutationFn: (data: Parameters<typeof calendarioApi.createEvento>[0]) =>
       calendarioApi.createEvento(data),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       // Invalidar todas as queries de eventos
       queryClient.invalidateQueries({
         queryKey: ["eventos"],
@@ -1606,7 +1593,6 @@ export function useUpdateEvento() {
     mutationFn: ({
       id,
       data,
-      anoLetivoId,
     }: {
       id: string;
       data: Parameters<typeof calendarioApi.updateEvento>[1];
@@ -1631,7 +1617,7 @@ export function useDeleteEvento() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, anoLetivoId }: { id: string; anoLetivoId: string }) =>
+    mutationFn: ({ id }: { id: string; anoLetivoId: string }) =>
       calendarioApi.deleteEvento(id),
     onSuccess: () => {
       // Invalidar todas as queries de eventos
@@ -2791,7 +2777,7 @@ export function useDeletePresencaReuniao() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, reuniaoId }: { id: string; reuniaoId: string }) =>
+    mutationFn: ({ id }: { id: string; reuniaoId: string }) =>
       reuniaoPaisApi.deletePresenca(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

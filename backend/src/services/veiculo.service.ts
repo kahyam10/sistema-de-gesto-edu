@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Veiculo } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
@@ -29,7 +30,7 @@ export class VeiculoService {
     ativo?: boolean;
     tipoPropriedade?: string;
   }): Promise<Veiculo[]> {
-    const where: any = {};
+    const where: Prisma.VeiculoWhereInput = {};
     if (filters?.tipo) where.tipo = filters.tipo;
     if (filters?.ativo !== undefined) where.ativo = filters.ativo;
     if (filters?.tipoPropriedade)

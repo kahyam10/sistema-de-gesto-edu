@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Ponto } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import {
@@ -39,7 +40,7 @@ export class PontoService {
 
     if (ponto) {
       // Atualiza registro existente
-      const updateData: any = {};
+      const updateData: Prisma.PontoUncheckedUpdateInput & Partial<Record<"entrada" | "saida" | "entrada2" | "saida2", string>> = {};
 
       if (data.tipo === "ENTRADA") updateData.entrada = data.horario;
       if (data.tipo === "SAIDA") updateData.saida = data.horario;
@@ -59,7 +60,7 @@ export class PontoService {
       });
     } else {
       // Cria novo registro
-      const createData: any = {
+      const createData: Prisma.PontoUncheckedCreateInput = {
         profissionalId: data.profissionalId,
         escolaId: data.escolaId,
         data: hoje,
@@ -91,7 +92,7 @@ export class PontoService {
     dataFim?: Date;
     tipoRegistro?: string;
   }): Promise<Ponto[]> {
-    const where: any = {};
+    const where: Prisma.PontoWhereInput = {};
 
     if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
     if (filters?.escolaId) where.escolaId = filters.escolaId;
@@ -131,7 +132,7 @@ export class PontoService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.PontoWhereInput = {};
 
     if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
     if (filters?.escolaId) where.escolaId = filters.escolaId;
@@ -201,7 +202,10 @@ export class PontoService {
       const pontoAtual = await prisma.ponto.findUnique({ where: { id } });
       if (pontoAtual) {
         const pontoAtualizado = { ...pontoAtual, ...data };
-        (data as any).horasTrabalhadas = this.calcularHoras(pontoAtualizado);
+        return await prisma.ponto.update({
+          where: { id },
+          data: { ...data, horasTrabalhadas: this.calcularHoras(pontoAtualizado) },
+        });
       }
     }
 
@@ -268,7 +272,7 @@ export class PontoService {
   }
 
   // Calcula horas trabalhadas no dia
-  private calcularHoras(ponto: any): number {
+  private calcularHoras(ponto: Partial<Record<"entrada" | "saida" | "entrada2" | "saida2", string | null>>): number {
     let total = 0;
 
     if (ponto.entrada && ponto.saida) {

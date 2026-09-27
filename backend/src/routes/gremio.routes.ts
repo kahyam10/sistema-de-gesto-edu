@@ -45,7 +45,7 @@ export async function gremioRoutes(app: FastifyInstance) {
       try {
         const { escolaId, anoLetivo, status } = request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof gremioService.findAll>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (anoLetivo) filters.anoLetivo = parseInt(anoLetivo);
         if (status) filters.status = status;

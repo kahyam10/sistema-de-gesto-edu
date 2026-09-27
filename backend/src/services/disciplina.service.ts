@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import {
@@ -7,7 +8,7 @@ import {
 
 export class DisciplinaService {
   async findAll(filters?: { etapaId?: string; ativo?: boolean }) {
-    const where: any = {};
+    const where: Prisma.DisciplinaWhereInput = {};
     if (filters?.etapaId) where.etapaId = filters.etapaId;
     if (filters?.ativo !== undefined) where.ativo = filters.ativo;
 

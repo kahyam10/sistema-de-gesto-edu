@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 
 const MOBILE_BREAKPOINT = 768
+const CONSULTA = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`
+
+function assinar(aoMudar: () => void) {
+  const mql = window.matchMedia(CONSULTA)
+  mql.addEventListener("change", aoMudar)
+  return () => mql.removeEventListener("change", aoMudar)
+}
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = useState<boolean | undefined>(undefined)
-
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
-
-  return !!isMobile
+  return useSyncExternalStore(
+    assinar,
+    () => window.matchMedia(CONSULTA).matches,
+    () => false
+  )
 }

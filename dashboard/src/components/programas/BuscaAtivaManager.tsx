@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { Icon } from "@phosphor-icons/react";
+import type { ComponentProps } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -36,7 +38,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useBuscasAtivas,
@@ -69,7 +70,7 @@ export function BuscaAtivaManager() {
   const { data: escolas = [], isLoading: loadingEscolas } = useEscolas();
   const { data: matriculas = [] } = useMatriculas();
 
-  const filters: any = {};
+  const filters: NonNullable<Parameters<typeof useBuscasAtivas>[0]> = {};
   if (selectedEscola) filters.escolaId = selectedEscola;
   if (selectedStatus) filters.status = selectedStatus;
   if (selectedPrioridade) filters.prioridade = selectedPrioridade;
@@ -101,7 +102,7 @@ export function BuscaAtivaManager() {
   };
 
   const getStatusBadge = (status: string) => {
-    const badges: Record<string, { variant: any; label: string; icon: any }> = {
+    const badges: Record<string, { variant: ComponentProps<typeof Badge>["variant"]; label: string; icon: Icon }> = {
       ATIVA: { variant: "destructive", label: "Ativa", icon: Warning },
       EM_ACOMPANHAMENTO: {
         variant: "secondary",
@@ -128,7 +129,7 @@ export function BuscaAtivaManager() {
   };
 
   const getPrioridadeBadge = (prioridade: string) => {
-    const badges: Record<string, { variant: any; label: string }> = {
+    const badges: Record<string, { variant: ComponentProps<typeof Badge>["variant"]; label: string }> = {
       BAIXA: { variant: "outline", label: "Baixa" },
       MEDIA: { variant: "secondary", label: "Média" },
       ALTA: { variant: "default", label: "Alta" },

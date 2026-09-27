@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 
@@ -59,7 +60,7 @@ export class FrequenciaService {
     dataInicio?: Date;
     dataFim?: Date;
   }) {
-    const where: any = {};
+    const where: Prisma.FrequenciaWhereInput = {};
 
     if (params.turmaId) where.turmaId = params.turmaId;
     if (params.matriculaId) where.matriculaId = params.matriculaId;
@@ -106,7 +107,7 @@ export class FrequenciaService {
     },
     pagination: { page: number; limit: number },
   ) {
-    const where: any = {};
+    const where: Prisma.FrequenciaWhereInput = {};
     if (params.turmaId) where.turmaId = params.turmaId;
     if (params.matriculaId) where.matriculaId = params.matriculaId;
     if (params.dataInicio || params.dataFim) {
@@ -349,7 +350,7 @@ export class FrequenciaService {
     dataInicio?: Date,
     dataFim?: Date,
   ): Promise<EstatisticasFrequencia> {
-    const where: any = {
+    const where: Prisma.FrequenciaWhereInput = {
       matriculaId,
       turmaId,
     };
@@ -452,7 +453,7 @@ export class FrequenciaService {
     }
 
     // Buscar TODAS as frequências da turma em UMA query (elimina N+1)
-    const whereFreq: any = {
+    const whereFreq: Prisma.FrequenciaWhereInput = {
       turmaId,
       matriculaId: { in: turma.matriculas.map((m) => m.id) },
     };
@@ -517,7 +518,7 @@ export class FrequenciaService {
     }
 
     // Buscar TODAS as frequências da turma em UMA query (elimina N+1)
-    const whereFreq: any = {
+    const whereFreq: Prisma.FrequenciaWhereInput = {
       turmaId,
       matriculaId: { in: turma.matriculas.map((m) => m.id) },
     };

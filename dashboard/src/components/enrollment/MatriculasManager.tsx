@@ -59,7 +59,7 @@ import { useAuth } from "@/lib/auth";
 export function MatriculasManager() {
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
-  const { data: series, isLoading: loadingSeries } = useSeries();
+  const { isLoading: loadingSeries } = useSeries();
   const { data: matriculas, isLoading: loadingMatriculas } = useMatriculas();
 
   const createMatricula = useCreateMatricula();
@@ -897,7 +897,7 @@ export function MatriculasManager() {
                 Nenhuma matrícula realizada ainda
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Clique em "Nova Matrícula" para começar
+                Clique em &quot;Nova Matrícula&quot; para começar
               </p>
             </div>
           ) : matriculasFiltradas.length === 0 ? (

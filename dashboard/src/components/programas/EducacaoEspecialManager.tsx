@@ -66,7 +66,7 @@ export function EducacaoEspecialManager() {
   const { data: escolas = [], isLoading: loadingEscolas } = useEscolas();
   const { data: matriculas = [] } = useMatriculas();
 
-  const filters: any = { anoLetivo: formData.anoLetivo };
+  const filters: NonNullable<Parameters<typeof usePEIs>[0]> = { anoLetivo: formData.anoLetivo };
   if (selectedEscola) filters.escolaId = selectedEscola;
 
   const { data: peis = [], isLoading } = usePEIs(filters);

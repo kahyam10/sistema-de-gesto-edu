@@ -18,7 +18,7 @@ interface ReuniaoDemocraticaFilters {
 
 export class ReuniaoDemocraticaService {
   private buildWhere(filters?: ReuniaoDemocraticaFilters) {
-    const where: any = {};
+    const where: Prisma.ReuniaoDemocraticaWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.orgao) where.orgao = filters.orgao;

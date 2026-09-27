@@ -54,7 +54,7 @@ movimentações (entradas − saídas), nunca armazenado.
       try {
         const { escolaId, categoria, ativo, busca } = request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof estoqueService.listItens>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (categoria) filters.categoria = categoria;
         if (ativo !== undefined) filters.ativo = ativo === "true";
@@ -286,7 +286,7 @@ Lista a trilha de entradas/saídas com filtros e paginação opcional.
         const { itemId, escolaId, tipo, dataInicio, dataFim, page, limit } =
           request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof estoqueService.listMovimentacoesPaginated>[0]> = {};
         if (itemId) filters.itemId = itemId;
         if (escolaId) filters.escolaId = escolaId;
         if (tipo) filters.tipo = tipo;

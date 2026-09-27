@@ -46,7 +46,7 @@ export async function liderTurmaRoutes(app: FastifyInstance) {
       try {
         const { turmaId, anoLetivo, escolaId, ativo } = request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof liderTurmaService.findAll>[0]> = {};
         if (turmaId) filters.turmaId = turmaId;
         if (anoLetivo) filters.anoLetivo = parseInt(anoLetivo);
         if (escolaId) filters.escolaId = escolaId;

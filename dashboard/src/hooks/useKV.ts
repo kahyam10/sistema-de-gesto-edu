@@ -20,6 +20,7 @@ export function useKV<T>(
     try {
       const item = window.localStorage.getItem(key);
       if (item) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- leitura do localStorage após a hidratação
         setStoredValue(JSON.parse(item));
       } else {
         setStoredValue(initialValue);

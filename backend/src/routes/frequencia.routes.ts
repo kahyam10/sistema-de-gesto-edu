@@ -148,7 +148,7 @@ Lista registros de frequência com suporte a filtros e paginação.
       try {
         const { turmaId, matriculaId, dataInicio, dataFim, page, limit } = request.query;
 
-        const params: any = {};
+        const params: NonNullable<Parameters<typeof frequenciaService.listPaginated>[0]> = {};
         if (turmaId) params.turmaId = turmaId;
         if (matriculaId) params.matriculaId = matriculaId;
         if (dataInicio) params.dataInicio = new Date(dataInicio);

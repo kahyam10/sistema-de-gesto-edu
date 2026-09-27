@@ -64,6 +64,8 @@ async function renovarSessao(): Promise<boolean> {
 
 function irParaLogin() {
   if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    // Recarga completa de propósito: descarta cache e estado da sessão que expirou
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/login";
   }
 }
@@ -2129,7 +2131,7 @@ export interface PlanoEducacionalIndividualizado {
   status: string;
   createdAt: string;
   updatedAt: string;
-  matricula?: any;
+  matricula?: Partial<Matricula>;
   atendimentos?: AtendimentoAEE[];
   _count?: {
     atendimentos: number;
@@ -2173,8 +2175,8 @@ export interface AtendimentoAEE {
   profissionalId?: string;
   createdAt: string;
   updatedAt: string;
-  pei?: any;
-  salaRecursos?: any;
+  pei?: Partial<PlanoEducacionalIndividualizado>;
+  salaRecursos?: Partial<SalaRecursos>;
   profissional?: {
     nome: string;
   };
@@ -2198,7 +2200,7 @@ export interface AcompanhamentoIndividualizado {
   resultado?: string;
   createdAt: string;
   updatedAt: string;
-  matricula?: any;
+  matricula?: Partial<Matricula>;
   profissional?: {
     nome: string;
   };
@@ -2247,7 +2249,7 @@ export const buscaAtivaApi = {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasBuscaAtiva>(
       `/api/busca-ativa/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
@@ -2418,7 +2420,7 @@ export const aeeApi = {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasAEE>(
       `/api/aee/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
@@ -2512,7 +2514,7 @@ export const acompanhamentoApi = {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasAcompanhamento>(
       `/api/acompanhamento/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
@@ -2705,7 +2707,7 @@ export const plantaoPedagogicoApi = {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasPlantao>(
       `/api/plantoes-pedagogicos/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
@@ -2787,13 +2789,22 @@ export const reuniaoPaisApi = {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasReuniaoPais>(
       `/api/reunioes-pais/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
 
 // ==================== COMUNICADO API ====================
+
+// ---------- Estatísticas (formatos de cada service no backend) ----------
+type Contagem = Record<string, number>;
+export interface EstatisticasBuscaAtiva { total: number; porStatus: Contagem; porPrioridade: Contagem; porMotivo: Contagem }
+export interface EstatisticasAEE { totalPEIs: number; totalSalasRecursos: number; alunosAtendidos: number; porDeficiencia: Contagem }
+export interface EstatisticasAcompanhamento { total: number; porStatus: Contagem; porTipo: Contagem }
+export interface EstatisticasPlantao { total: number; proximos: number; porTipo: Contagem }
+export interface EstatisticasReuniaoPais { total: number; proximas: number; porStatus: Contagem; porTipo: Contagem; taxaPresencaMedia: number }
+export interface EstatisticasNotificacao { total: number; naoLidas: number; lidas: number; porTipo: Contagem; porPrioridade: Contagem }
 
 /** Contagens dos comunicados ATIVOS (GET /api/comunicados/relatorios/estatisticas). */
 export interface EstatisticasComunicado {
@@ -3004,7 +3015,7 @@ export const notificacaoApi = {
     const params = new URLSearchParams();
     if (userId) params.append("userId", userId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasNotificacao>(
       `/api/notificacoes/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },

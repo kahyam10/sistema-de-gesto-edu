@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -37,7 +36,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   useTurmas,
   useDisciplinasByEtapa,
@@ -52,7 +50,6 @@ import {
   ChartBar,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import type { Turma, Avaliacao } from "@/lib/api";
 
 interface NotaAluno {
   matriculaId: string;
@@ -115,8 +112,10 @@ export function NotasManager() {
   // Preencher tabela de notas quando avaliacao selecionada
   const avaliacaoSelecionada = avaliacoes.find((a) => a.id === avaliacaoId);
 
+  // Estado editável preenchido a partir da avaliação escolhida; refaz quando os dados do servidor mudam
   useEffect(() => {
     if (!avaliacaoSelecionada || !turmaSelecionada) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- ver comentário acima
       setNotas([]);
       return;
     }
@@ -140,21 +139,10 @@ export function NotasManager() {
     setNotas(notasPreenchidas.sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno)));
   }, [avaliacaoSelecionada, turmaSelecionada]);
 
-  // Reset cascata
-  useEffect(() => {
-    setDisciplinaId("");
-    setBimestre("");
-    setAvaliacaoId("");
-  }, [turmaId]);
-
-  useEffect(() => {
-    setBimestre("");
-    setAvaliacaoId("");
-  }, [disciplinaId]);
-
-  useEffect(() => {
-    setAvaliacaoId("");
-  }, [bimestre]);
+  // Reset em cascata ao trocar um filtro de cima
+  const mudarTurma = (v: string) => { setTurmaId(v); setDisciplinaId(""); setBimestre(""); setAvaliacaoId(""); };
+  const mudarDisciplina = (v: string) => { setDisciplinaId(v); setBimestre(""); setAvaliacaoId(""); };
+  const mudarBimestre = (v: string) => { setBimestre(v); setAvaliacaoId(""); };
 
   const handleNotaChange = (matriculaId: string, valor: string) => {
     const num = parseFloat(valor);
@@ -279,7 +267,7 @@ export function NotasManager() {
             {/* Turma */}
             <div className="space-y-2">
               <Label>Turma</Label>
-              <Select value={turmaId} onValueChange={setTurmaId}>
+              <Select value={turmaId} onValueChange={mudarTurma}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a turma" />
                 </SelectTrigger>
@@ -298,7 +286,7 @@ export function NotasManager() {
               <Label>Disciplina</Label>
               <Select
                 value={disciplinaId}
-                onValueChange={setDisciplinaId}
+                onValueChange={mudarDisciplina}
                 disabled={!turmaId || disciplinas.length === 0}
               >
                 <SelectTrigger>
@@ -329,7 +317,7 @@ export function NotasManager() {
               <Label>Bimestre</Label>
               <Select
                 value={bimestre}
-                onValueChange={setBimestre}
+                onValueChange={mudarBimestre}
                 disabled={!disciplinaId}
               >
                 <SelectTrigger>

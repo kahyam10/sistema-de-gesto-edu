@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { ManutencaoVeiculo } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
@@ -19,7 +20,7 @@ const INCLUDE_VEICULO = {
 } as const;
 
 function montarWhere(filters?: ManutencaoFilters) {
-  const where: any = {};
+  const where: Prisma.ManutencaoVeiculoWhereInput = {};
   if (filters?.veiculoId) where.veiculoId = filters.veiculoId;
   if (filters?.status) where.status = filters.status;
   if (filters?.tipo) where.tipo = filters.tipo;
@@ -128,7 +129,7 @@ export class ManutencaoService {
 
   // Custo total de manutenções concluídas por veículo (join em memória com placas)
   async custoTotalPorVeiculo(filters?: { dataInicio?: Date; dataFim?: Date }) {
-    const where: any = { status: "CONCLUIDA" };
+    const where: Prisma.ManutencaoVeiculoWhereInput = { status: "CONCLUIDA" };
     if (filters?.dataInicio || filters?.dataFim) {
       where.dataAgendada = {};
       if (filters.dataInicio) where.dataAgendada.gte = filters.dataInicio;

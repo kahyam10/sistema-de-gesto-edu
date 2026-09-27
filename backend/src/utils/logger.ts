@@ -33,7 +33,7 @@ export interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   error?: {
     code?: string;
     message: string;
@@ -49,9 +49,9 @@ class Logger {
   error(
     message: string,
     error?: Error | AppError,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
   ) {
-    const extra: Record<string, any> = { ...context };
+    const extra: Record<string, unknown> = { ...context };
 
     if (error) {
       extra.err = {
@@ -67,15 +67,15 @@ class Logger {
     pinoLogger.error(extra, message);
   }
 
-  warn(message: string, context?: Record<string, any>) {
+  warn(message: string, context?: Record<string, unknown>) {
     pinoLogger.warn(context || {}, message);
   }
 
-  info(message: string, context?: Record<string, any>) {
+  info(message: string, context?: Record<string, unknown>) {
     pinoLogger.info(context || {}, message);
   }
 
-  debug(message: string, context?: Record<string, any>) {
+  debug(message: string, context?: Record<string, unknown>) {
     pinoLogger.debug(context || {}, message);
   }
 

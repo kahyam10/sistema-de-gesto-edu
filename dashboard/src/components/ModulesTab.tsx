@@ -163,8 +163,8 @@ export function ModulesTab() {
       })
     } else {
       setEditingSubModule(null)
-      const module = modules.find(m => m.id === moduleId)
-      setSubModuleForm({ name: '', description: '', status: 'planning', ordem: module?.subModules?.length || 0 })
+      const modulo = modules.find(m => m.id === moduleId)
+      setSubModuleForm({ name: '', description: '', status: 'planning', ordem: modulo?.subModules?.length || 0 })
     }
     setSubModuleDialogOpen(true)
   }
@@ -349,14 +349,14 @@ export function ModulesTab() {
 
       <AlertDialog open={deleteModuleDialogOpen} onOpenChange={setDeleteModuleDialogOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Excluir Modulo</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o modulo "{moduleToDelete?.name}"? Esta acao nao pode ser desfeita e todos os submodulos serao excluidos.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Excluir Modulo</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o modulo &quot;{moduleToDelete?.name}&quot;? Esta acao nao pode ser desfeita e todos os submodulos serao excluidos.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteModule}>Excluir</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={deleteSubModuleDialogOpen} onOpenChange={setDeleteSubModuleDialogOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Excluir Submodulo</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o submodulo "{subModuleToDelete?.name}"? Esta acao nao pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Excluir Submodulo</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o submodulo &quot;{subModuleToDelete?.name}&quot;? Esta acao nao pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSubModule}>Excluir</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

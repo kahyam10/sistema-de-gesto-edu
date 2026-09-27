@@ -29,7 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTurmas, useDisciplinas, useNotas, useCreateNota } from "@/hooks/useApi";
-import { GraduationCap, Warning, CheckCircle, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { CheckCircle, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 interface AlunoRecuperacao {

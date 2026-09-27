@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Licenca } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
@@ -36,7 +37,7 @@ export class LicencaService {
     dataInicio?: Date;
     dataFim?: Date;
   }): Promise<Licenca[]> {
-    const where: any = {};
+    const where: Prisma.LicencaWhereInput = {};
 
     if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
     if (filters?.status) where.status = filters.status;
@@ -77,7 +78,7 @@ export class LicencaService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.LicencaWhereInput = {};
 
     if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
     if (filters?.status) where.status = filters.status;
@@ -154,7 +155,7 @@ export class LicencaService {
     }
 
     // Recalcula dias se datas foram alteradas
-    const updateData: any = { ...data };
+    const updateData: Prisma.LicencaUncheckedUpdateInput = { ...data };
     if (data.dataInicio || data.dataFim) {
       const dataInicio = data.dataInicio || licenca?.dataInicio;
       const dataFim = data.dataFim || licenca?.dataFim;
@@ -261,7 +262,7 @@ export class LicencaService {
     totalDias: number;
     porTipo: Record<string, number>;
   }> {
-    const where: any = { profissionalId };
+    const where: Prisma.LicencaWhereInput = { profissionalId };
 
     if (anoInicio || anoFim) {
       where.dataInicio = {};

@@ -3,7 +3,6 @@ import { licencaService } from "../services/index.js";
 import {
   createLicencaSchema,
   updateLicencaSchema,
-  aprovarLicencaSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -146,7 +145,7 @@ Lista todas as licenças e afastamentos registrados no sistema.
       const { profissionalId, status, tipo, dataInicio, dataFim, page, limit } =
         request.query;
 
-      const filters: any = {};
+      const filters: NonNullable<Parameters<typeof licencaService.findAllPaginated>[0]> = {};
       if (profissionalId) filters.profissionalId = profissionalId;
       if (status) filters.status = status;
       if (tipo) filters.tipo = tipo;

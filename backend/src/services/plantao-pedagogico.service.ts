@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError, BusinessError } from "../errors/AppError.js";
+import { NotFoundError } from "../errors/AppError.js";
 
 
 export class PlantaoPedagogicoService {

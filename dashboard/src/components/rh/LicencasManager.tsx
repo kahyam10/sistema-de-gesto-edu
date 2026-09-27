@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { Licenca } from "@/lib/api";
+import type { Icon } from "@phosphor-icons/react";
+import type { ComponentProps } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -59,19 +62,19 @@ export function LicencasManager() {
   const { user } = useAuth();
   const [selectedProfissional, setSelectedProfissional] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [selectedLicenca, setSelectedLicenca] = useState<any>(null);
+  const [selectedLicenca, setSelectedLicenca] = useState<Licenca | null>(null);
   const [dialogType, setDialogType] = useState<"aprovar" | "rejeitar" | null>(
     null
   );
   const [justificativa, setJustificativa] = useState("");
 
   // Pagination
-  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+  const { limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
 
   const { data: profissionais = [], isLoading: loadingProfissionais } =
     useProfissionais();
 
-  const filters: any = {};
+  const filters: NonNullable<Parameters<typeof useLicencasPaginated>[0]> = {};
   if (selectedProfissional) filters.profissionalId = selectedProfissional;
   if (selectedStatus) filters.status = selectedStatus;
 
@@ -127,14 +130,14 @@ export function LicencasManager() {
     );
   };
 
-  const handleCancelar = (licenca: any) => {
+  const handleCancelar = (licenca: Licenca) => {
     if (confirm("Tem certeza que deseja cancelar esta licença?")) {
       cancelarMutation.mutate(licenca.id);
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const badges: Record<string, { variant: any; label: string; icon: any }> =
+    const badges: Record<string, { variant: ComponentProps<typeof Badge>["variant"]; label: string; icon: Icon }> =
       {
         PENDENTE: {
           variant: "secondary",

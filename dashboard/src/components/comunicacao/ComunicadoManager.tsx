@@ -132,7 +132,7 @@ const tipoColors = {
 
 export function ComunicadoManager() {
   // Pagination
-  const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
+  const { limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
 
   const { data: escolas = [] } = useEscolas();
   const { user } = useAuth();
@@ -238,7 +238,7 @@ export function ComunicadoManager() {
         await createComunicado.mutateAsync(dataToSubmit);
       }
       handleCloseForm();
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };
@@ -248,7 +248,7 @@ export function ComunicadoManager() {
 
     try {
       await deleteComunicado.mutateAsync(id);
-    } catch (error) {
+    } catch {
       // Error já tratado pelo hook
     }
   };

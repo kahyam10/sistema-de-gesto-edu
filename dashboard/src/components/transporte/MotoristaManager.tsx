@@ -76,7 +76,7 @@ function BadgeValidade({
   const data = new Date(vencimento);
   const dataBR = data.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // data pura (meia-noite UTC)
   const agora = new Date();
-  const em30Dias = new Date(Date.now() + 30 * DIA_MS);
+  const em30Dias = new Date(agora.getTime() + 30 * DIA_MS);
 
   if (data < agora) {
     return (

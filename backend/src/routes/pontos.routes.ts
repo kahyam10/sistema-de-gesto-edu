@@ -137,7 +137,7 @@ Lista todos os registros de ponto eletrônico do sistema.
       const { profissionalId, escolaId, dataInicio, dataFim, tipoRegistro, page, limit } =
         request.query;
 
-      const filters: any = {};
+      const filters: NonNullable<Parameters<typeof pontoService.findAllPaginated>[0]> = {};
       if (profissionalId) filters.profissionalId = profissionalId;
       if (escolaId) filters.escolaId = escolaId;
       if (tipoRegistro) filters.tipoRegistro = tipoRegistro;

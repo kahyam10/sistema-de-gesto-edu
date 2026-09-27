@@ -70,7 +70,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
           limit,
         } = request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof reuniaoDemocraticaService.findAllPaginated>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (orgao) filters.orgao = orgao;
         if (status) filters.status = status;

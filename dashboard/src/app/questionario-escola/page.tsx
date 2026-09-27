@@ -324,7 +324,7 @@ export default function QuestionarioEscolaPage() {
                 name="dependenciaAdministrativa"
                 options={["Federal", "Estadual", "Municipal", "Privada"]}
                 value={formData.dependenciaAdministrativa}
-                onChange={(value) => handleInputChange("dependenciaAdministrativa", value as any)}
+                onChange={(value) => handleInputChange("dependenciaAdministrativa", value as QuestionarioEscolaFormData["dependenciaAdministrativa"])}
                 required
               />
 
@@ -373,7 +373,7 @@ export default function QuestionarioEscolaPage() {
                 name="regulamentacao"
                 options={["Sim", "Em tramitação", "Não"]}
                 value={formData.regulamentacao}
-                onChange={(value) => handleInputChange("regulamentacao", value as any)}
+                onChange={(value) => handleInputChange("regulamentacao", value as QuestionarioEscolaFormData["regulamentacao"])}
               />
 
               {/* Esfera Administrativa */}
@@ -392,7 +392,7 @@ export default function QuestionarioEscolaPage() {
                 name="localizacao"
                 options={["Urbana", "Rural"]}
                 value={formData.localizacao}
-                onChange={(value) => handleInputChange("localizacao", value as any)}
+                onChange={(value) => handleInputChange("localizacao", value as QuestionarioEscolaFormData["localizacao"])}
                 required
               />
 
@@ -402,7 +402,7 @@ export default function QuestionarioEscolaPage() {
                 name="parceriaConvenio"
                 options={["Sim", "Não"]}
                 value={formData.parceriaConvenio}
-                onChange={(value) => handleInputChange("parceriaConvenio", value as any)}
+                onChange={(value) => handleInputChange("parceriaConvenio", value as QuestionarioEscolaFormData["parceriaConvenio"])}
               />
 
               {formData.parceriaConvenio === "Sim" && (
@@ -469,7 +469,7 @@ export default function QuestionarioEscolaPage() {
                 name="situacaoFuncionamento"
                 options={["Em atividade", "Paralisada", "Extinta"]}
                 value={formData.situacaoFuncionamento}
-                onChange={(value) => handleInputChange("situacaoFuncionamento", value as any)}
+                onChange={(value) => handleInputChange("situacaoFuncionamento", value as QuestionarioEscolaFormData["situacaoFuncionamento"])}
                 required
               />
 
@@ -745,7 +745,7 @@ export default function QuestionarioEscolaPage() {
                 name="compartilhaPredio"
                 options={["Sim", "Não"]}
                 value={formData.compartilhaPredio}
-                onChange={(value) => handleInputChange("compartilhaPredio", value as any)}
+                onChange={(value) => handleInputChange("compartilhaPredio", value as QuestionarioEscolaFormData["compartilhaPredio"])}
               />
 
               {formData.compartilhaPredio === "Sim" && (
@@ -769,7 +769,7 @@ export default function QuestionarioEscolaPage() {
                 name="aguaPotavel"
                 options={["Sim", "Não"]}
                 value={formData.aguaPotavel}
-                onChange={(value) => handleInputChange("aguaPotavel", value as any)}
+                onChange={(value) => handleInputChange("aguaPotavel", value as QuestionarioEscolaFormData["aguaPotavel"])}
               />
 
               {/* Abastecimento de Água */}
@@ -1087,7 +1087,7 @@ export default function QuestionarioEscolaPage() {
                 name="internetBandaLarga"
                 options={["Sim", "Não"]}
                 value={formData.internetBandaLarga}
-                onChange={(value) => handleInputChange("internetBandaLarga", value as any)}
+                onChange={(value) => handleInputChange("internetBandaLarga", value as QuestionarioEscolaFormData["internetBandaLarga"])}
               />
             </div>
           </SectionCard>
@@ -1134,7 +1134,7 @@ export default function QuestionarioEscolaPage() {
                 name="alimentacaoEscolar"
                 options={["Oferece", "Não oferece"]}
                 value={formData.alimentacaoEscolar}
-                onChange={(value) => handleInputChange("alimentacaoEscolar", value as any)}
+                onChange={(value) => handleInputChange("alimentacaoEscolar", value as QuestionarioEscolaFormData["alimentacaoEscolar"])}
               />
 
               {/* Escola Indígena */}
@@ -1143,7 +1143,7 @@ export default function QuestionarioEscolaPage() {
                 name="escolaIndigena"
                 options={["Sim", "Não"]}
                 value={formData.escolaIndigena}
-                onChange={(value) => handleInputChange("escolaIndigena", value as any)}
+                onChange={(value) => handleInputChange("escolaIndigena", value as QuestionarioEscolaFormData["escolaIndigena"])}
               />
 
               {formData.escolaIndigena === "Sim" && (
@@ -1183,7 +1183,7 @@ export default function QuestionarioEscolaPage() {
                 name="educacaoAmbiental"
                 options={["Sim", "Não"]}
                 value={formData.educacaoAmbiental}
-                onChange={(value) => handleInputChange("educacaoAmbiental", value as any)}
+                onChange={(value) => handleInputChange("educacaoAmbiental", value as QuestionarioEscolaFormData["educacaoAmbiental"])}
               />
 
               {formData.educacaoAmbiental === "Sim" && (
@@ -1231,7 +1231,7 @@ export default function QuestionarioEscolaPage() {
                 name="compartilhaEspacos"
                 options={["Sim", "Não"]}
                 value={formData.compartilhaEspacos}
-                onChange={(value) => handleInputChange("compartilhaEspacos", value as any)}
+                onChange={(value) => handleInputChange("compartilhaEspacos", value as QuestionarioEscolaFormData["compartilhaEspacos"])}
               />
 
               {/* Usa Espaços do Entorno */}
@@ -1240,7 +1240,7 @@ export default function QuestionarioEscolaPage() {
                 name="usaEspacosEntorno"
                 options={["Sim", "Não"]}
                 value={formData.usaEspacosEntorno}
-                onChange={(value) => handleInputChange("usaEspacosEntorno", value as any)}
+                onChange={(value) => handleInputChange("usaEspacosEntorno", value as QuestionarioEscolaFormData["usaEspacosEntorno"])}
               />
 
               {/* Site/Blog/Redes */}
@@ -1249,7 +1249,7 @@ export default function QuestionarioEscolaPage() {
                 name="siteBlogRedes"
                 options={["Sim", "Não"]}
                 value={formData.siteBlogRedes}
-                onChange={(value) => handleInputChange("siteBlogRedes", value as any)}
+                onChange={(value) => handleInputChange("siteBlogRedes", value as QuestionarioEscolaFormData["siteBlogRedes"])}
               />
 
               {/* Exame de Seleção */}
@@ -1258,7 +1258,7 @@ export default function QuestionarioEscolaPage() {
                 name="exameSelecao"
                 options={["Sim", "Não"]}
                 value={formData.exameSelecao}
-                onChange={(value) => handleInputChange("exameSelecao", value as any)}
+                onChange={(value) => handleInputChange("exameSelecao", value as QuestionarioEscolaFormData["exameSelecao"])}
               />
 
               {/* Reserva de Vagas */}

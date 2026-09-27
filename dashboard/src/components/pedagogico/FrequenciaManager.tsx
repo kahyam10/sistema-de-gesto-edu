@@ -98,6 +98,7 @@ export function FrequenciaManager() {
           ])
         );
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- estado editável inicializado com os dados do servidor
         setFrequencias(
           alunosAtivos.map((aluno) => {
             const freq = freqMap.get(aluno.id);
@@ -203,7 +204,7 @@ export function FrequenciaManager() {
           observacao: f.observacao,
         })),
       });
-    } catch (error) {
+    } catch {
       // Error já é tratado pelo hook
     }
   };

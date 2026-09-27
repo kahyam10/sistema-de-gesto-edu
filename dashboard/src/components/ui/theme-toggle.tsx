@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useHidratado } from "@/hooks/use-hidratado";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
+  const { setTheme } = useTheme();
   // Evitar hydration mismatch
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHidratado();
 
   if (!mounted) {
     return (
@@ -72,12 +69,8 @@ export function ThemeToggle() {
 
 // Versão simples (botão único que alterna entre claro/escuro)
 export function ThemeToggleSimple() {
-  const { setTheme, theme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { setTheme, resolvedTheme } = useTheme();
+  const mounted = useHidratado();
 
   if (!mounted) {
     return (

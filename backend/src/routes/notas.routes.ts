@@ -141,7 +141,7 @@ Lista notas com suporte a filtros e paginação.
       try {
         const { turmaId, disciplina, matriculaId, bimestre, page, limit } = request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof notaService.findAllPaginated>[0]> = {};
         if (turmaId) filters.turmaId = turmaId;
         if (disciplina) filters.disciplina = disciplina;
         if (matriculaId) filters.matriculaId = matriculaId;

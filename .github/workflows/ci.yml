@@ -69,6 +69,8 @@ jobs:
       - name: Instalar dependências (workspace)
         run: npm ci
         working-directory: .
+      - name: Lint (eslint, sem erros)
+        run: npm run lint
       - name: Testes (vitest)
         run: npm test
       - name: Build (next)

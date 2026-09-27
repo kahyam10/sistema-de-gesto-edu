@@ -48,7 +48,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
     ) => {
       try {
         const { turno, tipo, escolaId, ativo } = request.query;
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof rotaTransporteService.findAll>[0]> = {};
         if (turno) filters.turno = turno;
         if (tipo) filters.tipo = tipo;
         if (escolaId) filters.escolaId = escolaId;

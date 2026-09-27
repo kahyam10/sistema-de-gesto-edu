@@ -46,9 +46,6 @@ import {
   Phone,
   GraduationCap,
   Building2,
-  IdCard,
-  Eye,
-  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import {

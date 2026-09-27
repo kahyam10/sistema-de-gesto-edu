@@ -158,7 +158,7 @@ export function TimelineTab() {
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Excluir Fase</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a fase "{phaseToDelete?.name}"? Esta acao nao pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Excluir Fase</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a fase &quot;{phaseToDelete?.name}&quot;? Esta acao nao pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeletePhase}>Excluir</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

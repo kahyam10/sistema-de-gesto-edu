@@ -10,14 +10,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  GraduationCap, Users, BookOpen, Calendar, ListChecks, ArrowLeft,
-  Spinner, Wrench, CaretRight, CheckCircle, Circle, Clock, Warning,
-  Plus, Pencil, Trash, FloppyDisk, X
+  GraduationCap,
+  Users,
+  BookOpen,
+  Calendar,
+  ListChecks,
+  ArrowLeft,
+  Spinner,
+  Wrench,
+  CaretRight,
+  CheckCircle,
+  Circle,
+  Clock,
+  Warning,
+  Plus,
+  Pencil,
+  Trash,
 } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Module, SubModule, SubModuleStatus } from "@/lib/api";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 const moduleIcons: Record<string, React.ReactNode> = {
@@ -54,10 +66,12 @@ export function DevelopmentTab() {
     if (selectedModule) {
       const updatedModule = modules.find(m => m.id === selectedModule.id);
       if (updatedModule) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza a cópia local com a lista recarregada
         setLocalSubModules(updatedModule.subModules || []);
         setSelectedModule(updatedModule);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- depende só do id do módulo selecionado
   }, [modules, selectedModule?.id]);
 
   const handleStatusChange = async (subModule: SubModule, newStatus: SubModuleStatus) => {
@@ -171,7 +185,6 @@ export function DevelopmentTab() {
         <div className="space-y-3">
           {localSubModules.sort((a, b) => a.ordem - b.ordem).map((subModule) => {
             const isCompleted = subModule.status === "completed" || subModule.status === "homologated";
-            const currentStatus = statusConfig[subModule.status] || statusConfig.planning;
             return (
               <Card key={subModule.id} className={`transition-all ${isCompleted ? "bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800" : ""}`}>
                 <CardContent className="p-4">
@@ -237,7 +250,7 @@ export function DevelopmentTab() {
               <div className="text-center text-muted-foreground">
                 <Wrench className="h-10 w-10 mx-auto mb-3 opacity-50" />
                 <p>Nenhum recurso cadastrado</p>
-                <p className="text-sm mt-1">Clique em "Novo Recurso" para adicionar</p>
+                <p className="text-sm mt-1">Clique em &quot;Novo Recurso&quot; para adicionar</p>
               </div>
             </Card>
           )}
@@ -382,7 +395,7 @@ export function DevelopmentTab() {
         <h3 className="font-semibold mb-3">Como usar</h3>
         <div className="space-y-2 text-sm text-muted-foreground">
           <p><strong>1.</strong> Clique em um modulo para ver seus recursos</p>
-          <p><strong>2.</strong> Adicione novos recursos clicando em "Novo Recurso"</p>
+          <p><strong>2.</strong> Adicione novos recursos clicando em &quot;Novo Recurso&quot;</p>
           <p><strong>3.</strong> Marque o checkbox para concluir um recurso</p>
           <p><strong>4.</strong> Use o campo de observacao para anotacoes sobre o desenvolvimento</p>
         </div>

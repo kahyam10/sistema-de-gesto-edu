@@ -39,7 +39,7 @@ const includeItem = {
 };
 
 function montarWhereMovimentacao(filters: MovimentacaoFilters) {
-  const where: any = {};
+  const where: Prisma.MovimentacaoEstoqueWhereInput = {};
 
   if (filters.itemId) where.itemId = filters.itemId;
   if (filters.tipo) where.tipo = filters.tipo;
@@ -60,7 +60,7 @@ export class EstoqueService {
    * Saldo calculado anti-N+1 via groupBy + Map em memória.
    */
   async listItens(filters?: ItemEstoqueFilters) {
-    const where: any = {};
+    const where: Prisma.ItemEstoqueWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.categoria) where.categoria = filters.categoria;

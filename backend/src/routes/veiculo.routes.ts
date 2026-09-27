@@ -43,7 +43,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
     ) => {
       try {
         const { tipo, ativo, tipoPropriedade } = request.query;
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof veiculoService.findAll>[0]> = {};
         if (tipo) filters.tipo = tipo;
         if (ativo !== undefined) filters.ativo = ativo === "true";
         if (tipoPropriedade) filters.tipoPropriedade = tipoPropriedade;

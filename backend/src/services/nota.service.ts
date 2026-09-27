@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { mediaPonderada } from "../lib/media.js";
 import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
@@ -73,7 +74,7 @@ export class NotaService {
     matriculaId?: string;
     bimestre?: number;
   }) {
-    const where: any = {};
+    const where: Prisma.NotaWhereInput = {};
 
     if (filters?.turmaId) where.turmaId = filters.turmaId;
     if (filters?.disciplina) where.disciplina = filters.disciplina;
@@ -114,7 +115,7 @@ export class NotaService {
     pagination: { page: number; limit: number }
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const where: any = {};
+    const where: Prisma.NotaWhereInput = {};
 
     if (filters?.turmaId) where.turmaId = filters.turmaId;
     if (filters?.disciplina) where.disciplina = filters.disciplina;

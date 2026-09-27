@@ -157,9 +157,6 @@ export function GradeHorariaManager() {
     setFormProfissionalId("");
   };
 
-  const getDiaLabel = (value: string) =>
-    DIAS_SEMANA.find((d) => d.value === value)?.label || value;
-
   const getProfissionalNome = (id?: string | null) => {
     if (!id) return "Nao atribuido";
     const prof = profissionais.find((p) => p.id === id);

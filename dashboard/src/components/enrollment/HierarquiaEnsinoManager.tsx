@@ -19,15 +19,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Collapsible,
   CollapsibleContent,
@@ -135,7 +127,7 @@ export function HierarquiaEnsinoManager() {
     if (action === "edit" && context.item) {
       setFormData({
         nome: context.item.nome,
-        descricao: (context.item as any).descricao || "",
+        descricao: ("descricao" in context.item && typeof context.item.descricao === "string" ? context.item.descricao : ""),
         ordem: context.item.ordem,
       });
     } else {

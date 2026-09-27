@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { Icon } from "@phosphor-icons/react";
+import type { ComponentProps } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -62,7 +64,7 @@ export function AcompanhamentoManager() {
   const { data: escolas = [], isLoading: loadingEscolas } = useEscolas();
   const { data: matriculas = [] } = useMatriculas();
 
-  const filters: any = {};
+  const filters: NonNullable<Parameters<typeof useAcompanhamentos>[0]> = {};
   if (selectedEscola) filters.escolaId = selectedEscola;
   if (selectedTipo) filters.tipo = selectedTipo;
   if (selectedStatus) filters.status = selectedStatus;
@@ -95,7 +97,7 @@ export function AcompanhamentoManager() {
   };
 
   const getStatusBadge = (status: string) => {
-    const badges: Record<string, { variant: any; label: string; icon: any }> = {
+    const badges: Record<string, { variant: ComponentProps<typeof Badge>["variant"]; label: string; icon: Icon }> = {
       EM_ANDAMENTO: { variant: "default", label: "Em Andamento", icon: Clock },
       CONCLUIDO: { variant: "secondary", label: "Concluído", icon: CheckCircle },
       SUSPENSO: { variant: "destructive", label: "Suspenso", icon: XCircle },

@@ -62,7 +62,7 @@ Lista refeições efetivamente servidas (base do relatório FNDE/PNAE).
         const { escolaId, turno, tipoRefeicao, dataInicio, dataFim, page, limit } =
           request.query;
 
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof refeicaoService.findAllPaginated>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (turno) filters.turno = turno;
         if (tipoRefeicao) filters.tipoRefeicao = tipoRefeicao;

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import {
@@ -11,7 +12,7 @@ export class ConfiguracaoAvaliacaoService {
     escolaId?: string;
     etapaId?: string;
   }) {
-    const where: any = {};
+    const where: Prisma.ConfiguracaoAvaliacaoWhereInput = {};
     if (filters?.anoLetivo) where.anoLetivo = filters.anoLetivo;
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.etapaId) where.etapaId = filters.etapaId;

@@ -86,6 +86,7 @@ function DateInputBR({
 
   // Atualiza o valor exibido quando o valor externo muda
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- espelha o valor externo quando ele muda
     setDisplayValue(isoToBR(value));
   }, [value]);
 

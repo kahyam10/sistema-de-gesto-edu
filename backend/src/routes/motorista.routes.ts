@@ -39,7 +39,7 @@ export async function motoristaRoutes(app: FastifyInstance) {
     ) => {
       try {
         const { ativo, vinculo } = request.query;
-        const filters: any = {};
+        const filters: NonNullable<Parameters<typeof motoristaService.findAll>[0]> = {};
         if (ativo !== undefined) filters.ativo = ativo === "true";
         if (vinculo) filters.vinculo = vinculo;
 

@@ -36,7 +36,6 @@ import {
 import {
   Certificate,
   Printer,
-  Student,
   ChartBar,
   Clock,
 } from "@phosphor-icons/react";

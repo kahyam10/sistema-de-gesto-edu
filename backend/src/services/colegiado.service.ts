@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import {
@@ -10,7 +11,7 @@ import {
 export class ColegiadoService {
   // Lista colegiados com filtros
   async findAll(filters?: { escolaId?: string; ativo?: boolean }) {
-    const where: any = {};
+    const where: Prisma.ColegiadoEscolarWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
     if (filters?.ativo !== undefined) where.ativo = filters.ativo;

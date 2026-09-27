@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input-br";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,7 +59,6 @@ import {
   Chalkboard,
   Spinner,
   CheckCircle,
-  Warning,
   Info,
   Play,
   Stop,
@@ -78,7 +76,6 @@ import {
   useEscolas,
 } from "@/hooks/useApi";
 import type { AnoLetivo, EventoCalendario } from "@/lib/api";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 
@@ -148,16 +145,6 @@ const formatarDataBR = (data: string | Date | null | undefined): string => {
   });
 };
 
-// Função para formatar data curta (dd/mm)
-const formatarDataCurtaBR = (data: string | Date | null | undefined): string => {
-  if (!data) return "";
-  const d = diaLocal(data);
-  return d.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  });
-};
-
 interface CalendarioLetivoManagerProps {
   escolaId?: string;
 }
@@ -184,7 +171,18 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
   // recusa as escritas dos demais papéis; aqui a tela só evita oferecer a ação.
   const podeEditar = user?.role === "ADMIN" || user?.role === "SEMEC";
   
-  const [anoLetivoSelecionado, setAnoLetivoSelecionado] = useState<AnoLetivo | null>(null);
+  // Guarda só o id escolhido; o objeto vem sempre da lista mais recente
+  // (sem id escolhido, ou se ele sumiu: o ano ativo, senão o primeiro)
+  const [anoLetivoId, setAnoLetivoId] = useState<string | null>(null);
+  const anoLetivoSelecionado = useMemo<AnoLetivo | null>(
+    () =>
+      anosLetivos?.find((a) => a.id === anoLetivoId) ??
+      anosLetivos?.find((a) => a.ativo) ??
+      anosLetivos?.[0] ??
+      null,
+    [anosLetivos, anoLetivoId]
+  );
+  const setAnoLetivoSelecionado = (a: AnoLetivo | null) => setAnoLetivoId(a?.id ?? null);
   const [mesAtual, setMesAtual] = useState(new Date().getMonth());
   const [anoAtual, setAnoAtual] = useState(new Date().getFullYear());
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
@@ -223,24 +221,6 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
     escolaId
   );
 
-  // Selecionar ano letivo ativo por padrão
-  useEffect(() => {
-    if (anosLetivos && anosLetivos.length > 0 && !anoLetivoSelecionado) {
-      const ativo = anosLetivos.find((a) => a.ativo) || anosLetivos[0];
-      setAnoLetivoSelecionado(ativo);
-      setAnoAtual(ativo.ano);
-    }
-  }, [anosLetivos, anoLetivoSelecionado]);
-
-  // Atualizar ano letivo selecionado quando a lista muda
-  useEffect(() => {
-    if (anosLetivos && anoLetivoSelecionado) {
-      const atualizado = anosLetivos.find(a => a.id === anoLetivoSelecionado.id);
-      if (atualizado) {
-        setAnoLetivoSelecionado(atualizado);
-      }
-    }
-  }, [anosLetivos]);
 
   // Form Ano Letivo (agora só precisa do ano)
   const [anoLetivoForm, setAnoLetivoForm] = useState({
@@ -1281,7 +1261,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Evento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o evento "{eventoToDelete?.titulo}"? 
+              Tem certeza que deseja excluir o evento &quot;{eventoToDelete?.titulo}&quot;? 
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

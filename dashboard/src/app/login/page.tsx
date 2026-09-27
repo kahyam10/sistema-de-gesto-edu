@@ -28,6 +28,7 @@ export default function LoginPage() {
     try {
       const saved = window.localStorage.getItem(REMEMBER_KEY);
       if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- lê o e-mail memorizado só no cliente (localStorage não existe no servidor)
         setEmail(saved);
         setRemember(true);
       } else {

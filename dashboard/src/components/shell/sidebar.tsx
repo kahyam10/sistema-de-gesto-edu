@@ -23,6 +23,7 @@ export function Sidebar({ sections }: SidebarProps) {
 
   useEffect(() => {
     const v = window.localStorage.getItem(STORAGE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- preferência local lida só no cliente, após a hidratação
     if (v === '1') setCollapsed(true);
   }, []);
 
