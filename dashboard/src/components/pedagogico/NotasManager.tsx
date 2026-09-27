@@ -1,5 +1,6 @@
 "use client";
 
+import { hojeNaRede } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
 import {
   Card,
@@ -88,7 +89,7 @@ export function NotasManager() {
     tipo: "PROVA",
     peso: "1",
     valorMaximo: "10",
-    data: new Date().toISOString().split("T")[0],
+    data: hojeNaRede(),
   });
 
   const anoAtual = new Date().getFullYear();
@@ -218,7 +219,7 @@ export function NotasManager() {
             tipo: "PROVA",
             peso: "1",
             valorMaximo: "10",
-            data: new Date().toISOString().split("T")[0],
+            data: hojeNaRede(),
           });
         },
       }

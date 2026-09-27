@@ -71,3 +71,28 @@ export function filterNavForRole(role: string | undefined): NavSection[] {
     ),
   })).filter((s) => s.items.length > 0);
 }
+
+/**
+ * Item do menu que cobre a rota (prefixo mais longo). A raiz "/" não entra:
+ * o Dashboard trata sozinho quem não é da equipe (redireciona ao portal).
+ */
+export function itemDaRota(pathname: string): NavItem | undefined {
+  let melhor: NavItem | undefined;
+  for (const item of NAV_SECTIONS.flatMap((s) => s.items)) {
+    if (item.href === '/') continue;
+    const cobre = pathname === item.href || pathname.startsWith(item.href + '/');
+    if (cobre && (!melhor || item.href.length > melhor.href.length)) melhor = item;
+  }
+  return melhor;
+}
+
+/**
+ * O papel pode abrir esta área? Mesmas regras do menu. Só evita que a tela
+ * mostre uma página vazia/enganosa: quem bloqueia de fato é a API (403).
+ * Rotas fora do menu (ex.: /questionario-turma/:id) ficam a cargo da API.
+ */
+export function podeAcessarRota(pathname: string, role: string | undefined): boolean {
+  const item = itemDaRota(pathname);
+  if (!item) return true;
+  return item.roles === 'all' || (role !== undefined && item.roles.includes(role));
+}

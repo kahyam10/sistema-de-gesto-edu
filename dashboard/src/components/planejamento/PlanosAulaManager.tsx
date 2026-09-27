@@ -1,5 +1,6 @@
 "use client";
 
+import { hojeNaRede } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,10 +23,10 @@ import {
 } from "@/lib/api-planejamento";
 import type { Turma } from "@/lib/api";
 import {
-  AJUDA_BNCC, FiltroSelect, Habilidades, OPCOES_BIMESTRE, etapaDaTurma, fmtData, opcoesTurma,
+  AJUDA_BNCC, FiltroSelect, Habilidades, OPCOES_BIMESTRE, etapaDaTurma, fmtData, fmtMomento, opcoesTurma,
 } from "./comum";
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => hojeNaRede();
 
 interface Form {
   turmaId: string;
@@ -207,7 +208,11 @@ function PlanoDetalhe({
     <Dialog open={!!id} onOpenChange={(o) => !o && aoFechar()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         {!p ? (
-          <Skeleton className="h-64 w-full" />
+          <>
+            {/* Radix exige título no diálogo (leitor de tela) mesmo enquanto carrega */}
+            <DialogTitle className="sr-only">Carregando plano de aula</DialogTitle>
+            <Skeleton className="h-64 w-full" />
+          </>
         ) : (
           <>
             <DialogHeader>
@@ -219,7 +224,7 @@ function PlanoDetalhe({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={STATUS_PLANO[p.status].variante}>{STATUS_PLANO[p.status].rotulo}</Badge>
               {p.revisadoPor && (
-                <span className="text-xs text-ink-muted">revisado por {p.revisadoPor.nome} em {fmtData(p.revisadoEm)}</span>
+                <span className="text-xs text-ink-muted">revisado por {p.revisadoPor.nome} em {fmtMomento(p.revisadoEm)}</span>
               )}
             </div>
             {p.parecer && (

@@ -4,10 +4,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Turma } from "@/lib/api";
+import { FUSO_REDE } from "@/lib/utils";
 
-/** Rótulo curto e datas em pt-BR (data da aula vem como meia-noite UTC). */
+/** Data "pura" (ex.: data da aula, gravada como meia-noite UTC) em pt-BR. */
 export const fmtData = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
+
+/** Instante real (ex.: revisão, envio) no fuso da rede — não em UTC. */
+export const fmtMomento = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: FUSO_REDE }) : "—";
 
 export const etapaDaTurma = (t: Turma | undefined) =>
   (t?.serie?.nivel as { etapaId?: string } | undefined)?.etapaId;
@@ -35,8 +40,9 @@ export function FiltroSelect({
         onValueChange={(v) => aoMudar(v === TODOS ? "" : v)}
         disabled={desabilitado}
       >
-        <SelectTrigger id={id} className={largura}>
-          <SelectValue placeholder="Selecione" />
+        {/* overflow-hidden + min-w-0: nome longo (ex.: turma · escola) não vaza do campo */}
+        <SelectTrigger id={id} className={`${largura} overflow-hidden`} title={opcoes.find((o) => o.valor === valor)?.rotulo}>
+          <SelectValue placeholder="Selecione" className="min-w-0 truncate" />
         </SelectTrigger>
         <SelectContent>
           {todos !== null && <SelectItem value={TODOS}>{todos}</SelectItem>}

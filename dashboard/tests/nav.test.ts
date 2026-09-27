@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterNavForRole, NAV_SECTIONS } from "@/components/shell/nav";
+import { filterNavForRole, NAV_SECTIONS, podeAcessarRota } from "@/components/shell/nav";
 
 describe("filterNavForRole", () => {
   it("ADMIN vê todas as seções, inclusive Projeto", () => {
@@ -61,5 +61,22 @@ describe("filterNavForRole", () => {
         expect(s.items.length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe("podeAcessarRota", () => {
+  it("segue as mesmas regras do menu", () => {
+    expect(podeAcessarRota("/planejamento", "SECRETARIA")).toBe(false);
+    expect(podeAcessarRota("/planejamento", "PROFESSOR")).toBe(true);
+    expect(podeAcessarRota("/rh", "PROFESSOR")).toBe(false);
+    expect(podeAcessarRota("/cadastros/hierarquia", "DIRETOR")).toBe(false);
+    expect(podeAcessarRota("/cadastros/escolas/abc", "PROFESSOR")).toBe(true);
+    expect(podeAcessarRota("/pedagogico", "RESPONSAVEL")).toBe(false);
+    expect(podeAcessarRota("/portal", "RESPONSAVEL")).toBe(true);
+  });
+
+  it("a raiz e rotas fora do menu ficam a cargo da página/API", () => {
+    expect(podeAcessarRota("/", "RESPONSAVEL")).toBe(true);
+    expect(podeAcessarRota("/questionario-turma/t1", "PROFESSOR")).toBe(true);
   });
 });

@@ -12,10 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
-import { profissionaisApi } from "@/lib/api";
 import { AREAS_AC, DIAS, type AtividadeComplementar, type DadosAC } from "@/lib/api-rh";
-import { useAlternarAC, useAtividadesComplementares, useSalvarAC } from "@/hooks/useRh";
+import { useAlternarAC, useAtividadesComplementares, useQuadroLotacao, useSalvarAC } from "@/hooks/useRh";
 import { SeletorEscola } from "./SeletorEscola";
 
 const rotuloArea = Object.fromEntries(AREAS_AC.map((a) => [a.valor, a.rotulo]));
@@ -33,13 +31,11 @@ export function AtividadesComplementaresManager() {
   const q = useAtividadesComplementares(escolaId || undefined);
   const salvar = useSalvarAC();
   const alternar = useAlternarAC();
-  const profissionais = useQuery({
-    queryKey: ["profissionais", "escola", escolaId],
-    queryFn: () => profissionaisApi.getByEscola(escolaId),
-    enabled: !!escolaId,
-  });
+  // Mesmo critério da API (BIZ_036): quem está lotado OU dá aula na escola —
+  // é o conjunto que o quadro de lotação já monta.
+  const profissionais = useQuadroLotacao(escolaId || undefined);
   const listaProf = useMemo(
-    () => ((profissionais.data ?? []) as Array<{ id: string; nome: string }>).slice().sort((a, b) => a.nome.localeCompare(b.nome)),
+    () => (profissionais.data?.profissionais ?? []).map((l) => l.profissional).sort((a, b) => a.nome.localeCompare(b.nome)),
     [profissionais.data]
   );
 
@@ -126,7 +122,7 @@ export function AtividadesComplementaresManager() {
           <DialogHeader>
             <DialogTitle>{editando?.id ? "Editar AC" : "Nova AC"}</DialogTitle>
             <DialogDescription>
-              O sistema recusa horário que bata com aula ou outra AC de quem participa, e só aceita profissionais lotados na escola.
+              O sistema recusa horário que bata com aula ou outra AC de quem participa, e só aceita profissionais lotados na escola ou que dão aula nela.
             </DialogDescription>
           </DialogHeader>
           {editando && (
@@ -187,7 +183,7 @@ export function AtividadesComplementaresManager() {
                 {profissionais.isLoading ? (
                   <Skeleton className="h-20 w-full" />
                 ) : listaProf.length === 0 ? (
-                  <p className="text-sm text-ink-muted">Nenhum profissional lotado nesta escola.</p>
+                  <p className="text-sm text-ink-muted">Nenhum profissional lotado ou com aula nesta escola.</p>
                 ) : (
                   <div className="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1 rounded-md border border-hairline p-2">
                     {listaProf.map((p) => {

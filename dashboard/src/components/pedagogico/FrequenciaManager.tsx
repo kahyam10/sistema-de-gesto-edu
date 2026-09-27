@@ -1,5 +1,6 @@
 "use client";
 
+import { hojeNaRede } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ interface FrequenciaAluno {
 
 export function FrequenciaManager() {
   const anoAtual = new Date().getFullYear();
-  const dataHoje = new Date().toISOString().split("T")[0];
+  const dataHoje = hojeNaRede();
 
   const [turmaId, setTurmaId] = useState<string>("");
   const [data, setData] = useState<string>(dataHoje);
