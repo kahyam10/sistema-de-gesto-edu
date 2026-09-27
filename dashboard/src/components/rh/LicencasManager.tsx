@@ -15,6 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  OPCAO_TODOS
 } from "@/components/ui/select";
 import {
   Table,
@@ -208,14 +209,14 @@ export function LicencasManager() {
             <div className="space-y-2">
               <Label>Profissional (Opcional)</Label>
               <Select
-                value={selectedProfissional}
-                onValueChange={setSelectedProfissional}
+                value={selectedProfissional || OPCAO_TODOS}
+                onValueChange={(v) => setSelectedProfissional(v === OPCAO_TODOS ? "" : v)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os profissionais" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value={OPCAO_TODOS}>Todos</SelectItem>
                   {profissionais.map((prof) => (
                     <SelectItem key={prof.id} value={prof.id}>
                       {prof.nome} - {prof.tipo}
@@ -227,12 +228,12 @@ export function LicencasManager() {
 
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus || OPCAO_TODOS} onValueChange={(v) => setSelectedStatus(v === OPCAO_TODOS ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value={OPCAO_TODOS}>Todos</SelectItem>
                   <SelectItem value="PENDENTE">Pendente</SelectItem>
                   <SelectItem value="APROVADA">Aprovada</SelectItem>
                   <SelectItem value="REJEITADA">Rejeitada</SelectItem>

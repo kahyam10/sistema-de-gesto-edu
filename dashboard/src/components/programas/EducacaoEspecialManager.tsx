@@ -15,6 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  OPCAO_TODOS
 } from "@/components/ui/select";
 import {
   Table,
@@ -121,12 +122,12 @@ export function EducacaoEspecialManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Escola (Opcional)</Label>
-              <Select value={selectedEscola} onValueChange={setSelectedEscola}>
+              <Select value={selectedEscola || OPCAO_TODOS} onValueChange={(v) => setSelectedEscola(v === OPCAO_TODOS ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as escolas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value={OPCAO_TODOS}>Todas</SelectItem>
                   {escolas.map((escola) => (
                     <SelectItem key={escola.id} value={escola.id}>
                       {escola.nome}

@@ -15,6 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  OPCAO_TODOS
 } from "@/components/ui/select";
 import {
   Table,
@@ -145,12 +146,12 @@ export function AcompanhamentoManager() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Escola (Opcional)</Label>
-              <Select value={selectedEscola} onValueChange={setSelectedEscola}>
+              <Select value={selectedEscola || OPCAO_TODOS} onValueChange={(v) => setSelectedEscola(v === OPCAO_TODOS ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as escolas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value={OPCAO_TODOS}>Todas</SelectItem>
                   {escolas.map((escola) => (
                     <SelectItem key={escola.id} value={escola.id}>
                       {escola.nome}
@@ -162,12 +163,12 @@ export function AcompanhamentoManager() {
 
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select value={selectedTipo} onValueChange={setSelectedTipo}>
+              <Select value={selectedTipo || OPCAO_TODOS} onValueChange={(v) => setSelectedTipo(v === OPCAO_TODOS ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value={OPCAO_TODOS}>Todos</SelectItem>
                   <SelectItem value="PEDAGOGICO">Pedagógico</SelectItem>
                   <SelectItem value="COMPORTAMENTAL">Comportamental</SelectItem>
                   <SelectItem value="SOCIO_EMOCIONAL">Socioemocional</SelectItem>
@@ -178,12 +179,12 @@ export function AcompanhamentoManager() {
 
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus || OPCAO_TODOS} onValueChange={(v) => setSelectedStatus(v === OPCAO_TODOS ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value={OPCAO_TODOS}>Todos</SelectItem>
                   <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
                   <SelectItem value="CONCLUIDO">Concluído</SelectItem>
                   <SelectItem value="SUSPENSO">Suspenso</SelectItem>

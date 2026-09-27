@@ -183,3 +183,11 @@ export {
   SelectTrigger,
   SelectValue,
 }
+
+/**
+ * O Radix Select proíbe <SelectItem value=""> (derruba a tela em tempo de
+ * execução). Para a opção "Todos" de um filtro, use esta sentinela e converta
+ * para "" no estado: value={x || OPCAO_TODOS} e
+ * onValueChange={(v) => setX(v === OPCAO_TODOS ? "" : v)}.
+ */
+export const OPCAO_TODOS = "__todos__";
