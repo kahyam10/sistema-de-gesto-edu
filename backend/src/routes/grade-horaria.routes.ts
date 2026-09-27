@@ -8,6 +8,41 @@ import {
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 
+// Formato devolvido pelo service (INCLUDE_HORARIO). O serializador descarta o
+// que não estiver aqui — e nulos em campo "string" viram "" —, então o schema
+// precisa acompanhar o service.
+const NULO_OU_TEXTO = { type: ["string", "null"] } as const;
+const horarioResposta = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    turmaId: { type: "string" },
+    diaSemana: { type: "string", enum: ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"] },
+    horaInicio: { type: "string", example: "08:00" },
+    horaFim: { type: "string", example: "09:00" },
+    disciplina: { type: "string" },
+    profissionalId: NULO_OU_TEXTO,
+    observacoes: NULO_OU_TEXTO,
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    turma: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        nome: { type: "string" },
+        turno: { type: "string" },
+        anoLetivo: { type: "integer" },
+        escolaId: { type: "string" },
+        escola: { type: "object", properties: { id: { type: "string" }, nome: { type: "string" } } },
+      },
+    },
+    profissional: {
+      type: ["object", "null"],
+      properties: { id: { type: "string" }, nome: { type: "string" } },
+    },
+  },
+} as const;
+
 interface GradeHorarioFilters {
   turmaId?: string;
   profissionalId?: string;
@@ -53,29 +88,7 @@ Gera um relatório consolidado da carga horária dos profissionais.
           },
         },
         response: {
-          200: {
-            description: "Relatório de carga horária gerado com sucesso",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                profissionalId: { type: "string" },
-                profissionalNome: { type: "string" },
-                totalHorasSemanais: { type: "number" },
-                disciplinas: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      disciplina: { type: "string" },
-                      horas: { type: "number" },
-                      turmas: { type: "array", items: { type: "string" } },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           401: {description: "Não autorizado",
             type: "object",
             properties: {
@@ -138,20 +151,7 @@ Gera um relatório consolidado da carga horária organizado por escola.
         `,
         security: [{ bearerAuth: [] }],
         response: {
-          200: {
-            description: "Relatório por escola gerado com sucesso",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                escolaId: { type: "string" },
-                escolaNome: { type: "string" },
-                totalTurmas: { type: "number" },
-                totalProfissionais: { type: "number" },
-                totalHorasSemanais: { type: "number" },
-              },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           401: {description: "Não autorizado",
             type: "object",
             properties: {
@@ -210,31 +210,7 @@ Gera um relatório consolidado da carga horária organizado por turma.
         `,
         security: [{ bearerAuth: [] }],
         response: {
-          200: {
-            description: "Relatório por turma gerado com sucesso",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                turmaId: { type: "string" },
-                turmaNome: { type: "string" },
-                escolaNome: { type: "string" },
-                totalDisciplinas: { type: "number" },
-                totalHorasSemanais: { type: "number" },
-                disciplinas: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      disciplina: { type: "string" },
-                      horas: { type: "number" },
-                      profissional: { type: "string" },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           401: {description: "Não autorizado",
             type: "object",
             properties: {
@@ -313,27 +289,7 @@ Lista todos os horários da grade com filtros opcionais.
           },
         },
         response: {
-          200: {
-            description: "Lista de horários da grade",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                turmaId: { type: "string" },
-                diaSemana: {
-                  type: "string",
-                  enum: ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO"],
-                },
-                horaInicio: { type: "string", example: "08:00" },
-                horaFim: { type: "string", example: "09:00" },
-                disciplina: { type: "string" },
-                profissionalId: { type: "string" },
-                observacoes: { type: "string" },
-                createdAt: { type: "string", format: "date-time" },
-              },
-            },
-          },
+          200: { description: "Lista de horários da grade", type: "array", items: horarioResposta },
           401: {description: "Não autorizado",
             type: "object",
             properties: {
@@ -410,28 +366,7 @@ Retorna os detalhes completos de um horário específico da grade.
           },
         },
         response: {
-          200: {
-            description: "Horário encontrado",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              turmaId: { type: "string" },
-              diaSemana: { type: "string" },
-              horaInicio: { type: "string" },
-              horaFim: { type: "string" },
-              disciplina: { type: "string" },
-              profissionalId: { type: "string" },
-              observacoes: { type: "string" },
-              turma: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  nome: { type: "string" },
-                  turno: { type: "string" },
-                },
-              },
-            },
-          },
+          200: { description: "Horário encontrado", ...horarioResposta },
           401: {description: "Não autorizado",
             type: "object",
             properties: {
@@ -527,21 +462,7 @@ Cria um novo horário na grade horária de uma turma.
           },
         },
         response: {
-          201: {
-            description: "Horário criado com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              turmaId: { type: "string" },
-              diaSemana: { type: "string" },
-              horaInicio: { type: "string" },
-              horaFim: { type: "string" },
-              disciplina: { type: "string" },
-              profissionalId: { type: "string" },
-              observacoes: { type: "string" },
-              createdAt: { type: "string", format: "date-time" },
-            },
-          },
+          201: { description: "Horário criado com sucesso", ...horarioResposta },
           400: {
             description: "Dados inválidos",
             type: "object",
@@ -676,21 +597,7 @@ Atualiza um horário existente na grade horária.
           },
         },
         response: {
-          200: {
-            description: "Horário atualizado com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              turmaId: { type: "string" },
-              diaSemana: { type: "string" },
-              horaInicio: { type: "string" },
-              horaFim: { type: "string" },
-              disciplina: { type: "string" },
-              profissionalId: { type: "string" },
-              observacoes: { type: "string" },
-              updatedAt: { type: "string", format: "date-time" },
-            },
-          },
+          200: { description: "Horário atualizado com sucesso", ...horarioResposta },
           400: {
             description: "Dados inválidos",
             type: "object",

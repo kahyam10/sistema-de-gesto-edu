@@ -153,15 +153,7 @@ export async function plantaoPedagogicoRoutes(app: FastifyInstance) {
       description: "Retorna estatísticas gerais ou por escola dos plantões pedagógicos",
       security: [{ bearerAuth: [] }],
       response: {
-        200: {
-          description: "Estatísticas",
-          type: "object",
-          properties: {
-            total: { type: "number" },
-            porTipo: { type: "object" },
-            porMes: { type: "object" },
-          },
-        },
+        // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
       },
     },
   }, async (request, reply) => {

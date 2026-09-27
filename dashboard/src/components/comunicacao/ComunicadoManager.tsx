@@ -52,6 +52,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { PaginationControls } from "@/components/ui/pagination";
 import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 interface Comunicado {
   id: string;
@@ -102,28 +103,31 @@ const initialFormData: ComunicadoFormData = {
   ativo: true,
 };
 
+// Mesmos valores aceitos pelo backend (schemas/comunicacao.schemas.ts)
 const tipoComunicadoLabels = {
   INFORMATIVO: "Informativo",
   URGENTE: "Urgente",
-  EVENTO: "Evento",
   AVISO: "Aviso",
-  LEMBRETE: "Lembrete",
+  CONVITE: "Convite",
+  ALERTA: "Alerta",
 };
 
+// Opções oferecidas na criação (o backend aceita também ALUNOS e ETAPA_ESPECIFICA)
 const destinatariosLabels = {
   TODOS: "Todos",
   PAIS: "Pais/Responsáveis",
   PROFESSORES: "Professores",
-  GESTAO: "Gestão",
-  TURMA: "Turma Específica",
+  FUNCIONARIOS: "Funcionários",
+  DIRETORES: "Direção das escolas",
+  TURMA_ESPECIFICA: "Turma específica",
 };
 
 const tipoColors = {
   INFORMATIVO: "bg-blue-100 text-blue-800",
   URGENTE: "bg-red-100 text-red-800",
-  EVENTO: "bg-purple-100 text-purple-800",
   AVISO: "bg-yellow-100 text-yellow-800",
-  LEMBRETE: "bg-green-100 text-green-800",
+  CONVITE: "bg-purple-100 text-purple-800",
+  ALERTA: "bg-orange-100 text-orange-800",
 };
 
 export function ComunicadoManager() {
@@ -131,6 +135,10 @@ export function ComunicadoManager() {
   const { page, limit, pagination, handlePageChange, handleLimitChange } = usePagination({ initialLimit: 20 });
 
   const { data: escolas = [] } = useEscolas();
+  const { user } = useAuth();
+  // Só a gestão da rede publica sem escola (comunicado da rede); os demais
+  // papéis publicam na própria escola — o servidor recusa o resto.
+  const ehGestao = user?.role === "ADMIN" || user?.role === "SEMEC";
   const { data: comunicadosData, isLoading } = useComunicadosPaginated({}, pagination);
   const { data: estatisticas } = useEstatisticasComunicado();
 
@@ -182,7 +190,7 @@ export function ComunicadoManager() {
       });
     } else {
       setEditingComunicado(null);
-      setFormData(initialFormData);
+      setFormData({ ...initialFormData, escolaId: ehGestao ? "" : user?.escola?.id ?? "" });
     }
     setIsFormOpen(true);
   };
@@ -200,6 +208,14 @@ export function ComunicadoManager() {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
+    if (!ehGestao && !formData.escolaId) {
+      toast.error("Escolha a escola do comunicado");
+      return;
+    }
+    if (formData.destinatarios === "TURMA_ESPECIFICA" && !formData.turmaId) {
+      toast.error("Escolha a turma que vai receber o comunicado");
+      return;
+    }
 
     try {
       const dataToSubmit = {
@@ -210,7 +226,7 @@ export function ComunicadoManager() {
         anexoUrl: formData.anexoUrl || undefined,
         dataExpiracao: formData.dataExpiracao || undefined,
         dataPublicacao: new Date().toISOString(),
-        autorNome: "Administrador",
+        autorNome: user?.nome ?? "Equipe escolar",
       };
 
       if (editingComunicado) {
@@ -241,13 +257,13 @@ export function ComunicadoManager() {
     <div className="space-y-6">
       {/* Estatísticas */}
       {estatisticas && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Total de Comunicados</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{estatisticas.total || 0}</p>
+              <p className="text-2xl font-bold">{paginationMeta?.total ?? comunicados.length}</p>
             </CardContent>
           </Card>
           <Card>
@@ -255,7 +271,7 @@ export function ComunicadoManager() {
               <CardTitle className="text-sm font-medium">Ativos</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{estatisticas.ativos || 0}</p>
+              <p className="text-2xl font-bold">{estatisticas.total}</p>
             </CardContent>
           </Card>
           <Card>
@@ -263,19 +279,7 @@ export function ComunicadoManager() {
               <CardTitle className="text-sm font-medium">Em Destaque</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{estatisticas.emDestaque || 0}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Taxa de Leitura</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {estatisticas.taxaLeituraMedia
-                  ? `${estatisticas.taxaLeituraMedia.toFixed(1)}%`
-                  : "N/A"}
-              </p>
+              <p className="text-2xl font-bold">{estatisticas.destaques}</p>
             </CardContent>
           </Card>
         </div>
@@ -321,11 +325,9 @@ export function ComunicadoManager() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todos os Tipos</SelectItem>
-                  <SelectItem value="INFORMATIVO">Informativo</SelectItem>
-                  <SelectItem value="URGENTE">Urgente</SelectItem>
-                  <SelectItem value="EVENTO">Evento</SelectItem>
-                  <SelectItem value="AVISO">Aviso</SelectItem>
-                  <SelectItem value="LEMBRETE">Lembrete</SelectItem>
+                  {Object.entries(tipoComunicadoLabels).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>{l}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -367,7 +369,7 @@ export function ComunicadoManager() {
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold">{comunicado.titulo}</h3>
                           <Badge className={tipoColors[comunicado.tipo as keyof typeof tipoColors]}>
-                            {tipoComunicadoLabels[comunicado.tipo as keyof typeof tipoComunicadoLabels]}
+                            {tipoComunicadoLabels[comunicado.tipo as keyof typeof tipoComunicadoLabels] ?? comunicado.tipo}
                           </Badge>
                           {comunicado.destaque && (
                             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
@@ -381,7 +383,7 @@ export function ComunicadoManager() {
                           <div className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
                             <span>
-                              {destinatariosLabels[comunicado.destinatarios as keyof typeof destinatariosLabels]}
+                              {destinatariosLabels[comunicado.destinatarios as keyof typeof destinatariosLabels] ?? comunicado.destinatarios}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
@@ -495,11 +497,9 @@ export function ComunicadoManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INFORMATIVO">Informativo</SelectItem>
-                    <SelectItem value="URGENTE">Urgente</SelectItem>
-                    <SelectItem value="EVENTO">Evento</SelectItem>
-                    <SelectItem value="AVISO">Aviso</SelectItem>
-                    <SelectItem value="LEMBRETE">Lembrete</SelectItem>
+                    {Object.entries(tipoComunicadoLabels).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -516,11 +516,9 @@ export function ComunicadoManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TODOS">Todos</SelectItem>
-                    <SelectItem value="PAIS">Pais/Responsáveis</SelectItem>
-                    <SelectItem value="PROFESSORES">Professores</SelectItem>
-                    <SelectItem value="GESTAO">Gestão</SelectItem>
-                    <SelectItem value="TURMA">Turma Específica</SelectItem>
+                    {Object.entries(destinatariosLabels).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -528,15 +526,15 @@ export function ComunicadoManager() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="escolaId">Escola</Label>
+                <Label htmlFor="escolaId">Escola{ehGestao ? "" : " *"}</Label>
                 <Select
                   value={formData.escolaId}
                   onValueChange={(value) =>
                     setFormData({ ...formData, escolaId: value })
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione (opcional)" />
+                  <SelectTrigger id="escolaId" className="w-full">
+                    <SelectValue placeholder={ehGestao ? "Toda a rede (opcional)" : "Selecione a escola"} />
                   </SelectTrigger>
                   <SelectContent>
                     {escolas.map((escola) => (

@@ -261,16 +261,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
       description: "Retorna estatísticas gerais ou por escola dos comunicados",
       security: [{ bearerAuth: [] }],
       response: {
-        200: {
-          description: "Estatísticas",
-          type: "object",
-          properties: {
-            total: { type: "number" },
-            porTipo: { type: "object" },
-            porCategoria: { type: "object" },
-            ativos: { type: "number" },
-          },
-        },
+        // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
       },
     },
   }, async (request, reply) => {

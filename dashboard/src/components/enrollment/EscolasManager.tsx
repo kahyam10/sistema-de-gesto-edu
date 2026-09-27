@@ -28,6 +28,7 @@ import {
   useEscolas, useEtapas, useTurmas, useCreateEscola, useUpdateEscola, useDeleteEscola, useProfissionais,
 } from "@/hooks/useApi";
 import { Escola as EscolaType } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 interface EscolasManagerProps {
   onSelectEscola?: (escola: EscolaType) => void;
@@ -35,6 +36,9 @@ interface EscolasManagerProps {
 
 export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  // Criar e excluir escola é da gestão da rede (o servidor recusa os demais papéis)
+  const ehGestao = user?.role === "ADMIN" || user?.role === "SEMEC";
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: turmas, isLoading: loadingTurmas } = useTurmas();
@@ -158,11 +162,13 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-          <Plus size={14} weight="bold" />Nova Escola
-        </Button>
-      </div>
+      {ehGestao && (
+        <div className="flex items-center justify-end">
+          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+            <Plus size={14} weight="bold" />Nova Escola
+          </Button>
+        </div>
+      )}
 
       <div className="relative max-w-md">
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
@@ -284,7 +290,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
             {searchTerm ? (
               <><p className="text-muted-foreground">Nenhuma escola encontrada para "{searchTerm}"</p><Button variant="link" onClick={() => setSearchTerm("")} className="mt-2">Limpar busca</Button></>
             ) : (
-              <><p className="text-muted-foreground">Nenhuma escola cadastrada ainda</p><p className="text-sm text-muted-foreground mt-1">Clique em "Nova Escola" para começar</p></>
+              <><p className="text-muted-foreground">Nenhuma escola cadastrada ainda</p>{ehGestao && <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Escola" para começar</p>}</>
             )}
           </CardContent>
         </Card>
@@ -345,6 +351,7 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Questionário do Censo Escolar de ${escola.nome}`}
                               className="h-9 w-9 text-primary hover:text-primary"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -359,8 +366,10 @@ export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => handleEdit(e, escola)}><Pencil size={16} /></Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" onClick={(e) => handleDelete(e, escola.id)} disabled={deleteEscola.isPending}><Trash size={16} /></Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`Editar ${escola.nome}`} onClick={(e) => handleEdit(e, escola)}><Pencil size={16} /></Button>
+                      {ehGestao && (
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" aria-label={`Excluir ${escola.nome}`} onClick={(e) => handleDelete(e, escola.id)} disabled={deleteEscola.isPending}><Trash size={16} /></Button>
+                      )}
                       <CaretRight size={20} className="text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
                   </div>

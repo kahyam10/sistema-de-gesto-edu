@@ -95,16 +95,17 @@ const initialFormData: ReuniaoFormData = {
   titulo: "",
   data: "",
   horario: "",
-  tipo: "ORDINARIA",
+  tipo: "BIMESTRAL",
   pauta: "",
   ata: "",
 };
 
 const tipoReuniaoLabels = {
-  ORDINARIA: "Ordinária",
+  // Mesmos valores aceitos pelo backend (schemas/comunicacao.schemas.ts)
+  BIMESTRAL: "Bimestral",
+  TRIMESTRAL: "Trimestral",
   EXTRAORDINARIA: "Extraordinária",
-  ENTREGA_BOLETINS: "Entrega de Boletins",
-  COLETIVA: "Coletiva",
+  CONSELHO_PARTICIPATIVO: "Conselho participativo",
 };
 
 const statusLabels = {
@@ -329,7 +330,7 @@ export function ReuniaoPaisManager() {
                             {statusLabels[reuniao.status as keyof typeof statusLabels]}
                           </Badge>
                           <Badge variant="outline">
-                            {tipoReuniaoLabels[reuniao.tipo as keyof typeof tipoReuniaoLabels]}
+                            {tipoReuniaoLabels[reuniao.tipo as keyof typeof tipoReuniaoLabels] ?? reuniao.tipo}
                           </Badge>
                         </div>
                         <div className="space-y-1 text-sm">
@@ -440,10 +441,9 @@ export function ReuniaoPaisManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ORDINARIA">Ordinária</SelectItem>
-                    <SelectItem value="EXTRAORDINARIA">Extraordinária</SelectItem>
-                    <SelectItem value="ENTREGA_BOLETINS">Entrega de Boletins</SelectItem>
-                    <SelectItem value="COLETIVA">Coletiva</SelectItem>
+                    {Object.entries(tipoReuniaoLabels).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

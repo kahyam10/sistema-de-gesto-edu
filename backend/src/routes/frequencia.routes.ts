@@ -209,19 +209,8 @@ Retorna os detalhes de um registro de frequência específico.
           },
         },
         response: {
-          200: {
-            description: "Frequência encontrada",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              matriculaId: { type: "string" },
-              turmaId: { type: "string" },
-              data: { type: "string", format: "date-time" },
-              status: { type: "string", example: "PRESENTE" },
-              justificativa: { type: "string" },
-              observacao: { type: "string" },
-            },
-          },          404: {
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {
@@ -791,19 +780,7 @@ Sem filtros de data, considera todo o ano letivo.
           },
         },
         response: {
-          200: {
-            description: "Estatísticas calculadas",
-            type: "object",
-            properties: {
-              totalAulas: { type: "integer", example: 180 },
-              presencas: { type: "integer", example: 165 },
-              faltas: { type: "integer", example: 10 },
-              justificadas: { type: "integer", example: 5 },
-              percentualFrequencia: { type: "number", example: 91.67 },
-              percentualFaltas: { type: "number", example: 8.33 },
-              aprovadoFrequencia: { type: "boolean", example: true },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao calcular estatísticas",
             type: "object",
@@ -914,21 +891,7 @@ Alunos ordenados por percentual de frequência (menor primeiro).
           },
         },
         response: {
-          200: {
-            description: "Lista de alunos com baixa frequência",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                matriculaId: { type: "string" },
-                nomeAluno: { type: "string", example: "João Silva" },
-                percentualFrequencia: { type: "number", example: 68.5 },
-                totalFaltas: { type: "integer", example: 32 },
-                totalAulas: { type: "integer", example: 180 },
-                emRisco: { type: "boolean", example: true },
-              },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao listar alunos",
             type: "object",
@@ -1035,28 +998,7 @@ Ideal para relatórios gerenciais e acompanhamento da turma como um todo.
           },
         },
         response: {
-          200: {
-            description: "Resumo de frequência",
-            type: "object",
-            properties: {
-              turmaId: { type: "string" },
-              turmaNome: { type: "string" },
-              alunos: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    matriculaId: { type: "string" },
-                    nomeAluno: { type: "string" },
-                    percentualFrequencia: { type: "number" },
-                    totalFaltas: { type: "integer" },
-                  },
-                },
-              },
-              mediaFrequenciaTurma: { type: "number", example: 87.3 },
-              alunosBaixaFrequencia: { type: "integer", example: 3 },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao gerar resumo",
             type: "object",

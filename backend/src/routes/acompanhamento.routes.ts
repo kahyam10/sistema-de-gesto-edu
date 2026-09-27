@@ -287,16 +287,7 @@ export async function acompanhamentoRoutes(app: FastifyInstance) {
       description: "Retorna estatísticas gerais ou por escola dos acompanhamentos pedagógicos",
       security: [{ bearerAuth: [] }],
       response: {
-        200: {
-          description: "Estatísticas",
-          type: "object",
-          properties: {
-            total: { type: "number" },
-            ativos: { type: "number" },
-            concluidos: { type: "number" },
-            porTipo: { type: "object" },
-          },
-        },
+        // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
       },
     },
   }, async (request, reply) => {

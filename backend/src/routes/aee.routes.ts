@@ -424,16 +424,7 @@ export async function aeeRoutes(app: FastifyInstance) {
       description: "Retorna estatísticas gerais ou por escola do Atendimento Educacional Especializado",
       security: [{ bearerAuth: [] }],
       response: {
-        200: {
-          description: "Estatísticas",
-          type: "object",
-          properties: {
-            totalPEIs: { type: "number" },
-            totalSalasRecursos: { type: "number" },
-            totalAtendimentos: { type: "number" },
-            porDeficiencia: { type: "object" },
-          },
-        },
+        // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
       },
     },
   }, async (request, reply) => {

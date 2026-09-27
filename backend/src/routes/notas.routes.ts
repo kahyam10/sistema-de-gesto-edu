@@ -294,19 +294,8 @@ Retorna os detalhes de uma nota específica.
           },
         },
         response: {
-          200: {
-            description: "Nota encontrada",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              valor: { type: "number", example: 8.5 },
-              matriculaId: { type: "string" },
-              turmaId: { type: "string" },
-              disciplina: { type: "string" },
-              bimestre: { type: "integer" },
-              observacao: { type: "string" },
-            },
-          },          404: {
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {
@@ -673,36 +662,7 @@ Ideal para gerar boletim escolar digital do aluno.
           },
         },
         response: {
-          200: {
-            description: "Boletim do aluno",
-            type: "object",
-            properties: {
-              aluno: {
-                type: "object",
-                properties: {
-                  nome: { type: "string" },
-                  matricula: { type: "string" },
-                },
-              },
-              disciplinas: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    nome: { type: "string" },
-                    bimestre1: { type: "number" },
-                    bimestre2: { type: "number" },
-                    bimestre3: { type: "number" },
-                    bimestre4: { type: "number" },
-                    mediaFinal: { type: "number" },
-                    situacao: { type: "string", enum: ["APROVADO", "REPROVADO", "RECUPERACAO"] },
-                  },
-                },
-              },
-              frequenciaGeral: { type: "number", example: 92.5 },
-              situacaoFinal: { type: "string" },
-            },
-          },
+          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
           400: {
             description: "Erro ao gerar boletim",
             type: "object",

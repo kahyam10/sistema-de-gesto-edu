@@ -2792,6 +2792,14 @@ export const reuniaoPaisApi = {
 
 // ==================== COMUNICADO API ====================
 
+/** Contagens dos comunicados ATIVOS (GET /api/comunicados/relatorios/estatisticas). */
+export interface EstatisticasComunicado {
+  total: number;
+  destaques: number;
+  porTipo: Record<string, number>;
+  porCategoria: Record<string, number>;
+}
+
 export const comunicadoApi = {
   list: (
     filters?: {
@@ -2878,7 +2886,7 @@ export const comunicadoApi = {
     const params = new URLSearchParams();
     if (escolaId) params.append("escolaId", escolaId);
     const queryString = params.toString();
-    return request<any>(
+    return request<EstatisticasComunicado>(
       `/api/comunicados/relatorios/estatisticas${queryString ? `?${queryString}` : ""}`,
     );
   },

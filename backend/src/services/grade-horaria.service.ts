@@ -1,17 +1,22 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import {
   CreateGradeHorarioInput,
   UpdateGradeHorarioInput,
 } from "../schemas/index.js";
 
+// Só o que a tela usa: o cadastro completo do profissional tem CPF e dados
+// bancários, e a grade é lida por professores.
+const INCLUDE_HORARIO = {
+  turma: { select: { id: true, nome: true, turno: true, anoLetivo: true, escolaId: true, escola: { select: { id: true, nome: true } } } },
+  profissional: { select: { id: true, nome: true } },
+} satisfies Prisma.GradeHorariaInclude;
+
 export class GradeHorariaService {
   async findAll(filters?: { turmaId?: string; profissionalId?: string }) {
     return prisma.gradeHoraria.findMany({
       where: filters,
-      include: {
-        turma: { include: { escola: true } },
-        profissional: true,
-      },
+      include: INCLUDE_HORARIO,
       orderBy: [{ diaSemana: "asc" }, { horaInicio: "asc" }],
     });
   }
@@ -19,10 +24,7 @@ export class GradeHorariaService {
   async findById(id: string) {
     return prisma.gradeHoraria.findUnique({
       where: { id },
-      include: {
-        turma: { include: { escola: true } },
-        profissional: true,
-      },
+      include: INCLUDE_HORARIO,
     });
   }
 
@@ -32,10 +34,7 @@ export class GradeHorariaService {
         ...data,
         profissionalId: data.profissionalId || null,
       },
-      include: {
-        turma: { include: { escola: true } },
-        profissional: true,
-      },
+      include: INCLUDE_HORARIO,
     });
   }
 
@@ -46,10 +45,7 @@ export class GradeHorariaService {
         ...data,
         profissionalId: data.profissionalId || null,
       },
-      include: {
-        turma: { include: { escola: true } },
-        profissional: true,
-      },
+      include: INCLUDE_HORARIO,
     });
   }
 
@@ -64,7 +60,7 @@ export class GradeHorariaService {
       where: profissionalId
         ? { profissionalId }
         : { profissionalId: { not: null } },
-      include: { profissional: true },
+      include: { profissional: { select: { nome: true } } },
     });
 
     const resumo = new Map<

@@ -8,6 +8,27 @@ import {
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 
+// Formato devolvido pelo service. O serializador descarta o que não estiver
+// aqui (e nulos em campo "string" viram ""), então acompanha o service.
+const disciplinaResposta = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    nome: { type: "string", example: "Matemática" },
+    codigo: { type: "string", example: "MAT" },
+    descricao: { type: ["string", "null"] },
+    cargaHorariaSemanal: { type: ["integer", "null"], example: 5 },
+    obrigatoria: { type: "boolean", example: true },
+    ativo: { type: "boolean", example: true },
+    ordem: { type: "integer", example: 1 },
+    etapaId: { type: "string" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    etapa: { type: "object", properties: { id: { type: "string" }, nome: { type: "string" } } },
+    _count: { type: "object", properties: { avaliacoes: { type: "integer" } } },
+  },
+} as const;
+
 export async function disciplinasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
@@ -53,24 +74,8 @@ Para listar disciplinas disponíveis para uma etapa específica ou todas as disc
           },
         },
         response: {
-          200: {
-            description: "Lista de disciplinas",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                nome: { type: "string", example: "Matemática" },
-                codigo: { type: "string", example: "MAT" },
-                descricao: { type: "string" },
-                cargaHorariaSemanal: { type: "integer", example: 5 },
-                obrigatoria: { type: "boolean", example: true },
-                ativo: { type: "boolean", example: true },
-                ordem: { type: "integer", example: 1 },
-                etapaId: { type: "string" },
-              },
-            },
-          },          401: {
+          200: { description: "Lista de disciplinas", type: "array", items: disciplinaResposta },
+          401: {
             description: "Não autorizado",
             type: "object",
             properties: {
@@ -142,21 +147,8 @@ Retorna os detalhes de uma disciplina específica.
           },
         },
         response: {
-          200: {
-            description: "Disciplina encontrada",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              nome: { type: "string", example: "Matemática" },
-              codigo: { type: "string", example: "MAT" },
-              descricao: { type: "string" },
-              cargaHorariaSemanal: { type: "integer", example: 5 },
-              obrigatoria: { type: "boolean" },
-              ativo: { type: "boolean" },
-              ordem: { type: "integer" },
-              etapa: { type: "object" },
-            },
-          },          404: {
+          200: { description: "Disciplina encontrada", ...disciplinaResposta },
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {
@@ -235,21 +227,8 @@ Para exibir as disciplinas disponíveis ao criar turmas ou lançar notas de uma 
           },
         },
         response: {
-          200: {
-            description: "Lista de disciplinas da etapa",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                nome: { type: "string" },
-                codigo: { type: "string" },
-                cargaHorariaSemanal: { type: "integer" },
-                obrigatoria: { type: "boolean" },
-                ordem: { type: "integer" },
-              },
-            },
-          },          401: {
+          200: { description: "Lista de disciplinas da etapa", type: "array", items: disciplinaResposta },
+          401: {
             description: "Não autorizado",
             type: "object",
             properties: {
@@ -367,17 +346,8 @@ Cria uma nova disciplina no sistema.
           },
         },
         response: {
-          201: {
-            description: "Disciplina criada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              nome: { type: "string" },
-              codigo: { type: "string" },
-              etapaId: { type: "string" },
-              ativo: { type: "boolean" },
-            },
-          },          400: {
+          201: { description: "Disciplina criada com sucesso", ...disciplinaResposta },
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {
@@ -458,16 +428,8 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
           },
         },
         response: {
-          200: {
-            description: "Disciplina atualizada com sucesso",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              nome: { type: "string" },
-              codigo: { type: "string" },
-              ativo: { type: "boolean" },
-            },
-          },          400: {
+          200: { description: "Disciplina atualizada com sucesso", ...disciplinaResposta },
+          400: {
             description: "Requisição inválida",
             type: "object",
             properties: {

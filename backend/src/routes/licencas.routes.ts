@@ -923,58 +923,27 @@ Gera relatório completo de licenças de um profissional.
         },
         response: {
           200: {
+            // Formato de LicencaService.getRelatorio. Da licença sai só o resumo:
+            // observações, documento e justificativa ficam no detalhe da licença.
             description: "Relatório de licenças",
             type: "object",
             properties: {
-              profissional: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  nome: { type: "string" },
-                  cargo: { type: "string" },
-                  matricula: { type: "string" },
-                },
-              },
-              periodo: { type: "string", example: "2023-2026" },
-              anoInicio: { type: "number", example: 2023 },
-              anoFim: { type: "number", example: 2026 },
-              totalLicencas: { type: "number", example: 5 },
-              totalDiasAfastado: { type: "number", example: 45 },
-              porTipo: {
-                type: "object",
-                additionalProperties: {
-                  type: "object",
-                  properties: {
-                    quantidade: { type: "number" },
-                    dias: { type: "number" },
-                  },
-                },
-                example: {
-                  MEDICA: { quantidade: 3, dias: 15 },
-                  FERIAS: { quantidade: 2, dias: 30 },
-                },
-              },
-              porStatus: {
-                type: "object",
-                additionalProperties: { type: "number" },
-                example: {
-                  APROVADA: 3,
-                  PENDENTE: 1,
-                  FINALIZADA: 1,
-                },
-              },
+              totalDias: { type: "integer", example: 45 },
+              porTipo: { type: "object", additionalProperties: { type: "integer" }, example: { LICENCA_MEDICA: 15 } },
               licencas: {
                 type: "array",
                 items: {
                   type: "object",
                   properties: {
                     id: { type: "string" },
+                    profissionalId: { type: "string" },
                     tipo: { type: "string" },
                     status: { type: "string" },
-                    dataInicio: { type: "string", format: "date" },
-                    dataFim: { type: "string", format: "date" },
-                    diasAfastamento: { type: "number" },
-                    motivo: { type: "string" },
+                    dataInicio: { type: "string", format: "date-time" },
+                    dataFim: { type: "string", format: "date-time" },
+                    diasCorridos: { type: "integer" },
+                    diasUteis: { type: ["integer", "null"] },
+                    motivo: { type: ["string", "null"] },
                   },
                 },
               },

@@ -54,6 +54,7 @@ import {
 } from "@/hooks/useApi";
 import { Matricula } from "@/lib/api";
 import { AlunoDetails } from "./AlunoDetails";
+import { useAuth } from "@/lib/auth";
 
 export function MatriculasManager() {
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
@@ -64,6 +65,9 @@ export function MatriculasManager() {
   const createMatricula = useCreateMatricula();
   const updateMatricula = useUpdateMatricula();
   const deleteMatricula = useDeleteMatricula();
+  const { user } = useAuth();
+  // Exclusão é da gestão da rede (o servidor recusa DELETE dos demais papéis)
+  const ehGestao = user?.role === "ADMIN" || user?.role === "SEMEC";
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMatricula, setEditingMatricula] = useState<Matricula | null>(null);
@@ -395,7 +399,7 @@ export function MatriculasManager() {
                       required
                       disabled={!!editingMatricula}
                     >
-                      <SelectTrigger id="escolaId">
+                      <SelectTrigger id="escolaId" className="w-full">
                         <SelectValue placeholder="Selecione a escola" />
                       </SelectTrigger>
                       <SelectContent>
@@ -417,7 +421,7 @@ export function MatriculasManager() {
                       disabled={!formData.escolaId || etapasDisponiveis.length === 0 || !!editingMatricula}
                       required
                     >
-                      <SelectTrigger id="etapaId">
+                      <SelectTrigger id="etapaId" className="w-full">
                         <SelectValue placeholder="Selecione a etapa" />
                       </SelectTrigger>
                       <SelectContent>
@@ -428,6 +432,11 @@ export function MatriculasManager() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {formData.escolaId && etapasDisponiveis.length === 0 && !editingMatricula && (
+                      <p className="text-xs text-muted-foreground">
+                        Esta escola não tem etapas de ensino vinculadas. Vincule as etapas no cadastro da escola.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -462,7 +471,7 @@ export function MatriculasManager() {
                       }
                       required
                     >
-                      <SelectTrigger id="sexo">
+                      <SelectTrigger id="sexo" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -998,15 +1007,17 @@ export function MatriculasManager() {
                       >
                         <Pencil size={16} />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDelete(matricula.id)}
-                        disabled={deleteMatricula.isPending}
-                        title="Excluir"
-                      >
-                        <Trash size={16} />
-                      </Button>
+                      {ehGestao && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDelete(matricula.id)}
+                          disabled={deleteMatricula.isPending}
+                          title="Excluir"
+                        >
+                          <Trash size={16} />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -230,16 +230,7 @@ export async function reuniaoPaisRoutes(app: FastifyInstance) {
       description: "Retorna estatísticas gerais ou por escola das reuniões de pais",
       security: [{ bearerAuth: [] }],
       response: {
-        200: {
-          description: "Estatísticas",
-          type: "object",
-          properties: {
-            total: { type: "number" },
-            porTipo: { type: "object" },
-            porStatus: { type: "object" },
-            mediaPresencas: { type: "number" },
-          },
-        },
+        // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
       },
     },
   }, async (request, reply) => {

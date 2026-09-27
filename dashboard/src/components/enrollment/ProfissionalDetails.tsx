@@ -1178,7 +1178,6 @@ export function ProfissionalDetails({ profissionalId, onBack }: ProfissionalDeta
                       <SelectItem value="AUXILIAR">Auxiliar</SelectItem>
                       <SelectItem value="COORDENADOR">Coordenador</SelectItem>
                       <SelectItem value="DIRETOR">Diretor</SelectItem>
-                      <SelectItem value="SECRETARIO">Secretário</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

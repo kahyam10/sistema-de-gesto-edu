@@ -83,37 +83,38 @@ const initialFormData: NotificacaoFormData = {
   userId: "",
   titulo: "",
   mensagem: "",
-  tipo: "INFORMACAO",
+  tipo: "COMUNICADO",
   prioridade: "NORMAL",
   canais: ["APP"],
 };
 
+// Mesmos valores aceitos pelo backend (schemas/comunicacao.schemas.ts)
 const tipoNotificacaoLabels = {
-  INFORMACAO: "Informação",
-  ALERTA: "Alerta",
-  URGENTE: "Urgente",
+  COMUNICADO: "Comunicado",
   ACADEMICO: "Acadêmico",
-  FINANCEIRO: "Financeiro",
   LEMBRETE: "Lembrete",
+  URGENTE: "Urgente",
+  SISTEMA: "Sistema",
+  FINANCEIRO: "Financeiro",
 };
 
 const prioridadeLabels = {
   BAIXA: "Baixa",
   NORMAL: "Normal",
   ALTA: "Alta",
-  CRITICA: "Crítica",
+  URGENTE: "Urgente",
 };
 
 const prioridadeColors = {
   BAIXA: "bg-gray-100 text-gray-800",
   NORMAL: "bg-blue-100 text-blue-800",
   ALTA: "bg-orange-100 text-orange-800",
-  CRITICA: "bg-red-100 text-red-800",
+  URGENTE: "bg-red-100 text-red-800",
 };
 
 const tipoIcons = {
-  INFORMACAO: Info,
-  ALERTA: Warning,
+  COMUNICADO: Info,
+  SISTEMA: Info,
   URGENTE: Warning,
   ACADEMICO: Bell,
   FINANCEIRO: Bell,
@@ -288,12 +289,9 @@ export function NotificacaoManager() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todos os Tipos</SelectItem>
-                  <SelectItem value="INFORMACAO">Informação</SelectItem>
-                  <SelectItem value="ALERTA">Alerta</SelectItem>
-                  <SelectItem value="URGENTE">Urgente</SelectItem>
-                  <SelectItem value="ACADEMICO">Acadêmico</SelectItem>
-                  <SelectItem value="FINANCEIRO">Financeiro</SelectItem>
-                  <SelectItem value="LEMBRETE">Lembrete</SelectItem>
+                  {Object.entries(tipoNotificacaoLabels).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>{l}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -305,10 +303,9 @@ export function NotificacaoManager() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todas</SelectItem>
-                  <SelectItem value="BAIXA">Baixa</SelectItem>
-                  <SelectItem value="NORMAL">Normal</SelectItem>
-                  <SelectItem value="ALTA">Alta</SelectItem>
-                  <SelectItem value="CRITICA">Crítica</SelectItem>
+                  {Object.entries(prioridadeLabels).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>{l}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -361,10 +358,10 @@ export function NotificacaoManager() {
                                 {notificacao.titulo}
                               </h3>
                               <Badge className={prioridadeColors[notificacao.prioridade as keyof typeof prioridadeColors]}>
-                                {prioridadeLabels[notificacao.prioridade as keyof typeof prioridadeLabels]}
+                                {prioridadeLabels[notificacao.prioridade as keyof typeof prioridadeLabels] ?? notificacao.prioridade}
                               </Badge>
                               <Badge variant="outline">
-                                {tipoNotificacaoLabels[notificacao.tipo as keyof typeof tipoNotificacaoLabels]}
+                                {tipoNotificacaoLabels[notificacao.tipo as keyof typeof tipoNotificacaoLabels] ?? notificacao.tipo}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mb-2">
@@ -502,12 +499,9 @@ export function NotificacaoManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INFORMACAO">Informação</SelectItem>
-                    <SelectItem value="ALERTA">Alerta</SelectItem>
-                    <SelectItem value="URGENTE">Urgente</SelectItem>
-                    <SelectItem value="ACADEMICO">Acadêmico</SelectItem>
-                    <SelectItem value="FINANCEIRO">Financeiro</SelectItem>
-                    <SelectItem value="LEMBRETE">Lembrete</SelectItem>
+                    {Object.entries(tipoNotificacaoLabels).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -524,10 +518,9 @@ export function NotificacaoManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BAIXA">Baixa</SelectItem>
-                    <SelectItem value="NORMAL">Normal</SelectItem>
-                    <SelectItem value="ALTA">Alta</SelectItem>
-                    <SelectItem value="CRITICA">Crítica</SelectItem>
+                    {Object.entries(prioridadeLabels).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

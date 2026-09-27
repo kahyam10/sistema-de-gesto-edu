@@ -80,6 +80,7 @@ import {
 import type { AnoLetivo, EventoCalendario } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
 
 // Tipos de evento especiais (obrigatórios - definem estrutura do ano letivo)
 const tiposEventoObrigatorios = [
@@ -149,6 +150,10 @@ interface CalendarioLetivoManagerProps {
 export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerProps) {
   const { data: anosLetivos, isLoading: loadingAnos } = useAnosLetivos();
   const { data: escolas = [] } = useEscolas();
+  const { user } = useAuth();
+  // O calendário letivo é da rede: só a gestão (ADMIN/SEMEC) altera — o servidor
+  // recusa as escritas dos demais papéis; aqui a tela só evita oferecer a ação.
+  const podeEditar = user?.role === "ADMIN" || user?.role === "SEMEC";
   
   const [anoLetivoSelecionado, setAnoLetivoSelecionado] = useState<AnoLetivo | null>(null);
   const [mesAtual, setMesAtual] = useState(new Date().getMonth());
@@ -295,6 +300,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
 
   // Handlers Ano Letivo
   const handleOpenAnoLetivoDialog = (anoLetivo?: AnoLetivo) => {
+    if (!podeEditar) return;
     if (anoLetivo) {
       setEditingAnoLetivo(anoLetivo);
       setAnoLetivoForm({
@@ -344,6 +350,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
 
   // Handlers Evento
   const handleOpenEventoDialog = (eventoOuData?: EventoCalendario | Date) => {
+    if (!podeEditar) return;
     if (eventoOuData instanceof Date) {
       // Clicou em uma data para criar novo evento
       setDataSelecionada(eventoOuData);
@@ -592,7 +599,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
           </Select>
           
           {/* Botão de criar ano letivo só aparece no calendário global */}
-          {!escolaId && (
+          {!escolaId && podeEditar && (
             <Button onClick={() => handleOpenAnoLetivoDialog()}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Ano
@@ -611,10 +618,14 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
         }>
           <Info className="h-4 w-4" />
           <AlertTitle>
-            Defina: {tipoEventoMap[proximoEventoObrigatorio]?.label}
+            {podeEditar
+              ? `Defina: ${tipoEventoMap[proximoEventoObrigatorio]?.label}`
+              : `Pendente: ${tipoEventoMap[proximoEventoObrigatorio]?.label}`}
           </AlertTitle>
           <AlertDescription>
-            {proximoEventoObrigatorio === "INICIO_ANO_LETIVO" 
+            {!podeEditar
+              ? "O calendário deste ano letivo ainda está sendo configurado pela Secretaria de Educação."
+              : proximoEventoObrigatorio === "INICIO_ANO_LETIVO" 
               ? "Para começar a configurar o calendário, você precisa primeiro definir a data de Início do Ano Letivo." 
               : proximoEventoObrigatorio === "FIM_ANO_LETIVO"
               ? "Agora defina a data de Fim do Ano Letivo para liberar o cadastro de outros eventos."
@@ -656,6 +667,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
                   variant="ghost" 
                   size="icon" 
                   onClick={handleMesAnterior}
+                  aria-label="Mês anterior"
                   disabled={!podeVoltarMes}
                   className={!podeVoltarMes ? "opacity-30 cursor-not-allowed" : ""}
                 >
@@ -668,6 +680,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
                   variant="ghost" 
                   size="icon" 
                   onClick={handleProximoMes}
+                  aria-label="Próximo mês"
                   disabled={!podeAvancarMes}
                   className={!podeAvancarMes ? "opacity-30 cursor-not-allowed" : ""}
                 >
@@ -806,6 +819,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
           </Card>
 
           {/* Ações */}
+          {podeEditar && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Ações</CardTitle>
@@ -841,6 +855,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Lista de eventos do mês */}
           <Card>
@@ -876,10 +891,12 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
                             {formatarDataBR(evento.dataInicio)}
                           </div>
                         </div>
+                        {podeEditar && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="opacity-0 group-hover:opacity-100"
+                          aria-label={`Excluir evento ${evento.titulo}`}
+                          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEventoToDelete(evento);
@@ -888,6 +905,7 @@ export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerPro
                         >
                           <Trash className="h-4 w-4 text-destructive" />
                         </Button>
+                        )}
                       </div>
                     );
                   })}
