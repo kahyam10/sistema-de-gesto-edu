@@ -19,6 +19,9 @@ export type ProfessorStack = ComumStack & {
   Notas: { turmaId: string; turmaNome: string; aviso?: string };
   NovaAvaliacao: { turmaId: string; turmaNome: string; disciplinaId: string; bimestre: number };
   LancarNotas: { turmaId: string; turmaNome: string; avaliacaoId: string };
+  Planos: { turmaId: string; turmaNome: string };
+  Plano: { planoId: string; turmaId: string; turmaNome: string };
+  PlanoForm: { turmaId: string; turmaNome: string; planoId?: string };
 };
 
 export type ResponsavelStack = ComumStack & {

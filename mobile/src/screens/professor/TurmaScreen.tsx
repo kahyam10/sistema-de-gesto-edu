@@ -56,6 +56,10 @@ export function TurmaScreen({ route, navigation }: Props) {
         <Atalho icone="create-outline" titulo="Notas e avaliações" legenda="Lançar e acompanhar"
           onPress={() => navigation.navigate("Notas", { turmaId, turmaNome })} />
       </View>
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Atalho icone="book-outline" titulo="Planos de aula" legenda="Planejar e enviar à coordenação"
+          onPress={() => navigation.navigate("Planos", { turmaId, turmaNome })} />
+      </View>
 
       {q.isPending ? <Carregando /> : q.isError ? <Erro erro={q.error} tentarDeNovo={() => q.refetch()} /> : (
         <>

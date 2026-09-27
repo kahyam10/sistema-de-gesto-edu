@@ -3,6 +3,7 @@ import type {
   Agenda, CardapioSemana, EscolaContato, MeusDados, Notificacao,
   AlunosDaTurma, AlunoVinculado, Boletim, Chamada, Comunicado, FrequenciaAluno, NotasDaTurma,
   ResumoProfessor, StatusFrequencia, TokensResposta, Usuario,
+  CoberturaTurma, DadosPlano, PlanoAula, PlanoResumo,
 } from "./types";
 
 // ---------- Sessão ----------
@@ -38,6 +39,21 @@ export const professorApi = {
   }) => api<{ id: string }>("/api/avaliacoes", { method: "POST", body: dados }),
   lancarNotas: (avaliacaoId: string, notas: Array<{ matriculaId: string; valor: number }>) =>
     api<unknown>("/api/notas/turma", { method: "POST", body: { avaliacaoId, notas } }),
+};
+
+// ---------- Professor: planos de aula (o servidor só devolve turmas dele) ----------
+export const planejamentoApi = {
+  planos: (turmaId: string) =>
+    api<{ data: PlanoResumo[] }>(`/api/planejamento/planos?turmaId=${encodeURIComponent(turmaId)}&meus=true&limit=100`),
+  plano: (id: string) => api<PlanoAula>(`/api/planejamento/planos/${encodeURIComponent(id)}`),
+  criar: (dados: DadosPlano) => api<PlanoAula>("/api/planejamento/planos", { method: "POST", body: dados }),
+  // Sem turma/disciplina: o plano não muda de turma depois de criado
+  atualizar: (id: string, dados: Omit<DadosPlano, "turmaId" | "disciplinaId">) =>
+    api<PlanoAula>(`/api/planejamento/planos/${encodeURIComponent(id)}`, { method: "PUT", body: dados }),
+  enviar: (id: string) =>
+    api<PlanoAula>(`/api/planejamento/planos/${encodeURIComponent(id)}/enviar`, { method: "POST", body: {} }),
+  cobertura: (turmaId: string) =>
+    api<CoberturaTurma>(`/api/planejamento/cobertura?turmaId=${encodeURIComponent(turmaId)}`),
 };
 
 // ---------- Responsável ----------

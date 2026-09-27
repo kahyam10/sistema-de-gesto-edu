@@ -204,14 +204,14 @@ export function Botao({
   );
 }
 
-export function Campo({ rotulo, erro, ...props }: TextInputProps & { rotulo: string; erro?: string | null }) {
+export function Campo({ rotulo, erro, style, ...props }: TextInputProps & { rotulo: string; erro?: string | null }) {
   return (
     <View style={{ gap: 6 }}>
       <Text style={s.campoRotulo}>{rotulo}</Text>
       <TextInput
         placeholderTextColor={cores.textoApagado}
         accessibilityLabel={rotulo}
-        style={[s.campo, erro ? s.campoErro : null]}
+        style={[s.campo, style, erro ? s.campoErro : null]}
         {...props}
       />
       {erro ? <Text style={s.campoMsgErro}>{erro}</Text> : null}

@@ -187,3 +187,56 @@ export interface Notificacao {
   id: string; titulo: string; mensagem: string; tipo: string; prioridade: string;
   acaoTipo: string | null; acaoId: string | null; lida: boolean; createdAt: string;
 }
+
+// ---------- Planejamento (planos de aula) ----------
+export type StatusPlano = "RASCUNHO" | "ENVIADO" | "APROVADO" | "DEVOLVIDO";
+type Ref = { id: string; nome: string };
+
+export interface PlanoResumo {
+  id: string;
+  bimestre: number;
+  dataAula: string;
+  titulo: string;
+  objetivos: string;
+  status: StatusPlano;
+  enviadoEm: string | null;
+  parecer: string | null;
+  revisadoEm: string | null;
+  turmaId: string;
+  disciplinaId: string;
+  conteudoProgramaticoId: string | null;
+  disciplina: Ref;
+  revisadoPor: Ref | null;
+  conteudoProgramatico: { id: string; titulo: string } | null;
+}
+
+export interface PlanoAula extends PlanoResumo {
+  desenvolvimento: string | null;
+  recursos: string | null;
+  avaliacao: string | null;
+  habilidadesBncc: string[];
+  atividades: Array<{ id: string; titulo: string; tipo: string }>;
+}
+
+export interface DadosPlano {
+  turmaId: string;
+  disciplinaId: string;
+  bimestre: number;
+  dataAula: string;
+  titulo: string;
+  objetivos: string;
+  desenvolvimento?: string;
+  recursos?: string;
+  avaliacao?: string;
+  habilidadesBncc: string[];
+  conteudoProgramaticoId?: string;
+}
+
+/** Conteúdo programático previsto para a turma (GET /api/planejamento/cobertura). */
+export interface CoberturaTurma {
+  disciplinas: Array<{
+    disciplinaId: string;
+    nome: string;
+    conteudos: Array<{ id: string; titulo: string; bimestre: number; habilidadesBncc: string[] }>;
+  }>;
+}

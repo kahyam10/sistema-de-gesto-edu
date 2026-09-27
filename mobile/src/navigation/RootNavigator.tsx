@@ -16,6 +16,9 @@ import { ChamadaScreen } from "../screens/professor/ChamadaScreen";
 import { NotasScreen } from "../screens/professor/NotasScreen";
 import { NovaAvaliacaoScreen } from "../screens/professor/NovaAvaliacaoScreen";
 import { LancarNotasScreen } from "../screens/professor/LancarNotasScreen";
+import { PlanosScreen } from "../screens/professor/PlanosScreen";
+import { PlanoScreen } from "../screens/professor/PlanoScreen";
+import { PlanoFormScreen } from "../screens/professor/PlanoFormScreen";
 import { MeusAlunosScreen } from "../screens/responsavel/MeusAlunosScreen";
 import { AlunoScreen } from "../screens/responsavel/AlunoScreen";
 import { ComunicadosScreen } from "../screens/responsavel/ComunicadosScreen";
@@ -77,6 +80,9 @@ function ProfessorTurmas() {
       <PStack.Screen name="Notas" component={NotasScreen} />
       <PStack.Screen name="NovaAvaliacao" component={NovaAvaliacaoScreen} />
       <PStack.Screen name="LancarNotas" component={LancarNotasScreen} />
+      <PStack.Screen name="Planos" component={PlanosScreen} />
+      <PStack.Screen name="Plano" component={PlanoScreen} />
+      <PStack.Screen name="PlanoForm" component={PlanoFormScreen} />
     </PStack.Navigator>
   );
 }
