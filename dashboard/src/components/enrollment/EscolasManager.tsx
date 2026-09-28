@@ -28,7 +28,7 @@ import {
   useEscolas, useEtapas, useTurmas, useCreateEscola, useUpdateEscola, useDeleteEscola, useProfissionais,
 } from "@/hooks/useApi";
 import { Escola as EscolaType } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { useEhGestao } from "@/hooks/use-papel";
 
 interface EscolasManagerProps {
   onSelectEscola?: (escola: EscolaType) => void;
@@ -36,9 +36,8 @@ interface EscolasManagerProps {
 
 export function EscolasManager({ onSelectEscola }: EscolasManagerProps) {
   const router = useRouter();
-  const { user } = useAuth();
   // Criar e excluir escola é da gestão da rede (o servidor recusa os demais papéis)
-  const ehGestao = user?.role === "ADMIN" || user?.role === "SEMEC";
+  const ehGestao = useEhGestao();
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
   const { data: etapas, isLoading: loadingEtapas } = useEtapas();
   const { data: turmas, isLoading: loadingTurmas } = useTurmas();

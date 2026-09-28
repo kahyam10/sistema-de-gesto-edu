@@ -77,7 +77,7 @@ import {
 } from "@/hooks/useApi";
 import type { AnoLetivo, EventoCalendario } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth";
+import { useEhGestao } from "@/hooks/use-papel";
 
 // Tipos de evento especiais (obrigatórios - definem estrutura do ano letivo)
 const tiposEventoObrigatorios = [
@@ -166,10 +166,9 @@ const DIAS_SEMANA_FORM = [
 export function CalendarioLetivoManager({ escolaId }: CalendarioLetivoManagerProps) {
   const { data: anosLetivos, isLoading: loadingAnos } = useAnosLetivos();
   const { data: escolas = [] } = useEscolas();
-  const { user } = useAuth();
   // O calendário letivo é da rede: só a gestão (ADMIN/SEMEC) altera — o servidor
   // recusa as escritas dos demais papéis; aqui a tela só evita oferecer a ação.
-  const podeEditar = user?.role === "ADMIN" || user?.role === "SEMEC";
+  const podeEditar = useEhGestao();
   
   // Guarda só o id escolhido; o objeto vem sempre da lista mais recente
   // (sem id escolhido, ou se ele sumiu: o ano ativo, senão o primeiro)

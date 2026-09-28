@@ -18,6 +18,7 @@ import {
 } from "@/lib/api-planejamento";
 import type { Serie } from "@/lib/api";
 import { AJUDA_BNCC, FiltroSelect, Habilidades } from "./comum";
+import { useEhGestao } from "@/hooks/use-papel";
 
 const REDE = "__rede__";
 const SEM_SERIE = "";
@@ -26,7 +27,7 @@ const SEM_SERIE = "";
 export function BancoAtividadesManager() {
   const { user } = useAuth();
   const role = user?.role ?? "";
-  const ehGestao = role === "ADMIN" || role === "SEMEC";
+  const ehGestao = useEhGestao();
   const { data: disciplinas = [] } = useDisciplinas({ ativo: true });
   const { data: series = [] } = useSeries();
   const { data: escolas = [] } = useEscolas();

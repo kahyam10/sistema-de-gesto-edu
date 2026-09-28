@@ -17,6 +17,7 @@ import { useConteudos, useRemoverConteudo, useSalvarConteudo } from "@/hooks/use
 import { COORDENACAO_PEDAGOGICA, lerHabilidades, type ConteudoProgramatico } from "@/lib/api-planejamento";
 import type { Serie } from "@/lib/api";
 import { AJUDA_BNCC, FiltroSelect, Habilidades, OPCOES_BIMESTRE } from "./comum";
+import { useEhGestao } from "@/hooks/use-papel";
 
 const ANO = new Date().getFullYear();
 const REDE = "__rede__";
@@ -29,7 +30,7 @@ export function ConteudosProgramaticosManager() {
   const { user } = useAuth();
   const role = user?.role ?? "";
   const podeEditar = COORDENACAO_PEDAGOGICA.includes(role);
-  const ehGestao = role === "ADMIN" || role === "SEMEC";
+  const ehGestao = useEhGestao();
 
   const { data: series = [] } = useSeries();
   const { data: escolas = [] } = useEscolas();

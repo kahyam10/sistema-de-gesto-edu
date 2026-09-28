@@ -54,8 +54,8 @@ import {
 } from "@/hooks/useApi";
 import { Matricula } from "@/lib/api";
 import { AlunoDetails } from "./AlunoDetails";
-import { useAuth } from "@/lib/auth";
 import { idadeEm } from "@/lib/utils";
+import { useEhGestao } from "@/hooks/use-papel";
 
 export function MatriculasManager() {
   const { data: escolas, isLoading: loadingEscolas } = useEscolas();
@@ -66,9 +66,8 @@ export function MatriculasManager() {
   const createMatricula = useCreateMatricula();
   const updateMatricula = useUpdateMatricula();
   const deleteMatricula = useDeleteMatricula();
-  const { user } = useAuth();
   // Exclusão é da gestão da rede (o servidor recusa DELETE dos demais papéis)
-  const ehGestao = user?.role === "ADMIN" || user?.role === "SEMEC";
+  const ehGestao = useEhGestao();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMatricula, setEditingMatricula] = useState<Matricula | null>(null);

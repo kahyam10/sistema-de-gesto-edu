@@ -31,7 +31,6 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/auth";
 import {
   useDeleteDocumentoMatricula,
   useDocumentosMatricula,
@@ -40,6 +39,7 @@ import {
 } from "@/hooks/useApi";
 import type { Matricula, TipoDocumentoMatricula } from "@/lib/api";
 import { documentosMatriculaApi } from "@/lib/api";
+import { useEhGestao } from "@/hooks/use-papel";
 
 const TIPO_LABELS: Record<TipoDocumentoMatricula, string> = {
   CERTIDAO_NASCIMENTO: "Certidão de Nascimento",
@@ -83,7 +83,6 @@ interface DocumentosMatriculaProps {
 }
 
 export function DocumentosMatricula({ matricula }: DocumentosMatriculaProps) {
-  const { user } = useAuth();
   const [tipo, setTipo] = useState<TipoDocumentoMatricula>("CERTIDAO_NASCIMENTO");
   const [arquivo, setArquivo] = useState<File | null>(null);
   // Incrementa após upload para limpar o input de arquivo (não controlado)
@@ -100,7 +99,7 @@ export function DocumentosMatricula({ matricula }: DocumentosMatriculaProps) {
       ? matricula.documentosEntregues
       : {};
 
-  const podeExpurgar = ["ADMIN", "SEMEC"].includes(user?.role ?? "");
+  const podeExpurgar = useEhGestao();
 
   // Contagem de arquivos digitalizados por tipo
   const contagemPorTipo = documentos.reduce<Record<string, number>>((acc, doc) => {

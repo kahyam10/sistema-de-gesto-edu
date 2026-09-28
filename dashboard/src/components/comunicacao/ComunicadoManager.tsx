@@ -53,6 +53,7 @@ import { PaginationControls } from "@/components/ui/pagination";
 import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { useEhGestao } from "@/hooks/use-papel";
 
 interface Comunicado {
   id: string;
@@ -138,7 +139,7 @@ export function ComunicadoManager() {
   const { user } = useAuth();
   // Só a gestão da rede publica sem escola (comunicado da rede); os demais
   // papéis publicam na própria escola — o servidor recusa o resto.
-  const ehGestao = user?.role === "ADMIN" || user?.role === "SEMEC";
+  const ehGestao = useEhGestao();
   const { data: comunicadosData, isLoading } = useComunicadosPaginated({}, pagination);
   const { data: estatisticas } = useEstatisticasComunicado();
 
