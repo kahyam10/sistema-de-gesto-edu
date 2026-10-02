@@ -50,6 +50,9 @@ describe("formato", () => {
     expect(listaDeNomes(["Ana Clara Souza", "Pedro Souza"])).toBe("Ana e Pedro");
     expect(iniciais("João Miguel Ribeiro")).toBe("JR");
     expect(iniciais("Ana de Souza")).toBe("AS");
+    // sufixo entre parênteses não vira inicial (antes saía "A(")
+    expect(iniciais("Alice Ferreira (demo)")).toBe("AF");
+    expect(iniciais("Érica Ávila")).toBe("ÉÁ");
   });
 
   it("horaBR e dataHoraBR convertem para o horário da Bahia", () => {

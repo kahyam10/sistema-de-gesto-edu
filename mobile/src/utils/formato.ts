@@ -98,9 +98,12 @@ export const rotuloTipoAvaliacao: Record<string, string> = {
   PROVA: "Prova", TRABALHO: "Trabalho", ATIVIDADE: "Atividade", PARTICIPACAO: "Participação", RECUPERACAO: "Recuperação",
 };
 
-/** Iniciais para avatar: primeira letra do primeiro e do último nome (ignora "de", "da"...). */
+/**
+ * Iniciais para avatar: primeira letra do primeiro e do último nome (ignora
+ * "de", "da"... e o que não começa com letra, como "(demo)" ou "2º").
+ */
 export function iniciais(nome: string): string {
-  const partes = nome.trim().split(/\s+/).filter((p) => p.length > 2);
+  const partes = nome.trim().split(/\s+/).filter((p) => p.length > 2 && /^\p{L}/u.test(p));
   if (partes.length === 0) return nome.slice(0, 2).toUpperCase();
   const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
   return (partes[0][0] + ultima).toUpperCase();
