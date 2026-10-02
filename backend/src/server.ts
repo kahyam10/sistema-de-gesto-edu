@@ -40,6 +40,7 @@ import { reuniaoPaisRoutes } from "./routes/reuniao-pais.routes.js";
 // Módulo 4 — RH
 import { pontosRoutes } from "./routes/pontos.routes.js";
 import { licencasRoutes } from "./routes/licencas.routes.js";
+import { caminhoSuspeito } from "./lib/caminho-seguro.js";
 
 // Types are imported via triple-slash reference in the .d.ts file
 // No need to import them here
@@ -217,6 +218,10 @@ async function buildApp() {
 
   app.addHook("onRequest", async (request, reply) => {
     const url = request.raw.url?.split("?")[0] ?? "";
+    // Antes de qualquer decisão: o roteador decodifica %xx, o guard não
+    if (caminhoSuspeito(url)) {
+      return reply.status(400).send({ error: "URL inválida" });
+    }
     if (!url.startsWith("/api") || PUBLIC_API.has(url)) return;
 
     try {
