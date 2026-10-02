@@ -28,15 +28,18 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTurmas, useDisciplinas, useNotas, useCreateNota } from "@/hooks/useApi";
+import { useTurmas, useDisciplinas, useCreateNota } from "@/hooks/useApi";
+import { useBoletinsDaTurma, useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
+import { comoSituacao, formatarMedia, type SituacaoApi } from "@/lib/medias";
 import { CheckCircle, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 interface AlunoRecuperacao {
   matriculaId: string;
   nomeAluno: string;
-  mediaAtual: number;
-  precisaRecuperacao: boolean;
+  /** Média final da disciplina devolvida pela API (boletim); null = sem média. */
+  mediaAtual: number | null;
+  situacao: SituacaoApi;
   notaRecuperacao?: number;
 }
 
@@ -49,59 +52,44 @@ export function RecuperacaoManager() {
 
   const { data: turmas = [], isLoading: loadingTurmas } = useTurmas({ anoLetivo: anoAtual });
   const { data: disciplinas = [] } = useDisciplinas();
-  const { data: notas = [], isLoading: loadingNotas } = useNotas(
-    turmaId && disciplinaSelecionada
-      ? { turmaId, disciplina: disciplinaSelecionada }
-      : undefined
-  );
   const createNota = useCreateNota();
 
   const turmaSelecionada = turmas.find((t) => t.id === turmaId);
+  // Média vem do boletim da API (mesma conta do backend); limite = média
+  // mínima da configuração de avaliação da rede para a turma.
+  const { porMatricula, isLoading: loadingNotas } = useBoletinsDaTurma(
+    disciplinaSelecionada ? turmaSelecionada : undefined
+  );
+  const { config } = useConfiguracaoDaTurma(turmaSelecionada);
+  const mediaMinima = config?.mediaMinima ?? null;
+  const rotuloMinima = mediaMinima !== null ? mediaMinima.toFixed(1) : "não configurada";
+  const abaixoDaMinima = mediaMinima !== null ? `abaixo de ${mediaMinima.toFixed(1)}` : "abaixo da média mínima da rede";
 
-  // Agrupa alunos e calcula médias
   const alunosRecuperacao = useMemo(() => {
     if (!turmaSelecionada || !disciplinaSelecionada) return [];
 
-    const alunosMap = new Map<string, AlunoRecuperacao>();
-
-    // Inicializa todos os alunos da turma
-    turmaSelecionada.matriculas?.forEach((matricula) => {
-      alunosMap.set(matricula.id, {
+    const alunos: AlunoRecuperacao[] = (turmaSelecionada.matriculas ?? []).map((matricula) => {
+      const disc = porMatricula
+        .get(matricula.id)
+        ?.disciplinas.find((d) => d.disciplinaNome === disciplinaSelecionada);
+      return {
         matriculaId: matricula.id,
         nomeAluno: matricula.nomeAluno,
-        mediaAtual: 0,
-        precisaRecuperacao: false,
-      });
+        mediaAtual: disc?.mediaFinal ?? null,
+        situacao: comoSituacao(disc?.situacao),
+      };
     });
 
-    // Calcula média de cada aluno
-    const notasPorAluno = new Map<string, number[]>();
-    notas.forEach((nota) => {
-      if (!notasPorAluno.has(nota.matriculaId)) {
-        notasPorAluno.set(nota.matriculaId, []);
-      }
-      // Ignora notas de recuperação no cálculo da média atual
-      if (nota.avaliacao?.tipo !== "RECUPERACAO") {
-        notasPorAluno.get(nota.matriculaId)!.push(nota.valor);
-      }
-    });
-
-    notasPorAluno.forEach((valores, matriculaId) => {
-      const media = valores.length > 0
-        ? valores.reduce((sum, v) => sum + v, 0) / valores.length
-        : 0;
-
-      const aluno = alunosMap.get(matriculaId);
-      if (aluno) {
-        aluno.mediaAtual = media;
-        aluno.precisaRecuperacao = media < 7.0;
-      }
-    });
-
-    return Array.from(alunosMap.values())
-      .filter((a) => a.precisaRecuperacao)
+    // Sem média não entra (não vira 0). Abaixo da mínima da configuração, ou
+    // em RECUPERACAO segundo a API (vale também sem configuração cadastrada).
+    return alunos
+      .filter(
+        (a) =>
+          a.situacao === "RECUPERACAO" ||
+          (a.mediaAtual !== null && mediaMinima !== null && a.mediaAtual < mediaMinima)
+      )
       .sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
-  }, [turmaSelecionada, disciplinaSelecionada, notas]);
+  }, [turmaSelecionada, disciplinaSelecionada, porMatricula, mediaMinima]);
 
   const handleLancarRecuperacao = async (matriculaId: string) => {
     const notaStr = notasRecuperacao[matriculaId];
@@ -188,7 +176,7 @@ export function RecuperacaoManager() {
             Sistema de Recuperação
           </CardTitle>
           <CardDescription>
-            Lance notas de recuperação paralela ou final para alunos com média abaixo de 7.0
+            Lance notas de recuperação paralela ou final para alunos com média {abaixoDaMinima}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -255,7 +243,7 @@ export function RecuperacaoManager() {
               <div>
                 <CardTitle>Alunos em Recuperação</CardTitle>
                 <CardDescription>
-                  {alunosRecuperacao.length} aluno(s) com média abaixo de 7.0
+                  {alunosRecuperacao.length} aluno(s) com média {abaixoDaMinima}
                 </CardDescription>
               </div>
               {alunosRecuperacao.length > 0 && Object.keys(notasRecuperacao).length > 0 && (
@@ -279,7 +267,7 @@ export function RecuperacaoManager() {
                   Nenhum aluno precisa de recuperação!
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Todos os alunos estão com média igual ou superior a 7.0
+                  Nenhum aluno com média {abaixoDaMinima} nesta disciplina (alunos ainda sem média não aparecem)
                 </p>
               </div>
             ) : (
@@ -298,15 +286,16 @@ export function RecuperacaoManager() {
                   <TableBody>
                     {alunosRecuperacao.map((aluno) => {
                       const notaRecup = parseFloat(notasRecuperacao[aluno.matriculaId] || "0");
-                      const mediaFinal = notaRecup > 0
+                      const mediaFinal = notaRecup > 0 && aluno.mediaAtual !== null
                         ? parseFloat(calcularMediaFinal(aluno.mediaAtual, notaRecup))
                         : 0;
+                      const aprovado = mediaMinima !== null && mediaFinal >= mediaMinima;
 
                       return (
                         <TableRow key={aluno.matriculaId}>
                           <TableCell className="font-medium">{aluno.nomeAluno}</TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="destructive">{aluno.mediaAtual.toFixed(2)}</Badge>
+                            <Badge variant="destructive">{formatarMedia(aluno.mediaAtual, 2)}</Badge>
                           </TableCell>
                           <TableCell>
                             <Input
@@ -327,14 +316,14 @@ export function RecuperacaoManager() {
                           </TableCell>
                           <TableCell className="text-center">
                             {mediaFinal > 0 && (
-                              <Badge variant={mediaFinal >= 7.0 ? "default" : "destructive"}>
+                              <Badge variant={aprovado ? "default" : "destructive"}>
                                 {mediaFinal.toFixed(2)}
                               </Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            {mediaFinal > 0 && (
-                              mediaFinal >= 7.0 ? (
+                            {mediaFinal > 0 && mediaMinima !== null && (
+                              aprovado ? (
                                 <Badge className="bg-green-600">Aprovado</Badge>
                               ) : (
                                 <Badge variant="destructive">Reprovado</Badge>
@@ -377,13 +366,13 @@ export function RecuperacaoManager() {
           </p>
           <p>
             • <strong>Recuperação Final:</strong> Realizada ao final do ano para alunos que não
-            atingiram média 7.0
+            atingiram a média mínima ({rotuloMinima})
           </p>
           <p>
             • <strong>Cálculo da Média Final:</strong> (Média Atual + Nota Recuperação) / 2
           </p>
           <p>
-            • <strong>Aprovação:</strong> Média final ≥ 7.0
+            • <strong>Aprovação:</strong> Média final ≥ média mínima da configuração de avaliação da rede ({rotuloMinima})
           </p>
         </CardContent>
       </Card>

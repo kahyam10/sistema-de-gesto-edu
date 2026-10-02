@@ -118,7 +118,7 @@ export function PortalProfessor() {
         <Card>
           <CardHeader>
             <CardTitle>Pendências de frequência</CardTitle>
-            <CardDescription>Turmas com aula hoje sem chamada registrada</CardDescription>
+            <CardDescription>Aulas de hoje sem chamada registrada</CardDescription>
           </CardHeader>
           <CardContent>
             {data.frequenciasPendentesHoje.length === 0 ? (
@@ -127,12 +127,17 @@ export function PortalProfessor() {
               <div className="space-y-2">
                 {data.frequenciasPendentesHoje.map((p) => (
                   <div
-                    key={p.turmaId}
+                    key={p.gradeHorariaId}
                     className="flex items-center justify-between rounded-md border border-hairline px-3 py-2"
                   >
                     <div className="flex items-center gap-2">
                       <Badge variant="warning">Pendente</Badge>
                       <span className="text-[13px] font-medium">{p.turmaNome}</span>
+                      {p.disciplina ? (
+                        <span className="text-[12px] text-ink-muted">
+                          {p.horaInicio} · {p.disciplina}
+                        </span>
+                      ) : null}
                     </div>
                     <Button size="sm" variant="outline" asChild>
                       <Link href="/pedagogico">Lançar frequência</Link>

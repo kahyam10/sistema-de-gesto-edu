@@ -167,10 +167,107 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
 export const LEITURA_RESPONSAVEL: RegExp[] = [
   /^\/api\/auth\/me$/,
   /^\/api\/portal\/meu(\/|$)/,
-  /^\/api\/comunicados(\/|$)/,
+  // Comunicados (lista/detalhe filtrados no service); estatísticas são da equipe
+  /^\/api\/comunicados(\/(?!relatorios(\/|$))|$)/,
   /^\/api\/notificacoes\/usuario\/[^/]+/,
   /^\/api\/calendario(\/|$)/,
 ];
+
+// Leituras liberadas à equipe (ADMIN, SEMEC, DIRETOR, COORDENADOR, SECRETARIA,
+// PROFESSOR) — ALLOWLIST explícita, rota a rota (padrão do roteador, ":x" =
+// um segmento). GET que não está aqui nem na LEITURA_RESTRITA é NEGADO aos
+// papéis pedagógicos: rota nova nasce fechada até ser classificada, e o teste
+// tests/fb-rotas-classificadas.test.ts quebra a CI enquanto isso.
+export const LEITURA_PEDAGOGICA: string[] = [
+  "/api/acompanhamento", "/api/acompanhamento/:id", "/api/acompanhamento/matricula/:matriculaId",
+  "/api/acompanhamento/relatorios/estatisticas",
+  "/api/aee/atendimentos/pei/:peiId", "/api/aee/atendimentos/sala/:salaRecursosId", "/api/aee/pei",
+  "/api/aee/pei/:id", "/api/aee/pei/matricula/:matriculaId", "/api/aee/relatorios/estatisticas",
+  "/api/aee/salas-recursos", "/api/aee/salas-recursos/:id",
+  "/api/atividades-complementares", "/api/atividades-complementares/:id",
+  "/api/auth/me",
+  "/api/avaliacoes", "/api/avaliacoes/:id",
+  "/api/busca-ativa", "/api/busca-ativa/:buscaAtivaId/encaminhamentos",
+  "/api/busca-ativa/:buscaAtivaId/visitas", "/api/busca-ativa/:id",
+  "/api/busca-ativa/relatorios/estatisticas",
+  "/api/calendario/anos-letivos", "/api/calendario/anos-letivos/:anoLetivoId/estatisticas",
+  "/api/calendario/anos-letivos/:anoLetivoId/eventos",
+  "/api/calendario/anos-letivos/:anoLetivoId/eventos/data/:data",
+  "/api/calendario/anos-letivos/:anoLetivoId/eventos/mes/:ano/:mes", "/api/calendario/anos-letivos/:id",
+  "/api/calendario/anos-letivos/ativo", "/api/calendario/eventos/:id",
+  "/api/cardapios", "/api/cardapios/:id",
+  "/api/colegiados", "/api/colegiados/:id",
+  "/api/comunicados", "/api/comunicados/:id", "/api/comunicados/relatorios/estatisticas",
+  "/api/comunicados/usuario/:userId",
+  "/api/configuracao-avaliacao", "/api/configuracao-avaliacao/:id",
+  "/api/disciplinas", "/api/disciplinas/:id", "/api/disciplinas/etapa/:etapaId",
+  "/api/escolas", "/api/escolas/:escolaId/salas", "/api/escolas/:escolaId/salas/estatisticas",
+  "/api/escolas/:id", "/api/escolas/:id/estatisticas",
+  "/api/estoque/alertas", "/api/estoque/itens", "/api/estoque/itens/:id", "/api/estoque/movimentacoes",
+  "/api/etapas", "/api/etapas/:id",
+  "/api/frequencia", "/api/frequencia/:id", "/api/frequencia/estatisticas/:matriculaId/:turmaId",
+  "/api/frequencia/turma/:turmaId/aulas/:data",
+  "/api/frequencia/turma/:turmaId/baixa-frequencia", "/api/frequencia/turma/:turmaId/data/:data",
+  "/api/frequencia/turma/:turmaId/resumo",
+  "/api/grade-horaria", "/api/grade-horaria/:id", "/api/grade-horaria/relatorios/carga",
+  "/api/grade-horaria/relatorios/escola", "/api/grade-horaria/relatorios/turma",
+  "/api/gremios", "/api/gremios/:id",
+  "/api/lideres-turma", "/api/lideres-turma/:id",
+  "/api/manutencoes", "/api/manutencoes/:id", "/api/manutencoes/custos-por-veiculo",
+  "/api/matriculas", "/api/matriculas/:id", "/api/matriculas/:id/transferencias",
+  "/api/matriculas/estatisticas", "/api/matriculas/numero/:numero", "/api/matriculas/sem-turma",
+  "/api/modules", "/api/modules/:id",
+  "/api/motoristas", "/api/motoristas/:id", "/api/motoristas/alertas-cnh",
+  "/api/niveis-ensino", "/api/niveis-ensino/:id", "/api/niveis-ensino/etapa/:etapaId",
+  "/api/notas", "/api/notas/:id", "/api/notas/boletim/:matriculaId", "/api/notas/boletim-turma/:turmaId",
+  "/api/notas/media/:matriculaId/:turmaId/:disciplinaId",
+  "/api/notas/situacao/:matriculaId/:turmaId/:disciplinaId",
+  "/api/notificacoes/:id", "/api/notificacoes/usuario/:userId",
+  "/api/notificacoes/usuario/:userId/count-nao-lidas",
+  "/api/phases", "/api/phases/:id",
+  "/api/plantoes-pedagogicos", "/api/plantoes-pedagogicos/:id",
+  "/api/plantoes-pedagogicos/escola/:escolaId/periodo", "/api/plantoes-pedagogicos/relatorios/estatisticas",
+  "/api/portal/meu/agenda", "/api/portal/meu/alunos", "/api/portal/meu/alunos/:matriculaId/boletim",
+  "/api/portal/meu/alunos/:matriculaId/frequencia", "/api/portal/meu/cardapio",
+  "/api/portal/meu/comunicados", "/api/portal/meu/dados", "/api/portal/meu/escolas",
+  "/api/profissionais", "/api/profissionais/:id", "/api/profissionais/:id/formacoes",
+  "/api/profissionais/escola/:escolaId",
+  "/api/refeicoes", "/api/refeicoes/:id", "/api/refeicoes/relatorio-pnae",
+  "/api/reunioes-democraticas", "/api/reunioes-democraticas/:id",
+  "/api/reunioes-pais", "/api/reunioes-pais/:id", "/api/reunioes-pais/:reuniaoId/presencas",
+  "/api/reunioes-pais/relatorios/estatisticas",
+  "/api/rotas-transporte", "/api/rotas-transporte/:id",
+  "/api/salas/:id",
+  "/api/series", "/api/series/:id", "/api/series/nivel/:nivelId",
+  "/api/tipos-educacao", "/api/tipos-educacao/:id",
+  "/api/turmas", "/api/turmas/:id", "/api/turmas/:id/estatisticas", "/api/turmas/escola/:escolaId",
+  "/api/veiculos", "/api/veiculos/:id", "/api/veiculos/alertas-vencimento",
+];
+
+const paraRegex = (padrao: string) =>
+  new RegExp(
+    "^" +
+      padrao
+        .split("/")
+        .map((seg) => (seg === "*" ? ".*" : seg.startsWith(":") ? "[^/]+" : seg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+        .join("/") +
+      "/?$"
+  );
+const LEITURA_PEDAGOGICA_RE = LEITURA_PEDAGOGICA.map(paraRegex);
+
+/**
+ * Classe de uma leitura (GET) pelo caminho: "publica", "restrita" (com os
+ * papéis), "liberada" (equipe pedagógica) ou null = não classificada (negada).
+ */
+export function classificarLeitura(
+  url: string
+): { classe: "publica" } | { classe: "restrita"; roles: string[] } | { classe: "liberada" } | null {
+  if (PUBLIC_API.has(url)) return { classe: "publica" };
+  const restrita = LEITURA_RESTRITA.find((r) => r.pattern.test(url));
+  if (restrita) return { classe: "restrita", roles: restrita.roles };
+  if (LEITURA_PEDAGOGICA_RE.some((r) => r.test(url))) return { classe: "liberada" };
+  return null;
+}
 
 /**
  * Decisão pura de autorização (sem a checagem de propriedade do DIRETOR,
@@ -193,8 +290,10 @@ export function autorizar(
       if (proprio && proprio[1] !== user.id) return "NEGADO";
       return "OK";
     }
-    const restrita = LEITURA_RESTRITA.find((r) => r.pattern.test(url));
-    if (restrita && !restrita.roles.includes(user.role)) return "NEGADO";
+    // Equipe: leitura negada por padrão — só o que está classificado
+    const classe = classificarLeitura(url);
+    if (!classe) return "NEGADO";
+    if (classe.classe === "restrita" && !classe.roles.includes(user.role)) return "NEGADO";
     return "OK";
   }
   const regra = REGRAS_ESCRITA.find(

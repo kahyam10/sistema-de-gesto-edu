@@ -8,11 +8,42 @@ import {
   AprovarLicencaInput,
 } from "../schemas/index.js";
 import { hojeNaRede } from "../lib/datas.js";
+import { getStorageDriver } from "../storage/index.js";
+
+/**
+ * documentoPath vem do cliente. Chaves de storage são sempre geradas pelo
+ * servidor (ver storage-driver.ts) e o driver local já impede sair da raiz,
+ * mas DENTRO da raiz o cliente podia apontar a licença para um arquivo de
+ * outra pessoa (ex.: "matriculas/<id>/<uuid>.pdf", documento de criança) — e
+ * qualquer download futuro do anexo serviria esse arquivo.
+ * Aceita só: "licencas/<profissionalId da licença>/<nome simples>" de um
+ * arquivo que JÁ existe no storage (ou seja, gravado pelo servidor).
+ * Recusa "..", caminho absoluto, barra invertida, esquema (http:, file:) e
+ * qualquer outro prefixo. "" ou null limpam o campo.
+ */
+const ID_SEGURO = /^[A-Za-z0-9_-]{1,64}$/;
+const NOME_ARQUIVO_SEGURO = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}(\.[A-Za-z0-9]{1,10})?$/;
+
+async function validarDocumentoPath(
+  documentoPath: string | null | undefined,
+  profissionalId: string
+): Promise<void> {
+  if (documentoPath === undefined || documentoPath === null || documentoPath === "") return;
+  const prefixo = `licencas/${profissionalId}/`;
+  const nome = documentoPath.startsWith(prefixo) ? documentoPath.slice(prefixo.length) : "";
+  if (!ID_SEGURO.test(profissionalId) || !NOME_ARQUIVO_SEGURO.test(nome)) {
+    throw new Error("Documento da licença inválido");
+  }
+  if (!(await getStorageDriver().exists(documentoPath))) {
+    throw new Error("Documento da licença não encontrado");
+  }
+}
 
 
 export class LicencaService {
   // Cria uma solicitação de licença
   async create(data: CreateLicencaInput): Promise<Licenca> {
+    await validarDocumentoPath(data.documentoPath, data.profissionalId);
     // Calcula dias corridos e úteis
     const diasCorridos = this.calcularDiasCorridos(
       data.dataInicio,
@@ -150,6 +181,14 @@ export class LicencaService {
       throw new Error(
         "Não é possível alterar uma licença que já foi aprovada ou rejeitada"
       );
+    }
+
+    // Trocar o profissional ou o documento: o documento precisa ser do
+    // profissional que fica na licença
+    if (data.documentoPath !== undefined || data.profissionalId !== undefined) {
+      const profissionalId = data.profissionalId ?? licenca?.profissionalId;
+      const documentoPath = data.documentoPath !== undefined ? data.documentoPath : licenca?.documentoPath;
+      if (profissionalId) await validarDocumentoPath(documentoPath, profissionalId);
     }
 
     // Recalcula dias se datas foram alteradas

@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { exportacaoEducacensoService } from "../services/exportacao-educacenso.service.js";
 import { exportacaoPresencaService } from "../services/exportacao-presenca.service.js";
@@ -9,6 +7,7 @@ import {
   exportacaoPresencaQuerySchema,
 } from "../schemas/exportacao.schemas.js";
 import { auditar } from "../lib/auditoria.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function exportacaoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -93,21 +92,11 @@ oficial. Valide no sistema oficial do Educacenso antes de submeter.
           .header("Content-Type", "text/plain; charset=ISO-8859-1")
           .header(
             "Content-Disposition",
-            `attachment; filename="${resultado.nomeArquivo}"`
+            `attachment; filename="${resultado.nomeArquivo.replace(/[^\w.-]/g, "_")}"`
           )
           .send(Buffer.from(resultado.conteudo, "latin1"));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar exportação do Educacenso";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -205,21 +194,11 @@ Faltas justificadas NÃO contam como presença, mas saem em coluna própria
           .header("Content-Type", "text/csv; charset=utf-8")
           .header(
             "Content-Disposition",
-            `attachment; filename="${resultado.nomeArquivo}"`
+            `attachment; filename="${resultado.nomeArquivo.replace(/[^\w.-]/g, "_")}"`
           )
           .send(resultado.conteudo);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar exportação do Sistema Presença";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

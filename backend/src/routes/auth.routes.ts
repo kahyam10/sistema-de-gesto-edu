@@ -16,7 +16,7 @@ import {
   renovarSessaoMobile,
 } from "../lib/sessao.js";
 import { z } from "zod";
-import { limparFalhas, registrarFalha, segundosBloqueado } from "../lib/limite-login.js";
+import { hashEmailLogin, segundosBloqueado } from "../lib/limite-login.js";
 import { auditar } from "../lib/auditoria.js";
 
 const refreshBodySchema = z.object({ refreshToken: z.string().min(20).max(200) });
@@ -43,7 +43,8 @@ export async function authRoutes(app: FastifyInstance) {
     try {
       const data = loginSchema.parse(request.body);
       email = data.email;
-      const espera = segundosBloqueado(request.ip, email);
+      // Contagem persistente (trilha de auditoria): por IP+e-mail e por conta
+      const espera = await segundosBloqueado(request.ip, email);
       if (espera > 0) {
         reply
           .status(429)
@@ -52,22 +53,23 @@ export async function authRoutes(app: FastifyInstance) {
         return null;
       }
       const user = await authService.login(data);
-      limparFalhas(request.ip, email);
+      // O sucesso zera a contagem de falhas (lib/limite-login.ts)
       await auditar(request, {
         acao: "LOGIN_SUCESSO",
         userId: user.id,
         userRole: user.role,
-        detalhes: { cliente },
+        detalhes: { cliente, emailHash: hashEmailLogin(email) },
       });
       return user;
     } catch (error: unknown) {
       if (error instanceof LoginInvalidoError) {
-        registrarFalha(request.ip, email);
+        // Esta linha da trilha É o contador do bloqueio (lib/limite-login.ts).
+        // E-mail só como HMAC: nunca em claro na auditoria.
         await auditar(request, {
           acao: "LOGIN_FALHA",
           userId: error.userId,
           userRole: null,
-          detalhes: { motivo: error.motivo, cliente },
+          detalhes: { motivo: error.motivo, cliente, emailHash: hashEmailLogin(email) },
         });
         reply.status(401).send({ error: error.message });
         return null;

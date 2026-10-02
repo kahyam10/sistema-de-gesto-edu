@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_TEXTO_CURTO, MAX_ITENS_PAGINA } from "./index.js";
 
 // ==================== MÓDULO 9: COMUNICAÇÃO E EVENTOS (schemas) ====================
 // Substituem os schemas JSON antigos das rotas, que estavam desalinhados do
@@ -8,17 +9,34 @@ import { z } from "zod";
 
 const semVazio = (v: unknown) => (v === "" || v === null ? undefined : v);
 const texto = (max = 5000) => z.preprocess(semVazio, z.string().trim().min(1).max(max).optional());
-const id = z.string().trim().min(1, "Obrigatório");
-const idOpcional = z.preprocess(semVazio, z.string().trim().min(1).optional());
+const id = z.string().max(MAX_TEXTO_CURTO).trim().min(1, "Obrigatório");
+const idOpcional = z.preprocess(semVazio, z.string().max(MAX_TEXTO_CURTO).trim().min(1).optional());
 const dataOpcional = z.preprocess(semVazio, z.coerce.date({ invalid_type_error: "Data inválida" }).optional());
 const boolQuery = z.preprocess((v) => (v === "true" ? true : v === "false" ? false : v), z.boolean().optional());
 const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário inválido (HH:MM)");
 export const paginacaoQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_ITENS_PAGINA).optional(),
 });
 
 // ---------- Comunicados ----------
+/**
+ * Anexo do comunicado: só https. z.string().url() aceitava qualquer esquema
+ * (javascript:, data:, http:, file:) — o link é aberto por pais e professores
+ * nos apps e no painel.
+ */
+const ehHttps = (v: string) => {
+  try {
+    return new URL(v).protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+export const anexoUrlSchema = z.preprocess(
+  semVazio,
+  z.string().trim().max(500).url("Endereço do anexo inválido").refine(ehHttps, "O anexo deve ser um endereço https://").optional()
+);
+
 export const tipoComunicadoEnum = z.enum(["INFORMATIVO", "URGENTE", "AVISO", "CONVITE", "ALERTA"]);
 export const destinatariosEnum = z.enum([
   "TODOS", "PAIS", "PROFESSORES", "ALUNOS", "FUNCIONARIOS", "DIRETORES", "TURMA_ESPECIFICA", "ETAPA_ESPECIFICA",
@@ -34,7 +52,7 @@ export const createComunicadoSchema = z
     destinatarios: destinatariosEnum,
     turmaId: idOpcional,
     etapaId: idOpcional,
-    anexoUrl: z.preprocess(semVazio, z.string().url("Endereço do anexo inválido").max(500).optional()),
+    anexoUrl: anexoUrlSchema,
     dataPublicacao: dataOpcional,
     dataExpiracao: dataOpcional,
     destaque: z.boolean().optional(),
@@ -55,7 +73,7 @@ export const updateComunicadoSchema = z.object({
   destinatarios: destinatariosEnum.optional(),
   turmaId: idOpcional,
   etapaId: idOpcional,
-  anexoUrl: z.preprocess(semVazio, z.string().url("Endereço do anexo inválido").max(500).optional()),
+  anexoUrl: anexoUrlSchema,
   dataExpiracao: dataOpcional,
   ativo: z.boolean().optional(),
   destaque: z.boolean().optional(),
@@ -86,7 +104,7 @@ const baseNotificacao = {
   mensagem: z.string().trim().min(1, "Mensagem é obrigatória").max(5000),
   tipo: tipoNotificacaoEnum,
   prioridade: z.preprocess(semVazio, prioridadeEnum.optional()),
-  canais: z.array(canalEnum).min(1).default(["APP"]),
+  canais: z.array(canalEnum).min(1).max(canalEnum.options.length).default(["APP"]),
   // Caminho interno do sistema (os apps ignoram links externos)
   link: z.preprocess(semVazio, z.string().max(500).optional()),
   acaoTipo: texto(60),

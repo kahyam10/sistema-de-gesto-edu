@@ -1,8 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { phaseService } from "../services/phase.service.js";
 import { createPhaseSchema, updatePhaseSchema } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 interface IdParams {
   id: string;
@@ -51,15 +50,7 @@ export async function phaseRoutes(app: FastifyInstance) {
       const phase = await phaseService.create(data);
       return reply.status(201).send(phase);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao criar fase";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -82,15 +73,7 @@ export async function phaseRoutes(app: FastifyInstance) {
         const phase = await phaseService.update(id, data);
         return reply.send(phase);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar fase";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

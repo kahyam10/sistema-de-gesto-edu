@@ -33,6 +33,8 @@ import {
   useTurmas,
   useBoletim,
 } from "@/hooks/useApi";
+import { useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
+import { formatarMedia, mediaDasMedias, tomDaMedia } from "@/lib/medias";
 import {
   Certificate,
   Printer,
@@ -56,11 +58,16 @@ function getSituacaoBadge(situacao: string, size: "sm" | "lg" = "sm") {
   }
 }
 
-function getNotaColor(valor: number | null) {
-  if (valor === null) return "text-muted-foreground";
-  if (valor >= 6) return "text-green-600 font-semibold";
-  if (valor >= 3) return "text-yellow-600 font-semibold";
-  return "text-red-600 font-semibold";
+/** Cor pela média mínima da configuração de avaliação da turma (sem limite fixo). */
+function getNotaColor(valor: number | null, mediaMinima: number | null) {
+  switch (tomDaMedia(valor, mediaMinima)) {
+    case "ok":
+      return "text-green-600 font-semibold";
+    case "abaixo":
+      return "text-red-600 font-semibold";
+    default:
+      return valor === null ? "text-muted-foreground" : "font-semibold";
+  }
 }
 
 export function BoletimDigital() {
@@ -81,26 +88,21 @@ export function BoletimDigital() {
   const matriculasAtivas =
     turmaSelecionada?.matriculas?.filter((m) => m.status === "ATIVA") || [];
 
-  // Calcula media geral do aluno (media das medias finais)
-  const mediaGeral = (() => {
-    if (!boletim) return null;
-    const mediasFinais = boletim.disciplinas
-      .map((d) => d.mediaFinal)
-      .filter((m): m is number => m !== null);
-    if (mediasFinais.length === 0) return null;
-    const soma = mediasFinais.reduce((acc, m) => acc + m, 0);
-    return Math.round((soma / mediasFinais.length) * 100) / 100;
-  })();
+  const { config } = useConfiguracaoDaTurma(turmaSelecionada);
+  const mediaMinima = config?.mediaMinima ?? null;
+  const cor = (valor: number | null) => getNotaColor(valor, mediaMinima);
 
-  // Calcula medias por bimestre (media de todas as disciplinas naquele bimestre)
-  const mediasPorBimestre = [1, 2, 3, 4].map((bim) => {
-    if (!boletim) return null;
-    const notas = boletim.disciplinas
-      .map((d) => d.bimestres.find((b) => b.bimestre === bim)?.media)
-      .filter((m): m is number => m !== null && m !== undefined);
-    if (notas.length === 0) return null;
-    return Math.round((notas.reduce((a, b) => a + b, 0) / notas.length) * 100) / 100;
-  });
+  // A API não devolve média geral: é a média simples das médias finais (da
+  // API) das disciplinas que têm média — null não entra como 0.
+  const mediaGeral = boletim ? mediaDasMedias(boletim.disciplinas.map((d) => d.mediaFinal)) : null;
+  const geralParcial = boletim?.situacaoGeral === "EM_CURSO";
+
+  // Média de todas as disciplinas em cada bimestre (bimestre sem média fica de fora)
+  const mediasPorBimestre = [1, 2, 3, 4].map((bim) =>
+    boletim
+      ? mediaDasMedias(boletim.disciplinas.map((d) => d.bimestres.find((b) => b.bimestre === bim)?.media))
+      : null
+  );
 
   const handlePrint = () => {
     window.print();
@@ -244,9 +246,11 @@ export function BoletimDigital() {
                   )}
                   {mediaGeral !== null && (
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Média Geral</p>
-                      <p className={`text-2xl font-bold ${getNotaColor(mediaGeral)}`}>
-                        {mediaGeral.toFixed(1)}
+                      <p className="text-xs text-muted-foreground">
+                        Média Geral{geralParcial ? " (parcial)" : ""}
+                      </p>
+                      <p className={`text-2xl font-bold ${cor(mediaGeral)}`}>
+                        {formatarMedia(mediaGeral)}
                       </p>
                     </div>
                   )}
@@ -291,20 +295,19 @@ export function BoletimDigital() {
                             return (
                               <TableCell
                                 key={bim}
-                                className={`text-center ${getNotaColor(bimData?.media ?? null)}`}
+                                className={`text-center ${cor(bimData?.media ?? null)}`}
                               >
-                                {bimData?.media !== null && bimData?.media !== undefined
-                                  ? bimData.media.toFixed(1)
-                                  : "-"}
+                                {formatarMedia(bimData?.media)}
                               </TableCell>
                             );
                           })}
                           <TableCell
-                            className={`text-center text-base ${getNotaColor(disc.mediaFinal)}`}
+                            className={`text-center text-base ${cor(disc.mediaFinal)}`}
                           >
-                            {disc.mediaFinal !== null
-                              ? disc.mediaFinal.toFixed(1)
-                              : "-"}
+                            {formatarMedia(disc.mediaFinal)}
+                            {disc.mediaFinal !== null && disc.situacao === "EM_CURSO" && (
+                              <span className="block text-[10px] font-normal text-muted-foreground">parcial</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-center">
                             {getSituacaoBadge(disc.situacao)}
@@ -318,15 +321,18 @@ export function BoletimDigital() {
                         {mediasPorBimestre.map((media, idx) => (
                           <TableCell
                             key={idx}
-                            className={`text-center ${getNotaColor(media)}`}
+                            className={`text-center ${cor(media)}`}
                           >
-                            {media !== null ? media.toFixed(1) : "-"}
+                            {formatarMedia(media)}
                           </TableCell>
                         ))}
                         <TableCell
-                          className={`text-center text-base ${getNotaColor(mediaGeral)}`}
+                          className={`text-center text-base ${cor(mediaGeral)}`}
                         >
-                          {mediaGeral !== null ? mediaGeral.toFixed(1) : "-"}
+                          {formatarMedia(mediaGeral)}
+                          {mediaGeral !== null && geralParcial && (
+                            <span className="block text-[10px] font-normal text-muted-foreground">parcial</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center">
                           {boletim.situacaoGeral
@@ -367,9 +373,9 @@ export function BoletimDigital() {
                     </span>
                     <Badge
                       variant={
-                        boletim.frequencia.percentualPresenca >= 75
-                          ? "default"
-                          : "destructive"
+                        boletim.frequencia.abaixoDoLimite
+                          ? "destructive"
+                          : "default"
                       }
                       className="text-sm"
                     >
@@ -378,13 +384,7 @@ export function BoletimDigital() {
                   </div>
                   <Progress
                     value={boletim.frequencia.percentualPresenca}
-                    className={`h-3 ${
-                      boletim.frequencia.percentualPresenca < 75
-                        ? "[&>div]:bg-red-500"
-                        : boletim.frequencia.percentualPresenca < 85
-                          ? "[&>div]:bg-yellow-500"
-                          : ""
-                    }`}
+                    className={`h-3 ${boletim.frequencia.abaixoDoLimite ? "[&>div]:bg-red-500" : ""}`}
                   />
                   <div className="grid grid-cols-3 gap-4">
                     <div className="rounded-lg border p-3 text-center">
@@ -408,7 +408,8 @@ export function BoletimDigital() {
                   </div>
                   {boletim.frequencia.abaixoDoLimite && (
                     <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-200">
-                      Atenção: frequência abaixo do mínimo exigido de 75%. O aluno pode ser reprovado por faltas.
+                      Atenção: frequência abaixo do mínimo exigido
+                      {config ? ` de ${config.percentualFrequenciaMinima}%` : ""}. O aluno pode ser reprovado por faltas.
                     </div>
                   )}
                 </div>

@@ -1,12 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { gradeHorariaService } from "../services/grade-horaria.service.js";
 import {
   createGradeHorarioSchema,
   updateGradeHorarioSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 // Formato devolvido pelo service (INCLUDE_HORARIO). O serializador descarta o
 // que não estiver aqui — e nulos em campo "string" viram "" —, então o schema
@@ -114,17 +113,7 @@ Gera um relatório consolidado da carga horária dos profissionais.
         const resumo = await gradeHorariaService.getCargaResumo(profissionalId);
         return reply.send(resumo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar relatório de carga horária";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -173,17 +162,7 @@ Gera um relatório consolidado da carga horária organizado por escola.
         const resumo = await gradeHorariaService.getCargaResumoPorEscola();
         return reply.send(resumo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar relatório por escola";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -232,17 +211,7 @@ Gera um relatório consolidado da carga horária organizado por turma.
         const resumo = await gradeHorariaService.getCargaResumoPorTurma();
         return reply.send(resumo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar relatório por turma";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -318,17 +287,7 @@ Lista todos os horários da grade com filtros opcionais.
         );
         return reply.send(horarios);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao listar grade horária";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -402,17 +361,7 @@ Retorna os detalhes completos de um horário específico da grade.
         }
         return reply.send(horario);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar horário";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -529,17 +478,7 @@ Cria um novo horário na grade horária de uma turma.
         const horario = await gradeHorariaService.create(data);
         return reply.status(201).send(horario);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao criar horário";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -666,17 +605,7 @@ Atualiza um horário existente na grade horária.
         const horario = await gradeHorariaService.update(id, data);
         return reply.send(horario);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar horário";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -747,17 +676,7 @@ Remove um horário da grade horária.
         await gradeHorariaService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao deletar horário";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { matriculaService } from "../services/index.js";
 import {
   createMatriculaSchema,
@@ -8,6 +6,8 @@ import {
   transferirMatriculaSchema,
   criarAcessoMatriculaSchema,
 } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { anoLetivoObrigatorioQuerySchema, anoLetivoOpcionalQuerySchema } from "../schemas/parametros.schemas.js";
 
 interface MatriculaFilters {
   escolaId?: string;
@@ -26,7 +26,8 @@ export async function matriculasRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { escolaId, etapaId, turmaId, anoLetivo, status } = request.query;
+        const { escolaId, etapaId, turmaId, status } = request.query;
+        const { anoLetivo } = anoLetivoOpcionalQuerySchema.parse(request.query);
         const filters: {
           escolaId?: string;
           etapaId?: string;
@@ -38,21 +39,13 @@ export async function matriculasRoutes(app: FastifyInstance) {
         if (escolaId) filters.escolaId = escolaId;
         if (etapaId) filters.etapaId = etapaId;
         if (turmaId) filters.turmaId = turmaId;
-        if (anoLetivo) filters.anoLetivo = parseInt(anoLetivo);
+        if (anoLetivo !== undefined) filters.anoLetivo = anoLetivo;
         if (status) filters.status = status;
 
         const matriculas = await matriculaService.findAll(filters);
         return reply.send(matriculas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar matrículas";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -67,22 +60,15 @@ export async function matriculasRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { escolaId, anoLetivo } = request.query;
+        const { escolaId } = request.query;
+        const { anoLetivo } = anoLetivoOpcionalQuerySchema.parse(request.query);
         const matriculas = await matriculaService.findSemTurma(
           escolaId,
-          anoLetivo ? parseInt(anoLetivo) : undefined
+          anoLetivo
         );
         return reply.send(matriculas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar matrículas";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -97,24 +83,15 @@ export async function matriculasRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { anoLetivo, escolaId } = request.query;
+        const { escolaId } = request.query;
+        const { anoLetivo } = anoLetivoObrigatorioQuerySchema.parse(request.query);
         const estatisticas = await matriculaService.getEstatisticas(
-          parseInt(anoLetivo),
+          anoLetivo,
           escolaId
         );
         return reply.send(estatisticas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar estatísticas";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -136,15 +113,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
 
         return reply.send(matricula);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar matrícula";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -166,15 +135,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
 
         return reply.send(matricula);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar matrícula";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -186,15 +147,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
       const matricula = await matriculaService.create(data);
       return reply.status(201).send(matricula);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao criar matrícula";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -211,17 +164,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const matricula = await matriculaService.update(id, data);
         return reply.send(matricula);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar matrícula";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -238,15 +181,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
         await matriculaService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar matrícula";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -263,15 +198,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const matricula = await matriculaService.cancelar(id);
         return reply.send(matricula);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao cancelar matrícula";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -296,17 +223,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
         );
         return reply.send(matricula);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao transferir matrícula";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -323,17 +240,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
         const transferencias = await matriculaService.getTransferencias(id);
         return reply.send(transferencias);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar transferências";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -352,15 +259,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
           .status(200)
           .send(await matriculaService.listarAcessos(request.params.id));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar acessos";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -380,15 +279,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
         );
         return reply.status(201).send(vinculo);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar acesso";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -410,15 +301,7 @@ export async function matriculasRoutes(app: FastifyInstance) {
             )
           );
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao revogar acesso";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

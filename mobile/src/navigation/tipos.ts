@@ -15,7 +15,8 @@ export type ProfessorStack = ComumStack & {
   Inicio: undefined;
   Turmas: undefined;
   Turma: { turmaId: string; turmaNome: string };
-  Chamada: { turmaId: string; turmaNome: string };
+  // gradeHorariaId: abrir direto a chamada desta aula (frequência por aula)
+  Chamada: { turmaId: string; turmaNome: string; gradeHorariaId?: string };
   Notas: { turmaId: string; turmaNome: string; aviso?: string };
   NovaAvaliacao: { turmaId: string; turmaNome: string; disciplinaId: string; bimestre: number };
   LancarNotas: { turmaId: string; turmaNome: string; avaliacaoId: string };

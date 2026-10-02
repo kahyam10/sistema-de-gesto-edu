@@ -1,21 +1,56 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
-import { mediaPonderada } from "../lib/media.js";
+import { frequenciaAbaixoDoMinimo } from "./frequencia.service.js";
+import { mediaDasAvaliacoes } from "../lib/media.js";
+import { hojeNaRede } from "../lib/datas.js";
 
 type Nota = { matriculaId: string; valor: number };
-type Av = { id: string; disciplinaId: string; bimestre: number; peso: number; valorMaximo: number; notas: Nota[] };
+type Av = { id: string; disciplinaId: string; bimestre: number; data: Date; peso: number; valorMaximo: number; notas: Nota[] };
+type TurmaInfo = {
+  id: string; nome: string; turno: string; anoLetivo: number; escolaId: string;
+  escola: { nome: string };
+  serie: { nome: string; nivel: { etapaId: string } };
+};
+type Regra = { mediaMinima: number; frequenciaMinima: number; origem: string };
+type Disc = { id: string; nome: string };
+type Aluno = { id: string; nomeAluno: string; numeroMatricula: string };
+type FreqAgrupada = { matriculaId: string; status: string; _count: number };
 
 const arred = (n: number) => Math.round(n * 10) / 10;
 const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
+const selectTurma = {
+  id: true, nome: true, turno: true, anoLetivo: true, escolaId: true,
+  escola: { select: { nome: true } },
+  serie: { select: { nome: true, nivel: { select: { etapaId: true } } } },
+} as const;
+const selectAvaliacao = {
+  id: true, disciplinaId: true, bimestre: true, data: true, peso: true, valorMaximo: true,
+  notas: { select: { matriculaId: true, valor: true } },
+} as const;
+
 /** Média do aluno num conjunto de avaliações — mesma conta do boletim (lib/media). */
-function mediaDoAluno(avs: Av[], matriculaId: string): number | null {
-  const notas = avs.flatMap((av) => {
-    const n = av.notas.find((x) => x.matriculaId === matriculaId);
-    return n ? [{ valor: n.valor, valorMaximo: av.valorMaximo, peso: av.peso }] : [];
-  });
-  return mediaPonderada(notas);
+function mediaDoAluno(avs: Av[], matriculaId: string, hoje: Date): number | null {
+  if (avs.length === 0) return null;
+  return mediaDasAvaliacoes(
+    avs.map((av) => ({
+      data: av.data,
+      peso: av.peso,
+      valorMaximo: av.valorMaximo,
+      nota: av.notas.find((x) => x.matriculaId === matriculaId)?.valor ?? null,
+    })),
+    hoje
+  );
+}
+
+async function regraVigente(anoLetivo: number, escolaId: string, etapaId: string): Promise<Regra> {
+  const cfg = await configuracaoAvaliacaoService.findByAnoLetivo(anoLetivo, escolaId, etapaId);
+  return {
+    mediaMinima: cfg?.mediaMinima ?? 6,
+    frequenciaMinima: cfg?.percentualFrequenciaMinima ?? 75,
+    origem: cfg ? "CONFIGURACAO" : "PADRAO",
+  };
 }
 
 /**
@@ -26,25 +61,13 @@ function mediaDoAluno(avs: Av[], matriculaId: string): number | null {
  * (escola+etapa > etapa > escola > rede); sem configuração, 6,0 e 75%.
  */
 export class AprendizagemService {
-  async turma(turmaId: string, bimestrePedido?: number) {
-    const turma = await prisma.turma.findUnique({
-      where: { id: turmaId },
-      select: {
-        id: true, nome: true, turno: true, anoLetivo: true, escolaId: true,
-        escola: { select: { nome: true } },
-        serie: { select: { nome: true, nivel: { select: { etapaId: true } } } },
-      },
-    });
+  async turma(turmaId: string, bimestrePedido?: number, hoje: Date = hojeNaRede()) {
+    const turma = await prisma.turma.findUnique({ where: { id: turmaId }, select: selectTurma });
     if (!turma) throw new NotFoundError("NF_005");
     const etapaId = turma.serie.nivel.etapaId;
-    const cfg = await configuracaoAvaliacaoService.findByAnoLetivo(turma.anoLetivo, turma.escolaId, etapaId);
-    const regra = {
-      mediaMinima: cfg?.mediaMinima ?? 6,
-      frequenciaMinima: cfg?.percentualFrequenciaMinima ?? 75,
-      origem: cfg ? "CONFIGURACAO" : "PADRAO",
-    };
 
-    const [disciplinas, alunos, avaliacoes, freq] = await Promise.all([
+    const [regra, disciplinas, alunos, avaliacoes, freq] = await Promise.all([
+      regraVigente(turma.anoLetivo, turma.escolaId, etapaId),
       prisma.disciplina.findMany({
         where: { etapaId, ativo: true },
         select: { id: true, nome: true },
@@ -55,16 +78,17 @@ export class AprendizagemService {
         select: { id: true, nomeAluno: true, numeroMatricula: true },
         orderBy: { nomeAluno: "asc" },
       }),
-      prisma.avaliacao.findMany({
-        where: { turmaId },
-        select: {
-          id: true, disciplinaId: true, bimestre: true, peso: true, valorMaximo: true,
-          notas: { select: { matriculaId: true, valor: true } },
-        },
-      }),
+      prisma.avaliacao.findMany({ where: { turmaId }, select: selectAvaliacao }),
       prisma.frequencia.groupBy({ by: ["matriculaId", "status"], where: { turmaId }, _count: true }),
     ]);
+    return this.montar(turma, regra, disciplinas, alunos, avaliacoes, freq, bimestrePedido, hoje);
+  }
 
+  /** Cálculo puro do acompanhamento de UMA turma (dados já carregados). */
+  private montar(
+    turma: TurmaInfo, regra: Regra, disciplinas: Disc[], alunos: Aluno[],
+    avaliacoes: Av[], freq: FreqAgrupada[], bimestrePedido: number | undefined, hoje: Date
+  ) {
     const bimestresComAvaliacao = [...new Set(avaliacoes.map((a) => a.bimestre))].sort();
     const bimestre = bimestrePedido ?? bimestresComAvaliacao[bimestresComAvaliacao.length - 1] ?? 1;
     const doBim = (disciplinaId: string, bim: number) =>
@@ -80,11 +104,13 @@ export class AprendizagemService {
 
     const linhasAlunos = alunos.map((a) => {
       const f = presenca.get(a.id);
+      // Exibe arredondado; compara com a razão exata (74,5% não vira 75%)
       const frequencia = f && f.total ? Math.round((f.presencas / f.total) * 100) : null;
+      const frequenciaBaixa = !!f && f.total > 0 && frequenciaAbaixoDoMinimo(f.presencas, f.total, regra.frequenciaMinima);
       const porDisciplina = disciplinas.map((d) => {
         const avs = doBim(d.id, bimestre);
-        const atual = mediaDoAluno(avs, a.id);
-        const anterior = bimestre > 1 ? mediaDoAluno(doBim(d.id, bimestre - 1), a.id) : null;
+        const atual = mediaDoAluno(avs, a.id, hoje);
+        const anterior = bimestre > 1 ? mediaDoAluno(doBim(d.id, bimestre - 1), a.id, hoje) : null;
         const semNota = avs.filter((av) => !av.notas.some((n) => n.matriculaId === a.id)).length;
         return { disciplinaId: d.id, media: atual, mediaAnterior: anterior, avaliacoesSemNota: semNota };
       });
@@ -96,7 +122,7 @@ export class AprendizagemService {
       if (abaixo.length) {
         motivos.push({ codigo: "ABAIXO_DA_MEDIA", texto: `Abaixo da média em ${abaixo.map((x) => nome(x.disciplinaId)).join(", ")}` });
       }
-      if (frequencia !== null && frequencia < regra.frequenciaMinima) {
+      if (frequenciaBaixa) {
         motivos.push({ codigo: "FREQUENCIA_BAIXA", texto: `Frequência de ${frequencia}%` });
       }
       if (queda.length) {
@@ -151,8 +177,13 @@ export class AprendizagemService {
     };
   }
 
-  /** Resumo por turma da escola no ano letivo (padrão: o mais recente com turma ativa). */
-  async escola(escolaId: string, anoLetivo?: number) {
+  /**
+   * Resumo por turma da escola no ano letivo (padrão: o mais recente com turma
+   * ativa). Busca em LOTE (turmas, disciplinas, alunos, avaliações e
+   * frequência da escola inteira em poucas consultas) e reaproveita o mesmo
+   * cálculo de `turma()` — antes eram ~7 consultas por turma.
+   */
+  async escola(escolaId: string, anoLetivo?: number, hoje: Date = hojeNaRede()) {
     const escola = await prisma.escola.findUnique({ where: { id: escolaId }, select: { id: true, nome: true } });
     if (!escola) throw new NotFoundError("NF_003");
     const anos = await prisma.turma.findMany({
@@ -161,17 +192,61 @@ export class AprendizagemService {
       distinct: ["anoLetivo"],
       orderBy: { anoLetivo: "desc" },
     });
-    const ano = anoLetivo ?? anos[0]?.anoLetivo ?? new Date().getFullYear();
+    const ano = anoLetivo ?? anos[0]?.anoLetivo ?? Number(hojeNaRede().toISOString().slice(0, 4));
     const turmas = await prisma.turma.findMany({
       where: { escolaId, anoLetivo: ano, ativo: true },
-      select: { id: true },
+      select: selectTurma,
       orderBy: { nome: "asc" },
     });
-    const resumos = [];
-    for (const t of turmas) {
-      const r = await this.turma(t.id);
-      resumos.push({ turma: r.turma, bimestre: r.bimestre, resumo: r.resumo, regra: r.regra });
-    }
+    const turmaIds = turmas.map((t) => t.id);
+    const etapaIds = [...new Set(turmas.map((t) => t.serie.nivel.etapaId))];
+
+    const [regras, disciplinas, alunos, avaliacoes, freq] = await Promise.all([
+      // Uma consulta por etapa distinta (normalmente 1–3 por escola)
+      Promise.all(etapaIds.map(async (e) => [e, await regraVigente(ano, escolaId, e)] as const)),
+      prisma.disciplina.findMany({
+        where: { etapaId: { in: etapaIds }, ativo: true },
+        select: { id: true, nome: true, etapaId: true },
+        orderBy: [{ ordem: "asc" }, { nome: "asc" }],
+      }),
+      prisma.matricula.findMany({
+        where: { turmaId: { in: turmaIds }, status: "ATIVA" },
+        select: { id: true, nomeAluno: true, numeroMatricula: true, turmaId: true },
+        orderBy: { nomeAluno: "asc" },
+      }),
+      prisma.avaliacao.findMany({ where: { turmaId: { in: turmaIds } }, select: { ...selectAvaliacao, turmaId: true } }),
+      prisma.frequencia.groupBy({ by: ["turmaId", "matriculaId", "status"], where: { turmaId: { in: turmaIds } }, _count: true }),
+    ]);
+    const regraDaEtapa = new Map(regras);
+    const agrupa = <T, K>(xs: T[], chave: (x: T) => K) => {
+      const m = new Map<K, T[]>();
+      for (const x of xs) {
+        const k = chave(x);
+        const l = m.get(k);
+        if (l) l.push(x);
+        else m.set(k, [x]);
+      }
+      return m;
+    };
+    const discPorEtapa = agrupa(disciplinas, (d) => d.etapaId);
+    const alunosPorTurma = agrupa(alunos, (a) => a.turmaId);
+    const avsPorTurma = agrupa(avaliacoes, (a) => a.turmaId);
+    const freqPorTurma = agrupa(freq, (f) => f.turmaId);
+
+    const resumos = turmas.map((t) => {
+      const etapaId = t.serie.nivel.etapaId;
+      const r = this.montar(
+        t,
+        regraDaEtapa.get(etapaId)!,
+        discPorEtapa.get(etapaId) ?? [],
+        alunosPorTurma.get(t.id) ?? [],
+        avsPorTurma.get(t.id) ?? [],
+        freqPorTurma.get(t.id) ?? [],
+        undefined,
+        hoje
+      );
+      return { turma: r.turma, bimestre: r.bimestre, resumo: r.resumo, regra: r.regra };
+    });
     return { escola, anoLetivo: ano, anosDisponiveis: anos.map((a) => a.anoLetivo), turmas: resumos };
   }
 }

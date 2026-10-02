@@ -1,12 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { liderTurmaService } from "../services/lider-turma.service.js";
 import {
   createLiderTurmaSchema,
   updateLiderTurmaSchema,
 } from "../schemas/democratica.schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function liderTurmaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -55,17 +54,7 @@ export async function liderTurmaRoutes(app: FastifyInstance) {
         const lideres = await liderTurmaService.findAll(filters);
         return reply.send(lideres);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao listar líderes de turma";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -93,17 +82,7 @@ export async function liderTurmaRoutes(app: FastifyInstance) {
         const lider = await liderTurmaService.findById(request.params.id);
         return reply.send(lider);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar líder de turma";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -142,17 +121,7 @@ export async function liderTurmaRoutes(app: FastifyInstance) {
         const lider = await liderTurmaService.create(body);
         return reply.status(201).send(lider);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao registrar líder de turma";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -181,17 +150,7 @@ export async function liderTurmaRoutes(app: FastifyInstance) {
         const lider = await liderTurmaService.update(request.params.id, body);
         return reply.send(lider);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar líder de turma";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -219,17 +178,7 @@ export async function liderTurmaRoutes(app: FastifyInstance) {
         await liderTurmaService.delete(request.params.id);
         return reply.send({ message: "Líder de turma removido com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao remover líder de turma";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_TEXTO_CURTO, MAX_ITENS_PAGINA } from "./index.js";
 
 // ==================== MÓDULO 5: PROGRAMAS ESPECIAIS (schemas) ====================
 // Alinhados ao model/service (os schemas JSON antigos das rotas pediam campos
@@ -11,8 +12,8 @@ const semVazio = (v: unknown) => (v === "" || v === null ? undefined : v);
 const texto = (max = 5000) => z.preprocess(semVazio, z.string().trim().min(1).max(max).optional());
 const codigo = (max = 60) => z.string().trim().min(1, "Obrigatório").max(max);
 const codigoOpcional = (max = 60) => z.preprocess(semVazio, codigo(max).optional());
-const id = z.string().trim().min(1, "Obrigatório");
-const idOpcional = z.preprocess(semVazio, z.string().trim().min(1).optional());
+const id = z.string().max(MAX_TEXTO_CURTO).trim().min(1, "Obrigatório");
+const idOpcional = z.preprocess(semVazio, z.string().max(MAX_TEXTO_CURTO).trim().min(1).optional());
 const data = z.coerce.date({ invalid_type_error: "Data inválida" });
 const dataOpcional = z.preprocess(semVazio, data.optional());
 const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário inválido (HH:MM)");
@@ -20,7 +21,7 @@ const horaOpcional = z.preprocess(semVazio, hora.optional());
 const inteiroQuery = z.preprocess(semVazio, z.coerce.number().int().optional());
 const paginacao = {
   page: z.coerce.number().int().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_ITENS_PAGINA).optional(),
 };
 
 // ---------- AEE: PEI ----------

@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { colegiadoService } from "../services/colegiado.service.js";
 import {
   createColegiadoSchema,
@@ -9,6 +7,7 @@ import {
   updateMembroColegiadoSchema,
 } from "../schemas/democratica.schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function colegiadoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -48,15 +47,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         const colegiados = await colegiadoService.findAll(filters);
         return reply.send(colegiados);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar colegiados";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -86,15 +77,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         const colegiado = await colegiadoService.findById(request.params.id);
         return reply.send(colegiado);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar colegiado";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -128,15 +111,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         const colegiado = await colegiadoService.create(body);
         return reply.status(201).send(colegiado);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar colegiado";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -165,15 +140,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         const colegiado = await colegiadoService.update(request.params.id, body);
         return reply.send(colegiado);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar colegiado";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -201,15 +168,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         await colegiadoService.delete(request.params.id);
         return reply.send({ message: "Colegiado deletado com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover colegiado";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -273,15 +232,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         const membro = await colegiadoService.addMembro(request.params.id, body);
         return reply.status(201).send(membro);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao adicionar membro";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -313,15 +264,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         );
         return reply.send(membro);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar membro";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -349,15 +292,7 @@ export async function colegiadoRoutes(app: FastifyInstance) {
         await colegiadoService.removeMembro(request.params.membroId);
         return reply.send({ message: "Membro removido do colegiado" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover membro";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

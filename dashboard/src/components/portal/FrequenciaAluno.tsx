@@ -111,6 +111,11 @@ export function FrequenciaAluno({ matriculaId }: { matriculaId: string }) {
                     <TableRow key={r.id}>
                       <TableCell className="font-mono text-[12px]">
                         {new Date(r.data).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
+                        {r.horaInicio ? (
+                          <span className="ml-1 font-sans text-ink-muted">
+                            · {r.horaInicio} {r.disciplina}
+                          </span>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <Badge variant={config.variant}>{config.label}</Badge>

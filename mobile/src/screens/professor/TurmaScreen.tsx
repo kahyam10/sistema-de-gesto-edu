@@ -32,9 +32,18 @@ export function TurmaScreen({ route, navigation }: Props) {
   const q = useQuery({ queryKey: ["professor", "alunos", turmaId], queryFn: () => professorApi.alunos(turmaId) });
   const resumo = useQuery({ queryKey: ["professor", "resumo"], queryFn: professorApi.resumo });
 
+  // Frequência por aula: conta as aulas (deste professor) de hoje sem chamada
   const temAulaHoje = resumo.data?.aulasHoje.some((a) => a.turmaId === turmaId) ?? false;
-  const pendente = resumo.data?.frequenciasPendentesHoje.some((p) => p.turmaId === turmaId) ?? false;
-  const statusChamada = !resumo.data ? "…" : pendente ? "Pendente" : temAulaHoje ? "Registrada hoje" : "Sem aula hoje na grade";
+  const pendentes = resumo.data?.frequenciasPendentesHoje.filter((p) => p.turmaId === turmaId).length ?? 0;
+  const statusChamada = !resumo.data
+    ? "…"
+    : pendentes > 1
+      ? `${pendentes} aulas pendentes`
+      : pendentes === 1
+        ? "Pendente"
+        : temAulaHoje
+          ? "Registrada hoje"
+          : "Sem aula hoje na grade";
   const t = q.data?.turma;
 
   return (

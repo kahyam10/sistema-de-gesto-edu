@@ -1,12 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { manutencaoService } from "../services/manutencao.service.js";
 import {
   createManutencaoSchema,
   updateManutencaoSchema,
 } from "../schemas/transporte.schemas.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { consultaListaSchema } from "../schemas/index.js";
 
 export async function manutencaoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -62,36 +62,28 @@ export async function manutencaoRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { veiculoId, status, tipo, dataInicio, dataFim, page, limit } =
-          request.query;
+        const { veiculoId, status, tipo } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const filters: NonNullable<Parameters<typeof manutencaoService.findAllPaginated>[0]> = {};
         if (veiculoId) filters.veiculoId = veiculoId;
         if (status) filters.status = status;
         if (tipo) filters.tipo = tipo;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           return reply.send(
             await manutencaoService.findAllPaginated(filters, {
-              page: parseInt(page),
-              limit: parseInt(limit),
+              page: consulta.page,
+              limit: consulta.limit,
             })
           );
         }
 
         return reply.send(await manutencaoService.findAll(filters));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar manutenções";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -120,24 +112,14 @@ export async function manutencaoRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const { dataInicio, dataFim } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
         const filters: NonNullable<Parameters<typeof manutencaoService.custoTotalPorVeiculo>[0]> = {};
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
         return reply.send(await manutencaoService.custoTotalPorVeiculo(filters));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao calcular custos por veículo";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -159,15 +141,7 @@ export async function manutencaoRoutes(app: FastifyInstance) {
       try {
         return reply.send(await manutencaoService.findById(request.params.id));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar manutenção";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -188,15 +162,7 @@ export async function manutencaoRoutes(app: FastifyInstance) {
         const manutencao = await manutencaoService.create(data);
         return reply.status(201).send(manutencao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao agendar manutenção";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -223,17 +189,7 @@ export async function manutencaoRoutes(app: FastifyInstance) {
         );
         return reply.send(manutencao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar manutenção";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -256,15 +212,7 @@ export async function manutencaoRoutes(app: FastifyInstance) {
         await manutencaoService.delete(request.params.id);
         return reply.send({ message: "Manutenção deletada com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar manutenção";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

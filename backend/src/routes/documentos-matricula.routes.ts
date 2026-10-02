@@ -1,10 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
 import { authMiddleware } from "../middleware/auth.js";
 import { auditar } from "../lib/auditoria.js";
-import { AppError, FileError, formatarErroZod } from "../errors/index.js";
+import { FileError } from "../errors/index.js";
 import { documentoMatriculaService } from "../services/documento-matricula.service.js";
 import { uploadDocumentoMatriculaQuerySchema } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function documentosMatriculaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -70,15 +70,7 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
         });
         return reply.status(201).send(documento);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao enviar documento";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -105,12 +97,7 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
         const documentos = await documentoMatriculaService.list(request.params.matriculaId);
         return reply.status(200).send(documentos);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar documentos";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -160,12 +147,7 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
           )
           .send(stream);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao baixar documento";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -206,12 +188,7 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
         });
         return reply.status(200).send(resultado);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar documento";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -247,12 +224,7 @@ export async function documentosMatriculaRoutes(app: FastifyInstance) {
         });
         return reply.status(200).send(resultado);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao expurgar documentos";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

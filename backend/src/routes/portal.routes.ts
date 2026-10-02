@@ -1,17 +1,18 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, BusinessError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
+import { BusinessError } from "../errors/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { portalService } from "../services/portal.service.js";
 import { periodoPortalSchema, resumoPortalQuerySchema } from "../schemas/index.js";
 import { prisma } from "../lib/prisma.js";
 import { z } from "zod";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 // Data da chamada: AAAA-MM-DD (padrão: hoje, no fuso da Bahia)
 const chamadaQuerySchema = z.object({
   data: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato AAAA-MM-DD")
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), "Data inválida")
     .optional()
     .transform((v) =>
       new Date(
@@ -28,6 +29,7 @@ const cardapioQuerySchema = z.object({
   de: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato AAAA-MM-DD")
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), "Data inválida")
     .optional()
     .transform((v) => (v ? new Date(v) : undefined)),
 });
@@ -57,30 +59,13 @@ export async function portalRoutes(app: FastifyInstance) {
         const user = request.user as TokenUser;
         return reply.status(200).send(await portalService.resumoProfessor(user.id));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao carregar portal do professor";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
 
   // ---------- App do professor (propriedade da turma validada no service) ----------
 
-  const tratar = (error: unknown, reply: FastifyReply, padrao: string) => {
-    if (error instanceof AppError) {
-      return reply.status(error.statusCode).send({ error: error.message });
-    }
-    if (error instanceof ZodError) {
-      return reply.status(400).send(formatarErroZod(error));
-    }
-    return reply.status(400).send({ error: error instanceof Error ? error.message : padrao });
-  };
 
   // GET /api/portal/professor/turmas/:turmaId/chamada?data=AAAA-MM-DD
   app.get(
@@ -96,7 +81,7 @@ export async function portalRoutes(app: FastifyInstance) {
           await portalService.chamadaDaTurma(user.id, request.params.turmaId, q.data)
         );
       } catch (error) {
-        return tratar(error, reply, "Erro ao carregar a chamada");
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -109,7 +94,7 @@ export async function portalRoutes(app: FastifyInstance) {
         const user = request.user as TokenUser;
         return reply.send(await portalService.notasDaTurma(user.id, request.params.turmaId));
       } catch (error) {
-        return tratar(error, reply, "Erro ao carregar notas da turma");
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -122,7 +107,7 @@ export async function portalRoutes(app: FastifyInstance) {
         const user = request.user as TokenUser;
         return reply.send(await portalService.alunosDaTurma(user.id, request.params.turmaId));
       } catch (error) {
-        return tratar(error, reply, "Erro ao carregar alunos da turma");
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -136,7 +121,7 @@ export async function portalRoutes(app: FastifyInstance) {
       const user = request.user as TokenUser;
       return reply.send(await portalService.agenda(user.id, dias));
     } catch (error) {
-      return tratar(error, reply, "Erro ao carregar a agenda");
+      return responderErroRota(error, reply);
     }
   });
 
@@ -147,7 +132,7 @@ export async function portalRoutes(app: FastifyInstance) {
       const user = request.user as TokenUser;
       return reply.send(await portalService.cardapio(user.id, de));
     } catch (error) {
-      return tratar(error, reply, "Erro ao carregar o cardápio");
+      return responderErroRota(error, reply);
     }
   });
 
@@ -157,7 +142,7 @@ export async function portalRoutes(app: FastifyInstance) {
       const user = request.user as TokenUser;
       return reply.send(await portalService.escolasDoUsuario(user.id));
     } catch (error) {
-      return tratar(error, reply, "Erro ao carregar as escolas");
+      return responderErroRota(error, reply);
     }
   });
 
@@ -167,7 +152,7 @@ export async function portalRoutes(app: FastifyInstance) {
       const user = request.user as TokenUser;
       return reply.send(await portalService.meusDados(user.id));
     } catch (error) {
-      return tratar(error, reply, "Erro ao carregar seus dados");
+      return responderErroRota(error, reply);
     }
   });
 
@@ -177,7 +162,7 @@ export async function portalRoutes(app: FastifyInstance) {
       const user = request.user as TokenUser;
       return reply.send(await portalService.comunicadosDoUsuario(user.id));
     } catch (error) {
-      return tratar(error, reply, "Erro ao carregar comunicados");
+      return responderErroRota(error, reply);
     }
   });
 
@@ -196,15 +181,7 @@ export async function portalRoutes(app: FastifyInstance) {
         const user = request.user as TokenUser;
         return reply.status(200).send(await portalService.alunosDoUsuario(user.id));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar alunos vinculados";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -229,15 +206,7 @@ export async function portalRoutes(app: FastifyInstance) {
           .status(200)
           .send(await portalService.boletimAluno(user.id, request.params.matriculaId));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao carregar boletim do aluno";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -273,15 +242,7 @@ export async function portalRoutes(app: FastifyInstance) {
             )
           );
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao carregar frequência do aluno";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -317,15 +278,7 @@ export async function portalRoutes(app: FastifyInstance) {
         if (!escolaId) throw new BusinessError("BIZ_023");
         return reply.status(200).send(await portalService.resumoEscola(escolaId, anoLetivo));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao carregar portal do diretor";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -361,15 +314,7 @@ export async function portalRoutes(app: FastifyInstance) {
         if (!escolaId) throw new BusinessError("BIZ_023");
         return reply.status(200).send(await portalService.resumoEscola(escolaId, anoLetivo));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao carregar portal da coordenação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -394,15 +339,7 @@ export async function portalRoutes(app: FastifyInstance) {
           .status(200)
           .send(await portalService.resumoSemec(anoLetivo ?? new Date().getFullYear()));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao carregar portal da SEMEC";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

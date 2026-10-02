@@ -136,8 +136,12 @@ describe("autenticação por cookie + CSRF", () => {
   });
 
   it("Bearer (app mobile/integrações) funciona sem CSRF", async () => {
-    const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@teste.local" } });
-    const token = app.jwt.sign({ id: admin.id, email: admin.email, nome: admin.nome, role: "ADMIN" });
+    // Token de verdade (com "sid" de uma sessão viva): JWT sem sessão agora é 401
+    const mob = await app.inject({
+      method: "POST", url: "/api/auth/mobile/login", payload: { email: "admin@teste.local", password: SENHA },
+    });
+    expect(mob.statusCode).toBe(200);
+    const token = mob.json().accessToken as string;
     const res = await app.inject({
       method: "POST", url: "/api/escolas", payload: {},
       headers: { authorization: `Bearer ${token}` },

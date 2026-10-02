@@ -1,8 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { moduleService } from "../services/module.service.js";
 import { z } from "zod";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 const createModuleSchema = z.object({
   name: z.string().min(1),
@@ -48,15 +47,7 @@ export async function modulesRoutes(app: FastifyInstance) {
       const modules = await moduleService.findAll();
       return reply.send(modules);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao listar módulos";
-      return reply.status(500).send({ error: message });
+      return responderErroRota(error, reply, 500);
     }
   });
 
@@ -77,15 +68,7 @@ export async function modulesRoutes(app: FastifyInstance) {
 
         return reply.send(module);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar módulo";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -97,15 +80,7 @@ export async function modulesRoutes(app: FastifyInstance) {
       const module = await moduleService.create(data);
       return reply.status(201).send(module);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao criar módulo";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -122,15 +97,7 @@ export async function modulesRoutes(app: FastifyInstance) {
         const module = await moduleService.update(id, data);
         return reply.send(module);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar módulo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -147,15 +114,7 @@ export async function modulesRoutes(app: FastifyInstance) {
         await moduleService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar módulo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -180,15 +139,7 @@ export async function modulesRoutes(app: FastifyInstance) {
         });
         return reply.status(201).send(subModule);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar sub-módulo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -206,17 +157,7 @@ export async function modulesRoutes(app: FastifyInstance) {
         const subModule = await moduleService.updateSubModule(id, data);
         return reply.send(subModule);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar sub-módulo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -233,15 +174,7 @@ export async function modulesRoutes(app: FastifyInstance) {
         await moduleService.deleteSubModule(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar sub-módulo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -263,15 +196,7 @@ export async function modulesRoutes(app: FastifyInstance) {
 
         return reply.send(subModule);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao alternar status";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

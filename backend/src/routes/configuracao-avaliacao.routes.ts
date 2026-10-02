@@ -1,12 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { configuracaoAvaliacaoService } from "../services/index.js";
 import {
   createConfiguracaoAvaliacaoSchema,
   updateConfiguracaoAvaliacaoSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function configuracaoAvaliacaoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -140,17 +139,7 @@ Lista todas as configurações de avaliação do sistema com filtros opcionais.
         const configs = await configuracaoAvaliacaoService.findAll(filters);
         return reply.send(configs);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao listar configurações";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -264,17 +253,7 @@ Retorna os detalhes completos de uma configuração de avaliação específica.
 
         return reply.send(config);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar configuração";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -406,17 +385,7 @@ Cria uma nova configuração de avaliação para um ano letivo.
         const config = await configuracaoAvaliacaoService.create(body);
         return reply.status(201).send(config);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao criar configuração";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -534,17 +503,7 @@ Atualiza uma configuração de avaliação existente.
         const config = await configuracaoAvaliacaoService.update(id, body);
         return reply.send(config);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar configuração";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -627,17 +586,7 @@ Remove uma configuração de avaliação do sistema.
         await configuracaoAvaliacaoService.delete(id);
         return reply.send({ message: "Configuração removida com sucesso" });
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao remover configuração";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

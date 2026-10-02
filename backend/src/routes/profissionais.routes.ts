@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { profissionalService } from "../services/index.js";
 import {
   createProfissionalSchema,
@@ -8,7 +6,9 @@ import {
   createFormacaoSchema,
   updateFormacaoSchema,
   vincularEscolaSchema,
+  censoProfissionalSchema,
 } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 interface ProfissionalFilters {
   tipo?: string;
@@ -33,17 +33,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         const profissionais = await profissionalService.findAll(filters);
         return reply.send(profissionais);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao listar profissionais";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -67,17 +57,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
 
         return reply.send(profissional);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar profissional";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -94,17 +74,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         const profissionais = await profissionalService.findByEscola(escolaId);
         return reply.send(profissionais);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar profissionais";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -116,15 +86,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
       const profissional = await profissionalService.create(data);
       return reply.status(201).send(profissional);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao criar profissional";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -141,17 +103,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         const profissional = await profissionalService.update(id, data);
         return reply.send(profissional);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar profissional";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -167,19 +119,11 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         const { id } = request.params;
         const profissional = await profissionalService.updateCenso(
           id,
-          request.body
+          censoProfissionalSchema.parse(request.body)
         );
         return reply.send(profissional);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao salvar censo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -196,17 +140,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         await profissionalService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao deletar profissional";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -231,17 +165,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         );
         return reply.status(201).send(vinculo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao vincular profissional";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -258,17 +182,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         await profissionalService.desvincularEscola(id, escolaId);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao desvincular profissional";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -287,15 +201,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         const formacoes = await profissionalService.getFormacoes(id);
         return reply.send(formacoes);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar formações";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -313,15 +219,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         const formacao = await profissionalService.addFormacao(id, data);
         return reply.status(201).send(formacao);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao adicionar formação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -344,15 +242,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         );
         return reply.send(formacao);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar formação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -369,15 +259,7 @@ export async function profissionaisRoutes(app: FastifyInstance) {
         await profissionalService.deleteFormacao(formacaoId);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover formação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { MAX_TEXTO_CURTO } from "./index.js";
 import { DIAS_SEMANA_UTEIS } from "../lib/horarios.js";
 
 // ==================== MÓDULO 4: AC e quadro de lotação ====================
 
 const semVazio = (v: unknown) => (v === "" || v === null ? undefined : v);
 const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário inválido (HH:MM)");
-const idOpcional = z.preprocess(semVazio, z.string().trim().min(1).optional());
+const idOpcional = z.preprocess(semVazio, z.string().max(MAX_TEXTO_CURTO).trim().min(1).optional());
 const texto = (max: number) => z.preprocess(semVazio, z.string().trim().min(1).max(max).optional());
 
 export const areaAcEnum = z.enum([
@@ -23,11 +24,11 @@ const camposAc = {
   local: texto(150),
   coordenadorId: idOpcional,
   observacoes: texto(2000),
-  participantes: z.array(z.string().trim().min(1)).max(200).default([]),
+  participantes: z.array(z.string().max(MAX_TEXTO_CURTO).trim().min(1)).max(200).default([]),
 };
 
 export const createAcSchema = z
-  .object({ escolaId: z.string().trim().min(1, "Escola é obrigatória"), ...camposAc })
+  .object({ escolaId: z.string().max(MAX_TEXTO_CURTO).trim().min(1, "Escola é obrigatória"), ...camposAc })
   .refine((d) => d.horaFim > d.horaInicio, { message: "O fim deve ser depois do início", path: ["horaFim"] });
 
 export const updateAcSchema = z.object({
@@ -40,7 +41,7 @@ export const updateAcSchema = z.object({
   coordenadorId: idOpcional,
   observacoes: texto(2000),
   ativo: z.boolean().optional(),
-  participantes: z.array(z.string().trim().min(1)).max(200).optional(),
+  participantes: z.array(z.string().max(MAX_TEXTO_CURTO).trim().min(1)).max(200).optional(),
 });
 
 export const listarAcsQuerySchema = z.object({
@@ -51,7 +52,7 @@ export const listarAcsQuerySchema = z.object({
 });
 
 export const quadroLotacaoQuerySchema = z.object({
-  escolaId: z.string().trim().min(1, "Informe a escola"),
+  escolaId: z.string().max(MAX_TEXTO_CURTO).trim().min(1, "Informe a escola"),
 });
 
 export type CreateAcInput = z.infer<typeof createAcSchema>;

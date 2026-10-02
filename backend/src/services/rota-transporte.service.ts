@@ -1,6 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { RotaTransporte } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { filtroLeitura } from "../lib/escopo.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
 import {
   CreateRotaTransporteInput,
@@ -37,13 +39,18 @@ export class RotaTransporteService {
     });
   }
 
-  // Busca rota por ID com escolas e alunos vinculados
+  // Busca rota por ID com escolas e alunos vinculados. A rota é da rede
+  // (fora do escopo), mas os ALUNOS incluídos seguem o escopo de Matricula:
+  // includes não passam pela extensão, então o filtro vai aqui.
   async findById(id: string) {
+    const escopo = contextoAtual()?.escopo;
+    const daMatricula = escopo ? filtroLeitura("Matricula", escopo) : null;
     const rota = await prisma.rotaTransporte.findUnique({
       where: { id },
       include: {
         ...INCLUDE_LISTA,
         alunos: {
+          ...(daMatricula ? { where: { matricula: daMatricula } } : {}),
           include: {
             matricula: {
               select: {

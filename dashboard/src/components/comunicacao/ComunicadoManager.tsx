@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { urlSegura } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useComunicadosPaginated,
@@ -217,6 +218,10 @@ export function ComunicadoManager() {
       toast.error("Escolha a turma que vai receber o comunicado");
       return;
     }
+    if (formData.anexoUrl?.trim() && !urlSegura(formData.anexoUrl)) {
+      toast.error("O link do anexo precisa começar com https://");
+      return;
+    }
 
     try {
       const dataToSubmit = {
@@ -394,10 +399,7 @@ export function ComunicadoManager() {
                             </span>
                           </div>
                           {comunicado.anexoUrl && (
-                            <div className="flex items-center gap-1">
-                              <Paperclip className="h-4 w-4" />
-                              <span>Anexo</span>
-                            </div>
+                            <AnexoLink url={comunicado.anexoUrl} />
                           )}
                           {comunicado.escola && (
                             <span>{comunicado.escola.nome}</span>
@@ -655,6 +657,36 @@ export function ComunicadoManager() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/**
+ * Anexo do comunicado: link só se for https (urlSegura). Registros antigos
+ * com http:/javascript: etc. aparecem como texto, sem link, com aviso.
+ */
+export function AnexoLink({ url }: { url: string }) {
+  const segura = urlSegura(url);
+  if (segura) {
+    return (
+      <a
+        href={segura}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 underline underline-offset-2 hover:text-foreground"
+      >
+        <Paperclip className="h-4 w-4" />
+        <span>Anexo</span>
+      </a>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1" title={url}>
+      <Paperclip className="h-4 w-4" />
+      <span>Anexo</span>
+      <span className="text-xs text-amber-700 dark:text-amber-400">
+        (link não seguro — não abre; edite e use https://)
+      </span>
     </div>
   );
 }

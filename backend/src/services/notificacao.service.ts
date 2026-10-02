@@ -1,6 +1,53 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError } from "../errors/AppError.js";
+import { NotFoundError, PermissionError } from "../errors/AppError.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { escolasDoEscopo, filtroLeitura } from "../lib/escopo.js";
+import { GESTAO } from "../lib/rbac.js";
+
+/** Limite padrão da lista pessoal (as mais relevantes primeiro: não lidas, prioridade, recentes). */
+export const LIMITE_NOTIFICACOES_USUARIO = 100;
+
+// Equipe das escolas (quem pode receber aviso de colega da mesma escola)
+const PAPEIS_EQUIPE_ESCOLA = ["DIRETOR", "COORDENADOR", "SECRETARIA", "PROFESSOR"];
+
+/**
+ * Quem não é da gestão da rede só notifica quem está no seu escopo: a equipe
+ * das escolas do escopo (lotada nelas ou com aula em turma delas) e os
+ * responsáveis (vínculo ativo) de alunos do escopo. Fora disso → 403.
+ * Sem contexto (jobs/rotinas internas) ou gestão: sem restrição.
+ */
+async function garantirDestinatariosNoEscopo(userIds: string[]) {
+  const ctx = contextoAtual();
+  const papel = ctx?.papel;
+  if (!ctx || papel === undefined || GESTAO.includes(papel)) return;
+  const e = ctx.escopo;
+  if (!e) throw new PermissionError("PERM_007", { detalhe: "destinatário fora do seu escopo" });
+
+  const unicos = [...new Set(userIds)];
+  const escolas = escolasDoEscopo(e);
+  const daMatricula = filtroLeitura("Matricula", e) ?? {};
+  const permitidos = await prisma.user.findMany({
+    where: {
+      id: { in: unicos },
+      OR: [
+        {
+          role: { in: PAPEIS_EQUIPE_ESCOLA },
+          OR: [
+            { escolaId: { in: escolas } },
+            { profissional: { escolas: { some: { escolaId: { in: escolas } } } } },
+            { profissional: { turmas: { some: { turma: { escolaId: { in: escolas } } } } } },
+          ],
+        },
+        { vinculosMatricula: { some: { ativo: true, matricula: daMatricula } } },
+      ],
+    },
+    select: { id: true },
+  });
+  if (permitidos.length !== unicos.length) {
+    throw new PermissionError("PERM_007", { detalhe: "destinatário fora do seu escopo" });
+  }
+}
 
 
 export class NotificacaoService {
@@ -18,6 +65,7 @@ export class NotificacaoService {
     acaoTipo?: string;
     acaoId?: string;
   }) {
+    await garantirDestinatariosNoEscopo([data.userId]);
     const notificacao = await prisma.notificacao.create({
       data: {
         userId: data.userId,
@@ -49,6 +97,7 @@ export class NotificacaoService {
     acaoTipo?: string;
     acaoId?: string;
   }) {
+    await garantirDestinatariosNoEscopo(data.userIds);
     const notificacoes = await Promise.all(
       data.userIds.map((userId) =>
         prisma.notificacao.create({
@@ -162,6 +211,7 @@ export class NotificacaoService {
         { prioridade: "desc" },
         { createdAt: "desc" },
       ],
+      take: LIMITE_NOTIFICACOES_USUARIO,
     });
 
     return notificacoes;

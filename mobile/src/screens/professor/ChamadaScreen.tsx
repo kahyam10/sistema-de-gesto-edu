@@ -8,6 +8,7 @@ import { Aviso, Botao, Cabecalho, Carregando, Erro, Estatistica, Tela, Texto, Va
 import type { ProfessorStack } from "../../navigation/tipos";
 import { cores, espaco, fontes, raio } from "../../theme";
 import { dataPorExtenso, hojeISO, horaBR } from "../../utils/formato";
+import { aulaPreSelecionada, horaAtualNaRede } from "../../utils/chamada";
 
 type Props = NativeStackScreenProps<ProfessorStack, "Chamada">;
 
@@ -18,18 +19,42 @@ const OPCOES: Array<{ valor: StatusFrequencia; letra: string; nome: string; cor:
 ];
 
 export function ChamadaScreen({ route, navigation }: Props) {
-  const { turmaId, turmaNome } = route.params;
+  const { turmaId, turmaNome, gradeHorariaId: aulaDoParametro } = route.params;
   const data = hojeISO();
   const queryClient = useQueryClient();
   const q = useQuery({ queryKey: ["chamada", turmaId, data], queryFn: () => professorApi.chamada(turmaId, data) });
   const [marcacoes, setMarcacoes] = useState<Record<string, StatusFrequencia>>({});
   const [salvoAgora, setSalvoAgora] = useState(false);
+  // Frequência por aula: aula escolhida (null = ainda não escolhida)
+  const [aulaEscolhida, setAulaEscolhida] = useState<string | null>(null);
+  // Hora da rede ao abrir a tela: a pré-seleção não muda sozinha enquanto o
+  // professor marca (virar o minuto não troca a aula nem apaga as marcações)
+  const [horaAoAbrir] = useState(() => horaAtualNaRede());
 
-  // Pré-preenche: o que já foi lançado hoje ou, se nada, todos presentes
+  // Turma com grade hoje → uma chamada por aula. Sem escolha explícita, abre a
+  // aula pedida (vinda de "Hoje") ou a atual/próxima pelo horário da rede.
+  const porAula = q.data?.modo === "AULA";
+  const aulas = useMemo(() => q.data?.aulas ?? [], [q.data]);
+  const aulaId = !porAula
+    ? null
+    : aulaEscolhida && aulas.some((a) => a.gradeHorariaId === aulaEscolhida)
+      ? aulaEscolhida
+      : aulaDoParametro && aulas.some((a) => a.gradeHorariaId === aulaDoParametro)
+        ? aulaDoParametro
+        : aulaPreSelecionada(aulas, horaAoAbrir);
+  const aula = aulas.find((a) => a.gradeHorariaId === aulaId) ?? null;
+
+  // Pré-preenche: o que já foi lançado hoje (nesta aula, ou na chamada diária)
+  // ou, se nada, todos presentes
   useEffect(() => {
     if (!q.data) return;
-    setMarcacoes(Object.fromEntries(q.data.alunos.map((a) => [a.id, a.status ?? "PRESENTE"])));
-  }, [q.data]);
+    if (q.data.modo === "AULA") {
+      const daAula = new Map((aula?.registros ?? []).map((r) => [r.matriculaId, r.status]));
+      setMarcacoes(Object.fromEntries(q.data.alunos.map((a) => [a.id, daAula.get(a.id) ?? "PRESENTE"])));
+    } else {
+      setMarcacoes(Object.fromEntries(q.data.alunos.map((a) => [a.id, a.status ?? "PRESENTE"])));
+    }
+  }, [q.data, aula]);
 
   const cont = useMemo(() => {
     const v = Object.values(marcacoes);
@@ -45,7 +70,8 @@ export function ChamadaScreen({ route, navigation }: Props) {
       professorApi.salvarChamada(
         turmaId,
         data,
-        Object.entries(marcacoes).map(([matriculaId, status]) => ({ matriculaId, status }))
+        Object.entries(marcacoes).map(([matriculaId, status]) => ({ matriculaId, status })),
+        aula?.gradeHorariaId
       ),
     onSuccess: () => {
       setSalvoAgora(true);
@@ -62,7 +88,10 @@ export function ChamadaScreen({ route, navigation }: Props) {
 
   if (q.isPending) return <Carregando />;
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
-  const ja = q.data.jaRegistrada;
+  const ja = porAula ? !!aula?.jaRegistrada : q.data.jaRegistrada;
+  const registradaEm = porAula ? aula?.registradaEm ?? null : q.data.registradaEm;
+  // Turma com grade hoje, mas nenhuma aula deste professor (nem sem professor)
+  const semAulaMinha = porAula && aulas.length === 0;
 
   return (
     <Tela
@@ -71,25 +100,58 @@ export function ChamadaScreen({ route, navigation }: Props) {
           aoVoltar={() => navigation.goBack()}
           sobretitulo="Chamada"
           titulo={`Turma ${turmaNome}`}
-          subtitulo={`${dataPorExtenso(q.data.data)} · ${q.data.turma.escola.nome}`}
+          subtitulo={`${dataPorExtenso(q.data.data)}${aula ? ` · ${aula.horaInicio} ${aula.disciplina}` : ""} · ${q.data.turma.escola.nome}`}
         />
       }
       rodape={
         <>
           {salvoAgora ? <Aviso texto={`Chamada salva: ${cont.P} presentes, ${cont.F + cont.J} ausentes.`} /> : null}
           <Botao
-            titulo={ja ? "Salvar correções" : "Registrar chamada"}
+            titulo={ja ? "Salvar correções" : aula ? `Registrar chamada de ${aula.disciplina}` : "Registrar chamada"}
             onPress={() => salvar.mutate()}
             carregando={salvar.isPending}
-            desabilitado={q.data.alunos.length === 0}
+            desabilitado={q.data.alunos.length === 0 || (porAula && !aula)}
           />
         </>
       }
     >
+      {porAula && aulas.length > 0 ? (
+        <View style={{ gap: espaco.xs }}>
+          <Texto pequeno suave>Aula</Texto>
+          <View style={s.aulas} accessibilityRole="radiogroup" accessibilityLabel="Aula da chamada">
+            {aulas.map((a) => {
+              const ativa = a.gradeHorariaId === aulaId;
+              return (
+                <Pressable
+                  key={a.gradeHorariaId}
+                  onPress={() => {
+                    setSalvoAgora(false);
+                    setAulaEscolhida(a.gradeHorariaId);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: ativa }}
+                  accessibilityLabel={`${a.horaInicio} ${a.disciplina}${a.jaRegistrada ? ", chamada feita" : ", chamada pendente"}`}
+                  style={[s.aula, ativa ? s.aulaAtiva : null]}
+                >
+                  <Text style={[s.aulaHora, ativa ? s.aulaTextoAtivo : null]}>
+                    {a.horaInicio}{a.jaRegistrada ? " ✓" : ""}
+                  </Text>
+                  <Text style={[s.aulaNome, ativa ? s.aulaTextoAtivo : null]} numberOfLines={1}>{a.disciplina}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
+      {semAulaMinha ? (
+        <Vazio texto="A turma tem aulas na grade hoje, mas nenhuma é sua. A chamada é feita por aula, pelo professor de cada uma." />
+      ) : null}
+
       {ja && !salvoAgora ? (
         <Aviso
           tom="alerta"
-          texto={`Chamada registrada${q.data.registradaEm ? ` às ${horaBR(q.data.registradaEm)}` : ""}. Salvar de novo substitui.`}
+          texto={`Chamada${aula ? ` de ${aula.disciplina}` : ""} registrada${registradaEm ? ` às ${horaBR(registradaEm)}` : ""}. Salvar de novo substitui.`}
         />
       ) : null}
 
@@ -111,7 +173,7 @@ export function ChamadaScreen({ route, navigation }: Props) {
         />
       </View>
 
-      {q.data.alunos.length === 0 ? (
+      {semAulaMinha ? null : q.data.alunos.length === 0 ? (
         <Vazio texto="Nenhum aluno ativo nesta turma." />
       ) : (
         q.data.alunos.map((a) => (
@@ -145,6 +207,15 @@ export function ChamadaScreen({ route, navigation }: Props) {
 }
 
 const s = StyleSheet.create({
+  aulas: { flexDirection: "row", flexWrap: "wrap", gap: espaco.xs },
+  aula: {
+    minWidth: 96, paddingVertical: espaco.xs, paddingHorizontal: espaco.sm, borderRadius: raio.sm + 2,
+    backgroundColor: cores.superficie, borderWidth: 1, borderColor: cores.bordaCampo, gap: 1,
+  },
+  aulaAtiva: { backgroundColor: cores.marca, borderColor: cores.marca },
+  aulaHora: { fontFamily: fontes.negrito, fontSize: 15, color: cores.texto },
+  aulaNome: { fontFamily: fontes.regular, fontSize: 13, color: cores.textoSuave },
+  aulaTextoAtivo: { color: "#fff" },
   legendaLinha: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: espaco.sm },
   linha: {
     flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: cores.superficie,

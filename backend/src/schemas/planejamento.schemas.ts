@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { MAX_TEXTO_CURTO } from "./index.js";
 
 // ==================== MÓDULO 2: Planejamento pedagógico ====================
 
 const semVazio = (v: unknown) => (v === "" || v === null ? undefined : v);
-const id = (msg: string) => z.string().trim().min(1, msg);
-const idOpcional = z.preprocess(semVazio, z.string().trim().min(1).optional());
+const id = (msg: string) => z.string().max(MAX_TEXTO_CURTO).trim().min(1, msg);
+const idOpcional = z.preprocess(semVazio, z.string().max(MAX_TEXTO_CURTO).trim().min(1).optional());
 /** Texto opcional na criação ("" = ausente). */
 const texto = (max: number) => z.preprocess(semVazio, z.string().trim().min(1).max(max).optional());
 /** Texto opcional na atualização: "" ou null limpam o campo; ausente mantém. */
@@ -88,7 +89,7 @@ export const updateAtividadeSchema = z.object({
   titulo: z.string().trim().min(1).max(200).optional(),
   tipo: tipoAtividadeEnum.optional(),
   descricao: z.string().trim().min(1).max(8000).optional(),
-  serieId: z.preprocess((v) => (v === "" ? null : v), z.string().trim().min(1).nullable().optional()),
+  serieId: z.preprocess((v) => (v === "" ? null : v), z.string().max(MAX_TEXTO_CURTO).trim().min(1).nullable().optional()),
   habilidadesBncc: habilidadesBnccSchema.optional(),
   ativo: z.boolean().optional(),
 });
@@ -119,7 +120,7 @@ export const createPlanoSchema = z.object({
   avaliacao: texto(4000),
   habilidadesBncc: habilidadesBnccSchema.default([]),
   conteudoProgramaticoId: idOpcional,
-  atividades: z.array(z.string().trim().min(1)).max(20).default([]),
+  atividades: z.array(z.string().max(MAX_TEXTO_CURTO).trim().min(1)).max(20).default([]),
 });
 
 export const updatePlanoSchema = z.object({
@@ -131,8 +132,8 @@ export const updatePlanoSchema = z.object({
   recursos: textoLimpavel(2000),
   avaliacao: textoLimpavel(4000),
   habilidadesBncc: habilidadesBnccSchema.optional(),
-  conteudoProgramaticoId: z.preprocess((v) => (v === "" ? null : v), z.string().trim().min(1).nullable().optional()),
-  atividades: z.array(z.string().trim().min(1)).max(20).optional(),
+  conteudoProgramaticoId: z.preprocess((v) => (v === "" ? null : v), z.string().max(MAX_TEXTO_CURTO).trim().min(1).nullable().optional()),
+  atividades: z.array(z.string().max(MAX_TEXTO_CURTO).trim().min(1)).max(20).optional(),
 });
 
 export const revisarPlanoSchema = z.object({

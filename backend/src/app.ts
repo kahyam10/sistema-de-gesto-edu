@@ -1,5 +1,6 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
@@ -11,8 +12,10 @@ import { trustProxyDeEnv } from "./lib/trust-proxy.js";
 import { prisma } from "./lib/prisma.js";
 import { configurarZodPtBr } from "./lib/zod-pt-br.js";
 import { PUBLIC_API, WRITE_METHODS, autorizar } from "./lib/rbac.js";
-import { COOKIE_ACCESS, HEADER_CSRF, csrfConfere } from "./lib/sessao.js";
+import { COOKIE_ACCESS, HEADER_CSRF, csrfConfere, sessaoValida } from "./lib/sessao.js";
 import { contextoAcesso, contextoAtual } from "./lib/contexto.js";
+import { caminhoCanonicoDe } from "./lib/caminho-canonico.js";
+import { agendarExpurgoSessoes } from "./lib/expurgo-sessoes.js";
 import { calcularEscopo } from "./lib/escopo-usuario.js";
 import { minimizarParaProfessor } from "./lib/minimizacao.js";
 import {
@@ -21,6 +24,7 @@ import {
   profissionalDoUsuario,
   turmaAlvo,
 } from "./lib/propriedade-professor.js";
+import { professorDaAulaAlvo } from "./services/frequencia.service.js";
 
 // Mensagens de validação zod em PT-BR (antes de qualquer parse)
 configurarZodPtBr();
@@ -134,6 +138,28 @@ export async function buildApp() {
     exposedHeaders: ["Content-Disposition"],
   });
 
+  // Cabeçalhos de segurança. A API só devolve JSON e arquivos (downloads):
+  // nenhuma página dela precisa carregar script, estilo, imagem ou ser
+  // embutida em frame — CSP fecha tudo. Downloads do dashboard são fetch+blob
+  // (modo CORS), então Cross-Origin-Resource-Policy: same-origin não os afeta.
+  // A UI do Swagger (/docs, só fora de produção) define a própria CSP abaixo.
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
+    },
+    frameguard: { action: "deny" },
+    referrerPolicy: { policy: "no-referrer" },
+    crossOriginResourcePolicy: { policy: "same-origin" },
+    // HSTS só faz sentido atrás do HTTPS de produção (em http é ignorado)
+    hsts: isProd ? { maxAge: 31536000, includeSubDomains: true } : false,
+  });
+
   // Rate limiting global (proteção básica contra abuso/brute-force)
   await app.register(rateLimit, {
     max: 300,
@@ -185,6 +211,10 @@ export async function buildApp() {
 
     await app.register(swaggerUi, {
       routePrefix: "/docs",
+      // A página do Swagger precisa de script/estilo próprios: CSP gerada pelo
+      // plugin (hashes dos scripts inline) no lugar da CSP fechada da API.
+      staticCSP: true,
+      transformStaticCSP: (csp: string) => csp.replace("upgrade-insecure-requests;", "").trim(),
       uiConfig: {
         docExpansion: "list",
         deepLinking: false,
@@ -207,8 +237,16 @@ export async function buildApp() {
   // Tabelas e decisão de autorização em lib/rbac.ts (função pura testável);
   // apenas a checagem de propriedade do DIRETOR (consulta o banco) fica aqui.
   app.addHook("onRequest", async (request, reply) => {
-    const url = request.raw.url?.split("?")[0] ?? "";
-    if (!url.startsWith("/api") || PUBLIC_API.has(url)) return;
+    // Autorização SEMPRE sobre o caminho da rota que o roteador escolheu, nunca
+    // sobre o texto cru (que pode vir codificado: "/%61pi/..."). Ver lib/caminho-canonico.ts.
+    const canonico = caminhoCanonicoDe(request);
+    if (!canonico.ok) {
+      return reply.status(400).send({ error: "Caminho inválido", code: "CAMINHO_INVALIDO" });
+    }
+    const url = canonico.caminho;
+    if (!url.startsWith("/api")) return;
+    // Rotas públicas reconhecidas pelo PADRÃO da rota encontrada
+    if (canonico.rotaEncontrada && PUBLIC_API.has(request.routeOptions.url ?? "")) return;
 
     // Duas formas de autenticar:
     // - cookie httpOnly (dashboard web) → escritas exigem o header X-CSRF-Token
@@ -231,6 +269,12 @@ export async function buildApp() {
     }
 
     const userToken = request.user;
+
+    // JWT válido não basta: a sessão (família do refresh) precisa estar viva e
+    // o usuário ativo — logout, reuso detectado e desativação valem na hora.
+    if (!(await sessaoValida(userToken.sid, userToken.id))) {
+      return reply.status(401).send({ error: "Não autorizado" });
+    }
 
     // Escopo de dados: direção/coordenação/secretaria → própria escola;
     // professor → próprias turmas. Aplicado pela extensão do Prisma (lib/escopo.ts).
@@ -275,8 +319,13 @@ export async function buildApp() {
   // Propriedade da turma para PROFESSOR (precisa do corpo já parseado → preHandler).
   // Só lança frequência/notas/avaliações/grade nas turmas em que leciona.
   app.addHook("preHandler", async (request, reply) => {
-    const url = request.raw.url?.split("?")[0] ?? "";
     if (request.user?.role !== "PROFESSOR") return;
+    const canonico = caminhoCanonicoDe(request);
+    // O onRequest já recusou caminhos ambíguos; aqui é só defesa em profundidade
+    if (!canonico.ok) {
+      return reply.status(400).send({ error: "Caminho inválido", code: "CAMINHO_INVALIDO" });
+    }
+    const url = canonico.caminho;
     if (!WRITE_METHODS.has(request.method) || !RECURSOS_DO_PROFESSOR.test(url)) return;
 
     const profissionalId = await profissionalDoUsuario(request.user.id);
@@ -286,6 +335,17 @@ export async function buildApp() {
       return reply
         .status(403)
         .send({ error: "Professores só podem lançar dados nas próprias turmas", code: "PERM_TURMA" });
+    }
+    // Frequência por aula: o professor só lança (ou corrige) a chamada das
+    // aulas em que ELE é o professor na grade. Aula sem professor definido na
+    // grade (ou chamada diária) = basta lecionar na turma (checado acima).
+    if (url.startsWith("/api/frequencia")) {
+      const professorDaAula = await professorDaAulaAlvo(url, request.method, body);
+      if (professorDaAula && professorDaAula !== profissionalId) {
+        return reply
+          .status(403)
+          .send({ error: "Professores só podem lançar a chamada das próprias aulas", code: "PERM_AULA" });
+      }
     }
     // Avaliação criada pelo professor é sempre dele (ignora profissionalId do corpo)
     if (url === "/api/avaliacoes" && request.method === "POST" && body) {
@@ -416,6 +476,10 @@ export async function buildApp() {
 
   // Error handler global estruturado (AppError + Zod + Prisma → HTTP corretos)
   app.setErrorHandler(errorHandler);
+
+  // Limpeza periódica de refresh tokens mortos (não roda em NODE_ENV=test)
+  const pararExpurgo = agendarExpurgoSessoes();
+  app.addHook("onClose", async () => pararExpurgo());
 
   return app;
 }

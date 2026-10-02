@@ -12,13 +12,15 @@ type Where = Record<string, unknown>;
 // Como cada model chega na escola/turma:
 //  - escola: tem escolaId obrigatório
 //  - escolaOpcional: escolaId null = registro da rede (leitura liberada, escrita não)
-//  - via: herda o escopo do registro pai pela relação indicada
+//  - via: herda o escopo do registro pai pela relação indicada (e, se houver
+//    "tambem", precisa estar no escopo de TODOS os pais listados)
+type Pai = { relacao: string; fk: string; pai: string };
 type Regra =
   | { tipo: "escola" }
   | { tipo: "escolaOpcional" }
-  | { tipo: "via"; relacao: string; fk: string; pai: string };
+  | ({ tipo: "via"; tambem?: Pai[] } & Pai);
 
-const via = (relacao: string, fk: string, pai: string): Regra => ({ tipo: "via", relacao, fk, pai });
+const via = (relacao: string, fk: string, pai: string, tambem?: Pai[]): Regra => ({ tipo: "via", relacao, fk, pai, tambem });
 
 export const REGRAS: Record<string, Regra | "especial"> = {
   Escola: "especial",
@@ -62,7 +64,11 @@ export const REGRAS: Record<string, Regra | "especial"> = {
   RotaAluno: via("matricula", "matriculaId", "Matricula"),
   VisitaDomiciliar: via("buscaAtiva", "buscaAtivaId", "BuscaAtiva"),
   EncaminhamentoExterno: via("buscaAtiva", "buscaAtivaId", "BuscaAtiva"),
-  AtendimentoAEE: via("salaRecursos", "salaRecursosId", "SalaRecursos"),
+  // Atendimento AEE: sala da escola E aluno (PEI) no escopo — o professor não
+  // lê o atendimento (dados de saúde) de aluno que não é das suas turmas
+  AtendimentoAEE: via("salaRecursos", "salaRecursosId", "SalaRecursos", [
+    { relacao: "pei", fk: "peiId", pai: "PlanoEducacionalIndividualizado" },
+  ]),
   MovimentacaoEstoque: via("item", "itemId", "ItemEstoque"),
   ChapaGremio: via("gremio", "gremioId", "GremioEstudantil"),
   AtividadeGremio: via("gremio", "gremioId", "GremioEstudantil"),
@@ -81,10 +87,11 @@ export const REGRAS: Record<string, Regra | "especial"> = {
   // Notificacao e ComunicadoDestinatario (filtrados por usuário).
 };
 
-const NADA = "__sem_acesso__";
+const NADA = "__sem_acesso__"; // id impossível: filtro que não casa com nada
 
-// Models "escolaOpcional" que o professor só lê da rede e das próprias escolas
-const ESCOLA_OPCIONAL_DO_PROFESSOR = new Set(["Comunicado", "ConteudoProgramatico", "AtividadePedagogica"]); // id impossível: filtro que não casa com nada
+/** Escolas do escopo (direção/coordenação/secretaria: a própria; professor: onde leciona). */
+export const escolasDoEscopo = (e: Escopo): string[] =>
+  e.tipo === "ESCOLA" ? (e.escolaId ? [e.escolaId] : []) : e.escolaIds;
 
 /** Filtro de LEITURA de um model para o escopo. null = sem restrição. */
 export function filtroLeitura(model: string, e: Escopo): Where | null {
@@ -101,28 +108,40 @@ export function filtroLeitura(model: string, e: Escopo): Where | null {
       case "Matricula":
         return e.tipo === "ESCOLA" ? { escolaId: E } : { turmaId: { in: e.turmaIds } };
       case "ProfissionalEducacao":
-        // Professor enxerga colegas (dados sensíveis são removidos na resposta)
-        return e.tipo === "ESCOLA" ? { escolas: { some: { escolaId: E } } } : null;
+        if (e.tipo === "ESCOLA") return { escolas: { some: { escolaId: E } } };
+        // Professor: ele mesmo e os colegas das escolas em que leciona (lotados
+        // nelas ou com aula em turma delas) — dados sensíveis saem na resposta
+        return {
+          OR: [
+            { id: e.profissionalId ?? NADA },
+            { escolas: { some: { escolaId: { in: e.escolaIds } } } },
+            { turmas: { some: { turma: { escolaId: { in: e.escolaIds } } } } },
+          ],
+        };
     }
     return null;
   }
-  if (regra.tipo === "escola") return e.tipo === "ESCOLA" ? { escolaId: E } : null;
+  // Professor: só as escolas em que leciona (antes, null = a rede inteira)
+  if (regra.tipo === "escola") return e.tipo === "ESCOLA" ? { escolaId: E } : { escolaId: { in: e.escolaIds } };
   if (regra.tipo === "escolaOpcional") {
     if (e.tipo === "ESCOLA") return { OR: [{ escolaId: null }, { escolaId: E }] };
     // Professor: registros da rede + os das escolas em que leciona
-    return ESCOLA_OPCIONAL_DO_PROFESSOR.has(model)
-      ? { OR: [{ escolaId: null }, { escolaId: { in: e.escolaIds } }] }
-      : null;
+    return { OR: [{ escolaId: null }, { escolaId: { in: e.escolaIds } }] };
   }
-  const doPai = filtroLeitura(regra.pai, e);
-  return doPai ? { [regra.relacao]: doPai } : null;
+  const filtros: Where[] = [];
+  for (const p of [regra, ...(regra.tambem ?? [])]) {
+    const doPai = filtroLeitura(p.pai, e);
+    if (doPai) filtros.push({ [p.relacao]: doPai });
+  }
+  if (filtros.length === 0) return null;
+  return filtros.length === 1 ? filtros[0] : { AND: filtros };
 }
 
 /** Filtro de ESCRITA (update/delete): registros "da rede" não são editáveis por quem tem escopo. */
 export function filtroEscrita(model: string, e: Escopo): Where | null {
   const regra = REGRAS[model];
-  if (regra && regra !== "especial" && regra.tipo === "escolaOpcional" && e.tipo === "ESCOLA") {
-    return { escolaId: e.escolaId ?? NADA };
+  if (regra && regra !== "especial" && regra.tipo === "escolaOpcional") {
+    return e.tipo === "ESCOLA" ? { escolaId: e.escolaId ?? NADA } : { escolaId: { in: e.escolaIds } };
   }
   return filtroLeitura(model, e);
 }
@@ -158,13 +177,22 @@ export async function validarDados(
   if (e.tipo === "ESCOLA" && temEscola && (criacao || "escolaId" in data) && data.escolaId !== E) {
     throw new EscopoNegadoError(`${model}.escolaId`);
   }
+  // Professor: idem, nas escolas em que leciona (nunca "da rede")
+  if (
+    e.tipo === "PROFESSOR" && temEscola && (criacao || "escolaId" in data) &&
+    !(typeof data.escolaId === "string" && e.escolaIds.includes(data.escolaId))
+  ) {
+    throw new EscopoNegadoError(`${model}.escolaId`);
+  }
   // Chaves para turma/matrícula e para o pai declarado na regra
   const checagens: Array<[string, string]> = [];
   if (model !== "Turma" && typeof data.turmaId === "string") checagens.push(["Turma", data.turmaId]);
   if (model !== "Matricula" && typeof data.matriculaId === "string") checagens.push(["Matricula", data.matriculaId]);
   if (regra && regra !== "especial" && regra.tipo === "via") {
-    const id = data[regra.fk];
-    if (typeof id === "string") checagens.push([regra.pai, id]);
+    for (const p of [regra, ...(regra.tambem ?? [])]) {
+      const id = data[p.fk];
+      if (typeof id === "string") checagens.push([p.pai, id]);
+    }
   }
   // Profissional criado/atualizado com vínculos de escola aninhados
   if (model === "ProfissionalEducacao" && e.tipo === "ESCOLA") {
@@ -173,9 +201,10 @@ export async function validarDados(
       throw new EscopoNegadoError("ProfissionalEducacao.escolas");
     }
   }
-  for (const [pai, id] of checagens) {
-    if (!(await pertence(pai, id))) throw new EscopoNegadoError(`${model} → ${pai}`);
-  }
+  // Em paralelo: o verificador agrupa as consultas por model-pai (lib/prisma.ts)
+  const oks = await Promise.all(checagens.map(([pai, id]) => pertence(pai, id)));
+  const negada = checagens.find((_, i) => !oks[i]);
+  if (negada) throw new EscopoNegadoError(`${model} → ${negada[0]}`);
 }
 
 export const OPERACOES_LEITURA = new Set([

@@ -1569,10 +1569,16 @@ export interface Frequencia {
   id: string;
   data: string;
   status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
-  justificativa?: string;
-  observacao?: string;
+  justificativa?: string | null;
+  observacao?: string | null;
   matriculaId: string;
   turmaId: string;
+  // Frequência por aula: aula da grade (null = chamada diária ou aula que
+  // saiu da grade), cópia da disciplina/horário e a chave ("DIA" = diária)
+  gradeHorariaId?: string | null;
+  disciplina?: string | null;
+  horaInicio?: string | null;
+  aulaChave?: string;
   matricula?: {
     id: string;
     numeroMatricula: string;
@@ -1606,6 +1612,29 @@ export interface AlunoComBaixaFrequencia {
   estatisticas: EstatisticasFrequencia;
 }
 
+/** Aulas da grade da turma num dia (chamada por aula). */
+export interface AulaDoDia {
+  gradeHorariaId: string;
+  disciplina: string;
+  horaInicio: string;
+  horaFim: string;
+  profissional: { id: string; nome: string } | null;
+  totalRegistros: number;
+  registradaEm: string | null;
+}
+
+export interface AulasDoDia {
+  data: string;
+  diaSemana: string;
+  /** "AULA" = a turma tem grade nesse dia (chamada por aula); "DIA" = chamada diária */
+  modo: "AULA" | "DIA";
+  aulas: AulaDoDia[];
+  chamadaDiaria: { totalRegistros: number; registradaEm: string | null };
+}
+
+/** Chave da aula de um registro ("DIA" = chamada diária). */
+export const AULA_DIA = "DIA";
+
 export const frequenciaApi = {
   // Listar frequências
   list: (params?: {
@@ -1636,6 +1665,7 @@ export const frequenciaApi = {
     status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
     justificativa?: string;
     observacao?: string;
+    gradeHorariaId?: string;
   }) =>
     request<Frequencia>("/api/frequencia", {
       method: "POST",
@@ -1646,6 +1676,8 @@ export const frequenciaApi = {
   registrarTurma: (data: {
     turmaId: string;
     data: string;
+    /** Aula da grade (obrigatória quando a turma tem aulas no dia) */
+    gradeHorariaId?: string;
     presencas: Array<{
       matriculaId: string;
       status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
@@ -1655,6 +1687,7 @@ export const frequenciaApi = {
   }) =>
     request<{
       message: string;
+      aula: { gradeHorariaId: string; disciplina: string; horaInicio: string } | null;
       registros: Frequencia[];
     }>("/api/frequencia/turma", {
       method: "POST",
@@ -1723,9 +1756,17 @@ export const frequenciaApi = {
     );
   },
 
-  // Buscar frequência por data
-  buscarPorData: (turmaId: string, data: string) =>
-    request<Frequencia[]>(`/api/frequencia/turma/${turmaId}/data/${data}`),
+  // Buscar frequência por data (todas as aulas do dia, ou só uma: id da aula ou "DIA")
+  buscarPorData: (turmaId: string, data: string, aulaChave?: string) =>
+    request<Frequencia[]>(
+      `/api/frequencia/turma/${encodeURIComponent(turmaId)}/data/${data}${
+        aulaChave ? `?aulaChave=${encodeURIComponent(aulaChave)}` : ""
+      }`,
+    ),
+
+  // Aulas da grade da turma no dia (para o professor: só as dele e as sem professor)
+  aulasDoDia: (turmaId: string, data: string) =>
+    request<AulasDoDia>(`/api/frequencia/turma/${encodeURIComponent(turmaId)}/aulas/${data}`),
 };
 
 // ==================== DISCIPLINAS ====================
@@ -1989,6 +2030,12 @@ export interface Boletim {
   situacaoGeral?: string;
 }
 
+/** GET /api/notas/boletim-turma/:turmaId — boletins ordenados pelo nome do aluno. */
+export interface BoletimTurma {
+  turma: { id: string; nome: string; serie: string; anoLetivo: number };
+  boletins: Boletim[];
+}
+
 export const notasApi = {
   list: (filters?: {
     turmaId?: string;
@@ -2027,15 +2074,21 @@ export const notasApi = {
     const params = turmaId ? `?turmaId=${turmaId}` : "";
     return request<Boletim>(`/api/notas/boletim/${matriculaId}${params}`);
   },
+  /** Boletim de todos os alunos ATIVOS da turma numa requisição só (mesma conta do individual). */
+  getBoletimTurma: (turmaId: string, anoLetivo?: number) => {
+    const params = anoLetivo !== undefined ? `?anoLetivo=${encodeURIComponent(String(anoLetivo))}` : "";
+    return request<BoletimTurma>(`/api/notas/boletim-turma/${encodeURIComponent(turmaId)}${params}`);
+  },
   getMediaFinal: (matriculaId: string, turmaId: string, disciplinaId: string) =>
-    request<{ media: number }>(
+    // null = ainda sem média (avaliações futuras/nenhuma realizada)
+    request<{ media: number | null }>(
       `/api/notas/media/${matriculaId}/${turmaId}/${disciplinaId}`,
     ),
   getSituacao: (matriculaId: string, turmaId: string, disciplinaId: string) =>
     request<{
-      situacao: string;
-      mediaFinal: number;
-      frequenciaPercentual: number;
+      situacao: "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO";
+      mediaFinal: number | null;
+      frequencia: number;
     }>(`/api/notas/situacao/${matriculaId}/${turmaId}/${disciplinaId}`),
 };
 
@@ -3267,13 +3320,24 @@ export interface PortalProfessorResumo {
     totalAlunosAtivos: number;
   }>;
   aulasHoje: Array<{
+    gradeHorariaId: string;
     turmaId: string;
     turmaNome: string;
     disciplina: string;
     horaInicio: string;
     horaFim: string;
+    /** Chamada desta aula (ou a diária da turma) já feita hoje */
+    chamadaRegistradaEm: string | null;
   }>;
-  frequenciasPendentesHoje: Array<{ turmaId: string; turmaNome: string }>;
+  chamadasRegistradasHoje: Array<{ turmaId: string; registradaEm: string | null }>;
+  /** Uma entrada por AULA de hoje sem chamada */
+  frequenciasPendentesHoje: Array<{
+    turmaId: string;
+    turmaNome: string;
+    gradeHorariaId: string;
+    disciplina: string;
+    horaInicio: string;
+  }>;
 }
 
 export interface PortalFrequenciaAluno {

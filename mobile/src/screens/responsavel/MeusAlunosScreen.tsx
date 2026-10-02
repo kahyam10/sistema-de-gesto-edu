@@ -3,23 +3,18 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { comumApi, responsavelApi } from "../../api/endpoints";
-import type { Boletim } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import {
   Aviso, Avatar, Cabecalho, Cartao, Carregando, Erro, Estatistica, Rotulo, Secao, Subtitulo, Tela, Texto, TopoCabecalho, Vazio,
 } from "../../components/ui";
 import type { ResponsavelStack } from "../../navigation/tipos";
 import { cores, espaco, LIMITE_PRESENCA } from "../../theme";
-import { capitalizar, dataPorExtenso, hojeISO, listaDeNomes, media, nota, rotuloRefeicao } from "../../utils/formato";
+import { capitalizar, dataPorExtenso, hojeISO, listaDeNomes, nota, rotuloRefeicao } from "../../utils/formato";
+import { mediaGeralDoAluno, rotuloMedia } from "../../utils/medias";
 import { ComunicadoItem } from "./ComunicadosScreen";
 import { CartaoAgenda, itensDaAgenda } from "../comum/AgendaScreen";
 
 type Props = NativeStackScreenProps<ResponsavelStack, "Inicio">;
-
-/** Média parcial: por disciplina usa a final (se houver) ou a dos bimestres lançados. */
-export function mediaParcial(b: Boletim): number | null {
-  return media(b.disciplinas.map((d) => d.mediaFinal ?? media(d.bimestres.map((x) => x.media))));
-}
 
 /** Início do responsável: um cartão por aluno + comunicados recentes. */
 export function MeusAlunosScreen({ navigation }: Props) {
@@ -82,6 +77,7 @@ export function MeusAlunosScreen({ navigation }: Props) {
       ) : (
         alunos.data.map(({ matricula: m }) => {
           const b = porMatricula.get(m.id);
+          const mg = b ? mediaGeralDoAluno(b) : null;
           const pct = b?.frequencia.totalAulas ? b.frequencia.percentualPresenca : null;
           const baixo = pct !== null && pct < LIMITE_PRESENCA;
           return (
@@ -105,7 +101,10 @@ export function MeusAlunosScreen({ navigation }: Props) {
               {m.turma ? (
                 <View style={{ flexDirection: "row", gap: espaco.sm }}>
                   <Estatistica rotulo="Frequência" valor={pct === null ? "—" : `${pct}%`} tom={pct === null ? undefined : baixo ? "perigo" : "sucesso"} />
-                  <Estatistica rotulo="Média parcial" valor={b ? nota(mediaParcial(b)) : "…"} />
+                  <Estatistica
+                    rotulo={mg ? rotuloMedia(mg) : "Média"}
+                    valor={mg ? nota(mg.valor) : "…"}
+                  />
                 </View>
               ) : null}
               {baixo ? <Aviso tom="perigo" texto={`Frequência abaixo de ${LIMITE_PRESENCA}%. Procure a escola.`} /> : null}

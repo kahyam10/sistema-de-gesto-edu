@@ -28,100 +28,42 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTurmas, useNotas, useUpdateMatricula } from "@/hooks/useApi";
-import { CheckCircle, XCircle, Warning, Users } from "@phosphor-icons/react";
+import { useTurmas, useUpdateMatricula } from "@/hooks/useApi";
+import { useBoletinsDaTurma, useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
+import { alunoDoBoletim, formatarMedia, tomDaMedia, type AlunoConselho, type SituacaoApi } from "@/lib/medias";
+import { CheckCircle, XCircle, Warning, Users, Clock } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
-interface AlunoConselho {
-  matriculaId: string;
-  nomeAluno: string;
-  mediaGeral: number;
-  disciplinas: Record<string, number>;
-  statusCalculado: "APROVADO" | "REPROVADO" | "EM_RECUPERACAO";
-  frequenciaGeral?: number;
-}
+type FiltroStatus = "TODOS" | SituacaoApi;
 
 export function ConselhoClasseManager() {
   const anoAtual = new Date().getFullYear();
   const [turmaId, setTurmaId] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<"TODOS" | "APROVADO" | "REPROVADO" | "EM_RECUPERACAO">("TODOS");
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("TODOS");
   const [alunosSelecionados, setAlunosSelecionados] = useState<Set<string>>(new Set());
   const [novoStatus, setNovoStatus] = useState<"ATIVA" | "CONCLUIDA" | "CANCELADA">("CONCLUIDA");
 
   const { data: turmas = [], isLoading: loadingTurmas } = useTurmas({ anoLetivo: anoAtual });
-  const { data: notas = [], isLoading: loadingNotas } = useNotas(turmaId ? { turmaId } : undefined);
   const updateMatricula = useUpdateMatricula();
 
   const turmaSelecionada = turmas.find((t) => t.id === turmaId);
+  // Média e situação vêm do boletim da API (mesma regra do backend: pesos,
+  // avaliação realizada sem nota = 0, configuração de avaliação da rede).
+  const { porMatricula, isLoading: loadingBoletins, erros: errosBoletim } = useBoletinsDaTurma(turmaSelecionada);
+  const { config, isLoading: loadingConfig } = useConfiguracaoDaTurma(turmaSelecionada);
+  const mediaMinima = config?.mediaMinima ?? null;
 
-  // Calcula médias e status dos alunos
   const alunosConselho = useMemo(() => {
     if (!turmaSelecionada) return [];
-
-    const alunosMap = new Map<string, AlunoConselho>();
-
-    // Inicializa todos os alunos da turma
-    turmaSelecionada.matriculas?.forEach((matricula) => {
-      alunosMap.set(matricula.id, {
-        matriculaId: matricula.id,
-        nomeAluno: matricula.nomeAluno,
-        mediaGeral: 0,
-        disciplinas: {},
-        statusCalculado: "EM_RECUPERACAO",
-      });
-    });
-
-    // Agrupa notas por aluno e disciplina
-    const notasPorAlunoDisc = new Map<string, Map<string, number[]>>();
-
-    notas.forEach((nota) => {
-      if (!notasPorAlunoDisc.has(nota.matriculaId)) {
-        notasPorAlunoDisc.set(nota.matriculaId, new Map());
-      }
-      const discMap = notasPorAlunoDisc.get(nota.matriculaId)!;
-      if (!discMap.has(nota.disciplina)) {
-        discMap.set(nota.disciplina, []);
-      }
-      discMap.get(nota.disciplina)!.push(nota.valor);
-    });
-
-    // Calcula médias por disciplina e média geral
-    notasPorAlunoDisc.forEach((discMap, matriculaId) => {
-      const aluno = alunosMap.get(matriculaId);
-      if (!aluno) return;
-
-      const mediasPorDisciplina: number[] = [];
-
-      discMap.forEach((valores, disciplina) => {
-        const media = valores.reduce((sum, v) => sum + v, 0) / valores.length;
-        aluno.disciplinas[disciplina] = media;
-        mediasPorDisciplina.push(media);
-      });
-
-      if (mediasPorDisciplina.length > 0) {
-        aluno.mediaGeral = mediasPorDisciplina.reduce((sum, m) => sum + m, 0) / mediasPorDisciplina.length;
-      }
-
-      // Calcula status
-      const todasAcimaDe7 = mediasPorDisciplina.every((m) => m >= 7.0);
-      const algumaBaixoDe5 = mediasPorDisciplina.some((m) => m < 5.0);
-
-      if (todasAcimaDe7) {
-        aluno.statusCalculado = "APROVADO";
-      } else if (algumaBaixoDe5 || aluno.mediaGeral < 5.0) {
-        aluno.statusCalculado = "REPROVADO";
-      } else {
-        aluno.statusCalculado = "EM_RECUPERACAO";
-      }
-    });
-
-    return Array.from(alunosMap.values()).sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
-  }, [turmaSelecionada, notas]);
+    return (turmaSelecionada.matriculas ?? [])
+      .map((m) => alunoDoBoletim(m, porMatricula.get(m.id)))
+      .sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
+  }, [turmaSelecionada, porMatricula]);
 
   // Filtra alunos por status
   const alunosFiltrados = useMemo(() => {
     if (filtroStatus === "TODOS") return alunosConselho;
-    return alunosConselho.filter((a) => a.statusCalculado === filtroStatus);
+    return alunosConselho.filter((a) => a.situacao === filtroStatus);
   }, [alunosConselho, filtroStatus]);
 
   const handleToggleAluno = (matriculaId: string) => {
@@ -166,33 +108,42 @@ export function ConselhoClasseManager() {
     }
   };
 
-  const getStatusBadge = (status: AlunoConselho["statusCalculado"]) => {
+  const getStatusBadge = (status: AlunoConselho["situacao"]) => {
     switch (status) {
       case "APROVADO":
         return <Badge className="bg-green-600">Aprovado</Badge>;
       case "REPROVADO":
         return <Badge variant="destructive">Reprovado</Badge>;
-      case "EM_RECUPERACAO":
+      case "RECUPERACAO":
         return <Badge className="bg-yellow-600">Em Recuperação</Badge>;
+      case "EM_CURSO":
+        return <Badge variant="secondary">Em Curso</Badge>;
+      default:
+        return <Badge variant="outline">—</Badge>;
     }
   };
 
-  const getStatusIcon = (status: AlunoConselho["statusCalculado"]) => {
+  const getStatusIcon = (status: AlunoConselho["situacao"]) => {
     switch (status) {
       case "APROVADO":
         return <CheckCircle size={20} className="text-green-600" weight="fill" />;
       case "REPROVADO":
         return <XCircle size={20} className="text-red-600" weight="fill" />;
-      case "EM_RECUPERACAO":
+      case "RECUPERACAO":
         return <Warning size={20} className="text-yellow-600" weight="fill" />;
+      case "EM_CURSO":
+        return <Clock size={20} className="text-muted-foreground" weight="fill" />;
+      default:
+        return null;
     }
   };
 
   const contadores = useMemo(() => {
     return {
-      aprovados: alunosConselho.filter((a) => a.statusCalculado === "APROVADO").length,
-      reprovados: alunosConselho.filter((a) => a.statusCalculado === "REPROVADO").length,
-      recuperacao: alunosConselho.filter((a) => a.statusCalculado === "EM_RECUPERACAO").length,
+      aprovados: alunosConselho.filter((a) => a.situacao === "APROVADO").length,
+      reprovados: alunosConselho.filter((a) => a.situacao === "REPROVADO").length,
+      recuperacao: alunosConselho.filter((a) => a.situacao === "RECUPERACAO").length,
+      emCurso: alunosConselho.filter((a) => a.situacao === "EM_CURSO").length,
     };
   }, [alunosConselho]);
 
@@ -241,8 +192,9 @@ export function ConselhoClasseManager() {
                 <SelectContent>
                   <SelectItem value="TODOS">Todos</SelectItem>
                   <SelectItem value="APROVADO">Aprovados</SelectItem>
-                  <SelectItem value="EM_RECUPERACAO">Em Recuperação</SelectItem>
+                  <SelectItem value="RECUPERACAO">Em Recuperação</SelectItem>
                   <SelectItem value="REPROVADO">Reprovados</SelectItem>
+                  <SelectItem value="EM_CURSO">Em Curso</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -253,7 +205,7 @@ export function ConselhoClasseManager() {
       {turmaId && (
         <>
           {/* Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-green-50 dark:bg-green-950 border-green-200">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -301,7 +253,25 @@ export function ConselhoClasseManager() {
                 </p>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Em Curso</CardTitle>
+                  <Clock size={20} className="text-muted-foreground" weight="fill" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{contadores.emCurso}</p>
+              </CardContent>
+            </Card>
           </div>
+
+          {errosBoletim > 0 && (
+            <p className="text-sm text-destructive">
+              Não foi possível carregar o boletim de {errosBoletim} aluno(s); a situação deles aparece como &quot;—&quot;.
+            </p>
+          )}
 
           {/* Lista de alunos */}
           <Card>
@@ -333,7 +303,7 @@ export function ConselhoClasseManager() {
               </div>
             </CardHeader>
             <CardContent>
-              {loadingNotas ? (
+              {loadingBoletins ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
                     <Skeleton key={i} className="h-16 w-full" />
@@ -366,7 +336,7 @@ export function ConselhoClasseManager() {
                         <TableHead>Aluno</TableHead>
                         <TableHead className="text-center">Média Geral</TableHead>
                         <TableHead className="text-center">Disciplinas</TableHead>
-                        <TableHead className="text-center">Status Calculado</TableHead>
+                        <TableHead className="text-center">Situação (sistema)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -381,28 +351,43 @@ export function ConselhoClasseManager() {
                           <TableCell className="font-medium">{aluno.nomeAluno}</TableCell>
                           <TableCell className="text-center">
                             <Badge
-                              variant={aluno.mediaGeral >= 7.0 ? "default" : "destructive"}
+                              variant={
+                                tomDaMedia(aluno.mediaGeral, mediaMinima) === "abaixo"
+                                  ? "destructive"
+                                  : tomDaMedia(aluno.mediaGeral, mediaMinima) === "ok"
+                                    ? "default"
+                                    : "secondary"
+                              }
                             >
-                              {aluno.mediaGeral.toFixed(2)}
+                              {formatarMedia(aluno.mediaGeral, 2)}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1 justify-center">
-                              {Object.entries(aluno.disciplinas).map(([disc, media]) => (
-                                <Badge
-                                  key={disc}
-                                  variant={media >= 7.0 ? "outline" : "destructive"}
-                                  className="text-xs"
-                                >
-                                  {disc.substring(0, 4)}: {media.toFixed(1)}
-                                </Badge>
-                              ))}
+                              {aluno.disciplinas
+                                .filter((d) => d.media !== null)
+                                .map((d) => (
+                                  <Badge
+                                    key={d.disciplinaId}
+                                    variant={
+                                      tomDaMedia(d.media, mediaMinima) === "abaixo"
+                                        ? "destructive"
+                                        : tomDaMedia(d.media, mediaMinima) === "ok"
+                                          ? "outline"
+                                          : "secondary"
+                                    }
+                                    className="text-xs"
+                                    title={`${d.nome}: ${formatarMedia(d.media, 2)}${d.situacao === "EM_CURSO" ? " (parcial)" : ""}`}
+                                  >
+                                    {d.nome.substring(0, 4)}: {formatarMedia(d.media)}
+                                  </Badge>
+                                ))}
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-2">
-                              {getStatusIcon(aluno.statusCalculado)}
-                              {getStatusBadge(aluno.statusCalculado)}
+                              {getStatusIcon(aluno.situacao)}
+                              {getStatusBadge(aluno.situacao)}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -423,13 +408,28 @@ export function ConselhoClasseManager() {
             </CardHeader>
             <CardContent className="text-sm space-y-2 text-blue-900 dark:text-blue-100">
               <p>
-                • <strong>Aprovado:</strong> Todas as disciplinas com média ≥ 7.0
+                A média e a situação de cada disciplina são calculadas pelo sistema (boletim), com a
+                configuração de avaliação da rede para esta turma.
+              </p>
+              {loadingConfig ? null : config ? (
+                <p>
+                  • <strong>Média mínima:</strong> {config.mediaMinima.toFixed(1)} •{" "}
+                  <strong>Frequência mínima:</strong> {config.percentualFrequenciaMinima}%
+                </p>
+              ) : (
+                <p>
+                  • <strong>Configuração de avaliação não encontrada</strong> para esta turma — cadastre-a em
+                  Configuração de Avaliação. As cores de média ficam neutras até lá.
+                </p>
+              )}
+              <p>
+                • <strong>Situação geral:</strong> Em Curso se alguma disciplina ainda não fechou todos os
+                períodos; senão Reprovado se alguma disciplina reprovou; senão Em Recuperação se alguma está em
+                recuperação; senão Aprovado.
               </p>
               <p>
-                • <strong>Em Recuperação:</strong> Uma ou mais disciplinas com média entre 5.0 e 6.9
-              </p>
-              <p>
-                • <strong>Reprovado:</strong> Uma ou mais disciplinas com média &lt; 5.0 ou média geral &lt; 5.0
+                • <strong>Média geral:</strong> média simples das médias finais das disciplinas que já têm média
+                (disciplina sem média não conta como zero).
               </p>
               <p className="mt-4">
                 <strong>Atenção:</strong> A mudança de status da matrícula é permanente. Certifique-se da decisão antes de atualizar.

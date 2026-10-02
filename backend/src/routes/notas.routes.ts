@@ -1,13 +1,21 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { notaService } from "../services/index.js";
 import {
   createNotaSchema,
   lancarNotasTurmaSchema,
   updateNotaSchema,
+  consultaListaSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { z } from "zod";
+import {
+  anoLetivoOpcionalQuerySchema,
+  bimestreOpcionalQuerySchema,
+} from "../schemas/parametros.schemas.js";
+
+/** GET /api/notas/boletim-turma/:turmaId */
+const boletimTurmaParamsSchema = z.object({ turmaId: z.string().trim().min(1).max(255) });
 
 export async function notasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -139,19 +147,21 @@ Lista notas com suporte a filtros e paginação.
       reply: FastifyReply
     ) => {
       try {
-        const { turmaId, disciplina, matriculaId, bimestre, page, limit } = request.query;
+        const { turmaId, disciplina, matriculaId } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
+        const { bimestre } = bimestreOpcionalQuerySchema.parse(request.query);
 
         const filters: NonNullable<Parameters<typeof notaService.findAllPaginated>[0]> = {};
         if (turmaId) filters.turmaId = turmaId;
         if (disciplina) filters.disciplina = disciplina;
         if (matriculaId) filters.matriculaId = matriculaId;
-        if (bimestre) filters.bimestre = parseInt(bimestre);
+        if (bimestre !== undefined) filters.bimestre = bimestre;
 
         // Suporte a paginação
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           const result = await notaService.findAllPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: consulta.page,
+            limit: consulta.limit,
           });
           return reply.send(result);
         }
@@ -159,15 +169,7 @@ Lista notas com suporte a filtros e paginação.
         const notas = await notaService.findAll(filters);
         return reply.send(notas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar notas";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -246,15 +248,7 @@ Ideal para lançar notas de recuperação ou notas avulsas não vinculadas a uma
         const nota = await notaService.create(body);
         return reply.status(201).send(nota);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar nota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -321,15 +315,7 @@ Retorna os detalhes de uma nota específica.
 
         return reply.send(nota);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar nota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -415,17 +401,7 @@ Ideal para lançar notas após correção de provas/trabalhos. Permite registrar
         const resultado = await notaService.lancarNotasTurma(body);
         return reply.status(201).send(resultado);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao lançar notas";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -503,17 +479,7 @@ Atualiza uma nota existente.
         const nota = await notaService.update(id, body);
         return reply.send(nota);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar nota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -580,15 +546,7 @@ Remove permanentemente a nota. Esta ação não pode ser desfeita.
         await notaService.delete(id);
         return reply.send({ message: "Nota removida com sucesso" });
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover nota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -667,17 +625,79 @@ Ideal para gerar boletim escolar digital do aluno.
         const boletim = await notaService.getBoletim(matriculaId, turmaId);
         return reply.send(boletim);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
+        return responderErroRota(error, reply);
       }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar boletim";
-        return reply.status(400).send({ error: message });
+    }
+  );
+
+  // Boletim de todos os alunos ativos de uma turma (uma requisição por turma)
+  app.get(
+    "/boletim-turma/:turmaId",
+    {
+      schema: {
+        tags: ["Notas"],
+        summary: "Obter boletim de todos os alunos ativos da turma",
+        description: `
+Retorna o boletim (mesmo formato do boletim individual, por aluno) de todas as
+matrículas ATIVAS da turma, calculado em lote com a mesma regra do boletim
+individual (pesos, avaliação realizada sem nota = 0, configuração de avaliação
+da rede, frequência mínima, situação EM_CURSO).
+
+**Filtro opcional:**
+- \`anoLetivo\`: só as matrículas desse ano letivo
+
+**Retorno:** \`{ turma: { id, nome, serie, anoLetivo }, boletins: Boletim[] }\`
+(boletins ordenados pelo nome do aluno).
+
+Turma fora do escopo do usuário (professor de outra turma, escola diferente) = 404.
+        `,
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["turmaId"],
+          properties: {
+            turmaId: { type: "string", description: "ID da turma", example: "clx0987654321" },
+          },
+        },
+        querystring: {
+          type: "object",
+          properties: {
+            anoLetivo: { type: "string", description: "Ano letivo das matrículas", example: "2026" },
+          },
+        },
+        response: {
+          // 200 sem schema (como o boletim individual): formato aninhado e o
+          // serializador descartaria campos não declarados
+          400: {
+            description: "Parâmetros inválidos",
+            type: "object",
+            properties: { error: { type: "string" } },
+            additionalProperties: true,
+          },
+          401: {
+            description: "Não autorizado",
+            type: "object",
+            properties: {
+              error: { type: "string", example: "Token inválido ou expirado" },
+            },
+          },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{
+        Params: { turmaId: string };
+        Querystring: { anoLetivo?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { turmaId } = boletimTurmaParamsSchema.parse(request.params);
+        const { anoLetivo } = anoLetivoOpcionalQuerySchema.parse(request.query);
+        const resultado = await notaService.getBoletimTurma(turmaId, anoLetivo);
+        return reply.send(resultado);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -750,17 +770,7 @@ Para verificar situação do aluno em disciplina específica.
         );
         return reply.send({ media });
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao calcular média";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -776,7 +786,7 @@ Para verificar situação do aluno em disciplina específica.
 Retorna a situação final de um aluno em uma disciplina.
 
 **Informações retornadas:**
-- Situação: APROVADO | REPROVADO | RECUPERACAO
+- Situação: APROVADO | REPROVADO | RECUPERACAO | EM_CURSO
 - Média final
 - Nota necessária para aprovação (se em recuperação)
 - Frequência
@@ -801,10 +811,12 @@ Para verificar se aluno foi aprovado, está em recuperação ou foi reprovado.
             properties: {
               situacao: {
                 type: "string",
-                enum: ["APROVADO", "REPROVADO", "RECUPERACAO"],
+                // EM_CURSO: ainda faltam bimestres com nota (ou não há média)
+                enum: ["APROVADO", "REPROVADO", "RECUPERACAO", "EM_CURSO"],
                 example: "APROVADO",
               },
-              mediaFinal: { type: "number", example: 7.8 },
+              // null enquanto não há média (antes saía 0 na resposta)
+              mediaFinal: { type: "number", nullable: true, example: 7.8 },
               notaNecessaria: { type: "number", nullable: true },
               frequencia: { type: "number", example: 92.5 },
             },
@@ -842,17 +854,7 @@ Para verificar se aluno foi aprovado, está em recuperação ou foi reprovado.
         );
         return reply.send(situacao);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar situação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

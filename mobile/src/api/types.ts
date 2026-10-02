@@ -30,16 +30,49 @@ export interface ResumoProfessor {
     disciplina: string | null;
     totalAlunosAtivos: number;
   }>;
-  aulasHoje: Array<{ turmaId: string; turmaNome: string; disciplina: string; horaInicio: string; horaFim: string }>;
+  aulasHoje: Array<{
+    gradeHorariaId: string;
+    turmaId: string;
+    turmaNome: string;
+    disciplina: string;
+    horaInicio: string;
+    horaFim: string;
+    /** Chamada desta aula (ou a diária da turma) já feita hoje */
+    chamadaRegistradaEm: string | null;
+  }>;
   chamadasRegistradasHoje: Array<{ turmaId: string; registradaEm: string | null }>;
-  frequenciasPendentesHoje: Array<{ turmaId: string; turmaNome: string }>;
+  /** Uma entrada por AULA de hoje sem chamada */
+  frequenciasPendentesHoje: Array<{
+    turmaId: string;
+    turmaNome: string;
+    gradeHorariaId: string;
+    disciplina: string;
+    horaInicio: string;
+  }>;
 }
 
 export type StatusFrequencia = "PRESENTE" | "FALTA" | "JUSTIFICADA";
 
+/** Aula da grade que o professor pode lançar no dia (frequência por aula). */
+export interface AulaDaChamada {
+  gradeHorariaId: string;
+  disciplina: string;
+  horaInicio: string;
+  horaFim: string;
+  professorNome: string | null;
+  jaRegistrada: boolean;
+  registradaEm: string | null;
+  registros: Array<{ matriculaId: string; status: StatusFrequencia; justificativa: string | null }>;
+}
+
 export interface Chamada {
   turma: { id: string; nome: string; turno: string; escola: { nome: string } };
   data: string;
+  /** "AULA" = a turma tem grade hoje (uma chamada por aula); "DIA" = chamada diária */
+  modo: "AULA" | "DIA";
+  /** Aulas do dia que este professor pode lançar (só no modo "AULA") */
+  aulas: AulaDaChamada[];
+  /** jaRegistrada/registradaEm e o status de cada aluno: chamada diária */
   jaRegistrada: boolean;
   registradaEm: string | null;
   alunos: Array<{
@@ -127,7 +160,15 @@ export interface FrequenciaAluno {
     percentualPresenca: number;
     abaixoDoLimite: boolean;
   } | null;
-  registros: Array<{ id: string; data: string; status: StatusFrequencia; justificativa?: string | null }>;
+  registros: Array<{
+    id: string;
+    data: string;
+    status: StatusFrequencia;
+    justificativa?: string | null;
+    // Frequência por aula (null = chamada diária)
+    disciplina?: string | null;
+    horaInicio?: string | null;
+  }>;
 }
 
 export interface Comunicado {

@@ -20,11 +20,17 @@ export const professorApi = {
   resumo: () => api<ResumoProfessor>("/api/portal/professor/resumo"),
   chamada: (turmaId: string, data: string) =>
     api<Chamada>(`/api/portal/professor/turmas/${turmaId}/chamada?data=${data}`),
+  // gradeHorariaId: aula da grade (turma com grade no dia); ausente = chamada diária
   salvarChamada: (
     turmaId: string,
     data: string,
-    presencas: Array<{ matriculaId: string; status: StatusFrequencia }>
-  ) => api<{ message: string }>("/api/frequencia/turma", { method: "POST", body: { turmaId, data, presencas } }),
+    presencas: Array<{ matriculaId: string; status: StatusFrequencia }>,
+    gradeHorariaId?: string
+  ) =>
+    api<{ message: string }>("/api/frequencia/turma", {
+      method: "POST",
+      body: { turmaId, data, presencas, ...(gradeHorariaId ? { gradeHorariaId } : {}) },
+    }),
   alunos: (turmaId: string) => api<AlunosDaTurma>(`/api/portal/professor/turmas/${turmaId}/alunos`),
   notas: (turmaId: string) => api<NotasDaTurma>(`/api/portal/professor/turmas/${turmaId}/notas`),
   criarAvaliacao: (dados: {

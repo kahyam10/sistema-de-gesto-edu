@@ -1,10 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { mediaPonderada } from "../lib/media.js";
+import { mediaDasAvaliacoes, mediaDosBimestres } from "../lib/media.js";
+import { hojeNaRede } from "../lib/datas.js";
 import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
 import { NotFoundError } from "../errors/index.js";
 import { CreateNotaInput, LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
-import { frequenciaService } from "./frequencia.service.js";
+import {
+  frequenciaService,
+  frequenciaAbaixoDoMinimo,
+  FREQUENCIA_MINIMA_PADRAO,
+} from "./frequencia.service.js";
 
 interface BoletimDisciplina {
   disciplinaId: string;
@@ -26,7 +31,7 @@ interface BoletimDisciplina {
   situacao: "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO";
 }
 
-interface Boletim {
+export interface Boletim {
   matricula: {
     id: string;
     nomeAluno: string;
@@ -46,6 +51,208 @@ interface Boletim {
     abaixoDoLimite: boolean;
   };
   situacaoGeral: "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO";
+}
+
+/** Boletim de todos os alunos ativos de uma turma (GET /api/notas/boletim-turma/:turmaId). */
+export interface BoletimTurma {
+  turma: { id: string; nome: string; serie: string; anoLetivo: number };
+  boletins: Boletim[];
+}
+
+type Situacao = "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO";
+
+/** Regra de aprovação da turma (configuração de avaliação vigente; padrão 6,0 / 75% / 4 períodos). */
+export interface RegraAprovacao {
+  mediaMinima: number;
+  frequenciaMinima: number;
+  periodos: number;
+}
+
+type AvaliacaoComNotas = {
+  disciplinaId: string;
+  bimestre: number;
+  data: Date;
+  peso: number;
+  valorMaximo: number;
+  notas: Array<{ valor: number }>;
+};
+
+/** Média do aluno num conjunto de avaliações já filtradas pela nota DELE (notas[0]). */
+function mediaDoAluno(avaliacoes: AvaliacaoComNotas[], hoje: Date): number | null {
+  if (avaliacoes.length === 0) return null;
+  // lib/media: escala 0–10 pelo valorMaximo; realizada sem nota = 0; futura sem nota fica de fora
+  return mediaDasAvaliacoes(
+    avaliacoes.map((av) => ({
+      data: av.data,
+      peso: av.peso,
+      valorMaximo: av.valorMaximo,
+      nota: av.notas[0]?.valor ?? null,
+    })),
+    hoje
+  );
+}
+
+/**
+ * Situação de UMA disciplina — a mesma conta no boletim e na rota de
+ * situação final (antes cada uma tinha a sua regra).
+ */
+export function determinaSituacao(
+  mediaFinal: number | null,
+  bimestresComNota: number,
+  frequencia: { presencas: number; totalAulas: number },
+  regra: RegraAprovacao
+): Situacao {
+  // Se nem todos os bimestres têm nota, está em curso
+  if (bimestresComNota < regra.periodos) return "EM_CURSO";
+  if (mediaFinal === null) return "EM_CURSO";
+
+  // Reprovado por frequência (razão exata: 74,5% não vira 75%)
+  if (frequenciaAbaixoDoMinimo(frequencia.presencas, frequencia.totalAulas, regra.frequenciaMinima)) {
+    return "REPROVADO";
+  }
+
+  // Aprovado (média mínima da configuração de avaliação vigente; padrão 6,0)
+  if (mediaFinal >= regra.mediaMinima) return "APROVADO";
+
+  // Recuperação
+  if (mediaFinal >= 3.0) return "RECUPERACAO";
+
+  // Reprovado por nota
+  return "REPROVADO";
+}
+
+/** Situação geral: EM_CURSO > REPROVADO > RECUPERACAO > APROVADO. */
+function situacaoGeralDe(situacoes: Situacao[]): Situacao {
+  if (situacoes.some((s) => s === "EM_CURSO")) return "EM_CURSO";
+  if (situacoes.some((s) => s === "REPROVADO")) return "REPROVADO";
+  if (situacoes.some((s) => s === "RECUPERACAO")) return "RECUPERACAO";
+  return "APROVADO";
+}
+
+/** Turma com série/etapa, como o boletim a carrega. */
+type TurmaDoBoletim = {
+  id: string;
+  nome: string;
+  anoLetivo: number;
+  serie: { nome: string };
+};
+
+/** O que é comum a todos os alunos de uma turma no boletim. */
+interface ContextoBoletim {
+  turma: TurmaDoBoletim;
+  disciplinas: Array<{ id: string; nome: string; codigo: string }>;
+  regra: RegraAprovacao;
+}
+
+type AvaliacaoDoBoletim = AvaliacaoComNotas & {
+  id: string;
+  nome: string;
+  tipo: string;
+};
+
+type EstatisticasDoBoletim = {
+  percentualPresenca: number;
+  totalAulas: number;
+  presencas: number;
+  faltas: number;
+  faltasJustificadas: number;
+};
+
+/**
+ * Monta o boletim de UM aluno a partir de dados já carregados — a única
+ * implementação da conta, usada pelo boletim individual e pelo da turma.
+ * `avaliacoes`: todas as da turma, com `notas` contendo só a nota DESTE
+ * aluno (no máximo uma por avaliação).
+ */
+function montarBoletim(
+  matricula: { id: string; nomeAluno: string; numeroMatricula: string },
+  { turma, disciplinas, regra }: ContextoBoletim,
+  avaliacoes: AvaliacaoDoBoletim[],
+  frequencia: EstatisticasDoBoletim,
+  hoje: Date
+): Boletim {
+  const porDisciplinaBimestre = new Map<string, AvaliacaoDoBoletim[]>();
+  for (const av of avaliacoes) {
+    const chave = `${av.disciplinaId}:${av.bimestre}`;
+    const lista = porDisciplinaBimestre.get(chave);
+    if (lista) lista.push(av);
+    else porDisciplinaBimestre.set(chave, [av]);
+  }
+
+  const boletimDisciplinas: BoletimDisciplina[] = [];
+
+  for (const disciplina of disciplinas) {
+    const bimestres: BoletimDisciplina["bimestres"] = [];
+    const medias: number[] = [];
+    let bimestresComNota = 0;
+
+    for (let bim = 1; bim <= 4; bim++) {
+      const doBimestre = porDisciplinaBimestre.get(`${disciplina.id}:${bim}`) ?? [];
+
+      const avaliacoesComNotas = doBimestre.map((av) => ({
+        id: av.id,
+        nome: av.nome,
+        tipo: av.tipo,
+        peso: av.peso,
+        valorMaximo: av.valorMaximo,
+        nota: av.notas[0]?.valor ?? null,
+      }));
+
+      const media = mediaDoAluno(doBimestre, hoje);
+      if (media !== null) {
+        bimestresComNota++;
+        medias.push(media);
+      }
+
+      bimestres.push({
+        bimestre: bim,
+        media,
+        avaliacoes: avaliacoesComNotas,
+      });
+    }
+
+    const mediaFinal = mediaDosBimestres(medias);
+
+    boletimDisciplinas.push({
+      disciplinaId: disciplina.id,
+      disciplinaNome: disciplina.nome,
+      disciplinaCodigo: disciplina.codigo,
+      bimestres,
+      mediaFinal,
+      situacao: determinaSituacao(mediaFinal, bimestresComNota, frequencia, regra),
+    });
+  }
+
+  return {
+    matricula: {
+      id: matricula.id,
+      nomeAluno: matricula.nomeAluno,
+      numeroMatricula: matricula.numeroMatricula,
+    },
+    turma: {
+      id: turma.id,
+      nome: turma.nome,
+      serie: turma.serie.nome,
+    },
+    disciplinas: boletimDisciplinas,
+    frequencia: {
+      percentualPresenca: frequencia.percentualPresenca,
+      totalAulas: frequencia.totalAulas,
+      presencas: frequencia.presencas,
+      faltas: frequencia.faltas + frequencia.faltasJustificadas,
+      // Mesmo limite da situação (configuração da rede), razão exata
+      abaixoDoLimite: frequenciaAbaixoDoMinimo(
+        frequencia.presencas,
+        frequencia.totalAulas,
+        regra.frequenciaMinima
+      ),
+    },
+    situacaoGeral: situacaoGeralDe(boletimDisciplinas.map((d) => d.situacao)),
+  };
+}
+
+function resumoDaTurma(turma: TurmaDoBoletim): BoletimTurma["turma"] {
+  return { id: turma.id, nome: turma.nome, serie: turma.serie.nome, anoLetivo: turma.anoLetivo };
 }
 
 export class NotaService {
@@ -320,13 +527,15 @@ export class NotaService {
 
   /**
    * Calcula média ponderada de um aluno em uma disciplina/turma/bimestre.
-   * Fórmula: sum(nota * peso) / sum(peso)
+   * Fórmula: sum(nota * peso) / sum(peso) — avaliação já realizada sem nota
+   * do aluno conta como 0 (lib/media.notasParaMedia).
    */
   async calcularMedia(
     matriculaId: string,
     turmaId: string,
     disciplinaId: string,
-    bimestre: number
+    bimestre: number,
+    hoje: Date = hojeNaRede()
   ): Promise<number | null> {
     const avaliacoes = await prisma.avaliacao.findMany({
       where: { turmaId, disciplinaId, bimestre },
@@ -336,14 +545,22 @@ export class NotaService {
         },
       },
     });
+    return mediaDoAluno(avaliacoes, hoje);
+  }
 
-    if (avaliacoes.length === 0) return null;
-
-    // Notas convertidas para a escala 0–10 pelo valorMaximo (lib/media)
-    return mediaPonderada(
-      avaliacoes
-        .filter((av) => av.notas[0])
-        .map((av) => ({ valor: av.notas[0].valor, valorMaximo: av.valorMaximo, peso: av.peso }))
+  /** Médias por bimestre (1–4) de um aluno numa disciplina, numa consulta só. */
+  private async mediasPorBimestre(
+    matriculaId: string,
+    turmaId: string,
+    disciplinaId: string,
+    hoje: Date
+  ): Promise<Array<number | null>> {
+    const avaliacoes = await prisma.avaliacao.findMany({
+      where: { turmaId, disciplinaId },
+      include: { notas: { where: { matriculaId } } },
+    });
+    return [1, 2, 3, 4].map((bim) =>
+      mediaDoAluno(avaliacoes.filter((av) => av.bimestre === bim), hoje)
     );
   }
 
@@ -353,86 +570,42 @@ export class NotaService {
   async calcularMediaFinal(
     matriculaId: string,
     turmaId: string,
-    disciplinaId: string
+    disciplinaId: string,
+    hoje: Date = hojeNaRede()
   ): Promise<number | null> {
-    const medias: number[] = [];
+    return mediaDosBimestres(
+      await this.mediasPorBimestre(matriculaId, turmaId, disciplinaId, hoje)
+    );
+  }
 
-    for (let bim = 1; bim <= 4; bim++) {
-      const media = await this.calcularMedia(
-        matriculaId,
-        turmaId,
-        disciplinaId,
-        bim
-      );
-      if (media !== null) {
-        medias.push(media);
-      }
-    }
-
-    if (medias.length === 0) return null;
-
-    const soma = medias.reduce((acc, m) => acc + m, 0);
-    return Math.round((soma / medias.length) * 100) / 100;
+  /** Regra de aprovação vigente para a turma (configuração de avaliação da rede). */
+  async regraDaTurma(turma: {
+    anoLetivo: number;
+    escolaId: string;
+    etapaId: string;
+  }): Promise<RegraAprovacao> {
+    const cfg = await configuracaoAvaliacaoService.findByAnoLetivo(
+      turma.anoLetivo,
+      turma.escolaId,
+      turma.etapaId
+    );
+    return {
+      mediaMinima: cfg?.mediaMinima ?? 6.0,
+      frequenciaMinima: cfg?.percentualFrequenciaMinima ?? FREQUENCIA_MINIMA_PADRAO,
+      periodos: Math.min(cfg?.numeroPeriodos ?? 4, 4),
+    };
   }
 
   /**
-   * Determina situação do aluno em uma disciplina.
+   * Turma, disciplinas da etapa e regra de aprovação — o "contexto" comum ao
+   * boletim individual e ao boletim da turma (lote).
    */
-  private determinaSituacao(
-    mediaFinal: number | null,
-    bimestresComNota: number,
-    frequenciaPercentual: number,
-    regra: { mediaMinima: number; frequenciaMinima: number; periodos: number } = {
-      mediaMinima: 6.0,
-      frequenciaMinima: 75,
-      periodos: 4,
-    }
-  ): "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO" {
-    // Se nem todos os bimestres têm nota, está em curso
-    if (bimestresComNota < regra.periodos) return "EM_CURSO";
-    if (mediaFinal === null) return "EM_CURSO";
-
-    // Reprovado por frequência
-    if (frequenciaPercentual < regra.frequenciaMinima) return "REPROVADO";
-
-    // Aprovado (média mínima da configuração de avaliação vigente; padrão 6,0)
-    if (mediaFinal >= regra.mediaMinima) return "APROVADO";
-
-    // Recuperação
-    if (mediaFinal >= 3.0) return "RECUPERACAO";
-
-    // Reprovado por nota
-    return "REPROVADO";
-  }
-
-  /**
-   * Gera boletim completo de um aluno.
-   */
-  async getBoletim(matriculaId: string, turmaId?: string): Promise<Boletim> {
-    // Busca matrícula
-    const matricula = await prisma.matricula.findUnique({
-      where: { id: matriculaId },
-      include: {
-        turma: {
-          include: { serie: { select: { nome: true } } },
-        },
-        escola: { select: { id: true, nome: true } },
-        etapa: { select: { id: true, nome: true } },
-      },
-    });
-
-    if (!matricula) {
-      throw new NotFoundError("NF_004");
-    }
-
-    const turmaEfetiva = turmaId || matricula.turmaId;
-    if (!turmaEfetiva) {
-      throw new Error("Aluno não está vinculado a uma turma");
-    }
-
-    // Busca turma com série (hierarquia atual: Serie → Nível → Etapa)
+  private async contextoDoBoletim(turmaId: string) {
+    // Busca turma com série (hierarquia atual: Serie → Nível → Etapa).
+    // Com escopo (professor/escola), a extensão do Prisma devolve null para
+    // turma fora dele → NF_005 (404).
     const turma = await prisma.turma.findUnique({
-      where: { id: turmaEfetiva },
+      where: { id: turmaId },
       include: {
         serie: {
           select: {
@@ -447,184 +620,170 @@ export class NotaService {
       throw new NotFoundError("NF_005");
     }
 
-    // Busca disciplinas da etapa
-    const disciplinas = await prisma.disciplina.findMany({
-      where: { etapaId: turma.serie.nivel.etapaId, ativo: true },
-      orderBy: [{ ordem: "asc" }, { nome: "asc" }],
-    });
+    const [disciplinas, regra] = await Promise.all([
+      // Disciplinas da etapa
+      prisma.disciplina.findMany({
+        where: { etapaId: turma.serie.nivel.etapaId, ativo: true },
+        orderBy: [{ ordem: "asc" }, { nome: "asc" }],
+      }),
+      // Regras da configuração de avaliação vigente (antes fixas em 6,0 e 75%)
+      this.regraDaTurma({
+        anoLetivo: turma.anoLetivo,
+        escolaId: turma.escolaId,
+        etapaId: turma.serie.nivel.etapaId,
+      }),
+    ]);
 
-    // Busca TODAS as avaliações da turma (com a nota do aluno) de uma vez
-    // e agrupa em memória — evita o N+1 de disciplina × bimestre.
-    const todasAvaliacoes = await prisma.avaliacao.findMany({
-      where: { turmaId: turmaEfetiva },
-      include: {
-        notas: { where: { matriculaId } },
-      },
-      orderBy: { data: "asc" },
-    });
-
-    const porDisciplinaBimestre = new Map<string, typeof todasAvaliacoes>();
-    for (const av of todasAvaliacoes) {
-      const chave = `${av.disciplinaId}:${av.bimestre}`;
-      const lista = porDisciplinaBimestre.get(chave);
-      if (lista) lista.push(av);
-      else porDisciplinaBimestre.set(chave, [av]);
-    }
-
-    const mediaDe = (avaliacoes: typeof todasAvaliacoes): number | null => {
-      if (avaliacoes.length === 0) return null;
-      return mediaPonderada(
-        avaliacoes
-          .filter((av) => av.notas[0])
-          .map((av) => ({ valor: av.notas[0].valor, valorMaximo: av.valorMaximo, peso: av.peso }))
-      );
-    };
-
-    // Regras da configuração de avaliação vigente (antes fixas em 6,0 e 75%)
-    const cfg = await configuracaoAvaliacaoService.findByAnoLetivo(
-      turma.anoLetivo,
-      turma.escolaId,
-      turma.serie.nivel.etapaId
-    );
-    const regra = {
-      mediaMinima: cfg?.mediaMinima ?? 6.0,
-      frequenciaMinima: cfg?.percentualFrequenciaMinima ?? 75,
-      periodos: Math.min(cfg?.numeroPeriodos ?? 4, 4),
-    };
-
-    // Frequência geral (uma única vez, usada em todas as disciplinas)
-    const frequencia = await frequenciaService.calcularEstatisticas(
-      matriculaId,
-      turmaEfetiva
-    );
-
-    const boletimDisciplinas: BoletimDisciplina[] = [];
-
-    for (const disciplina of disciplinas) {
-      const bimestres: BoletimDisciplina["bimestres"] = [];
-      const medias: number[] = [];
-      let bimestresComNota = 0;
-
-      for (let bim = 1; bim <= 4; bim++) {
-        const avaliacoes =
-          porDisciplinaBimestre.get(`${disciplina.id}:${bim}`) ?? [];
-
-        const avaliacoesComNotas = avaliacoes.map((av) => ({
-          id: av.id,
-          nome: av.nome,
-          tipo: av.tipo,
-          peso: av.peso,
-          valorMaximo: av.valorMaximo,
-          nota: av.notas[0]?.valor ?? null,
-        }));
-
-        const media = mediaDe(avaliacoes);
-        if (media !== null) {
-          bimestresComNota++;
-          medias.push(media);
-        }
-
-        bimestres.push({
-          bimestre: bim,
-          media,
-          avaliacoes: avaliacoesComNotas,
-        });
-      }
-
-      const mediaFinal =
-        medias.length === 0
-          ? null
-          : Math.round(
-              (medias.reduce((acc, m) => acc + m, 0) / medias.length) * 100
-            ) / 100;
-
-      const situacao = this.determinaSituacao(
-        mediaFinal,
-        bimestresComNota,
-        frequencia.percentualPresenca,
-        regra
-      );
-
-      boletimDisciplinas.push({
-        disciplinaId: disciplina.id,
-        disciplinaNome: disciplina.nome,
-        disciplinaCodigo: disciplina.codigo,
-        bimestres,
-        mediaFinal,
-        situacao,
-      });
-    }
-
-    // Situação geral: reprovado se qualquer disciplina reprovada
-    let situacaoGeral: Boletim["situacaoGeral"] = "APROVADO";
-    const situacoes = boletimDisciplinas.map((d) => d.situacao);
-
-    if (situacoes.some((s) => s === "EM_CURSO")) {
-      situacaoGeral = "EM_CURSO";
-    } else if (situacoes.some((s) => s === "REPROVADO")) {
-      situacaoGeral = "REPROVADO";
-    } else if (situacoes.some((s) => s === "RECUPERACAO")) {
-      situacaoGeral = "RECUPERACAO";
-    }
-
-    return {
-      matricula: {
-        id: matricula.id,
-        nomeAluno: matricula.nomeAluno,
-        numeroMatricula: matricula.numeroMatricula,
-      },
-      turma: {
-        id: turma.id,
-        nome: turma.nome,
-        serie: turma.serie.nome,
-      },
-      disciplinas: boletimDisciplinas,
-      frequencia: {
-        percentualPresenca: frequencia.percentualPresenca,
-        totalAulas: frequencia.totalAulas,
-        presencas: frequencia.presencas,
-        faltas: frequencia.faltas + frequencia.faltasJustificadas,
-        abaixoDoLimite: frequencia.abaixoDoLimite,
-      },
-      situacaoGeral,
-    };
+    return { turma, disciplinas, regra };
   }
 
   /**
-   * Retorna situação final em uma disciplina específica.
+   * TODAS as avaliações da turma com as notas das matrículas pedidas, numa
+   * consulta só (sem N+1 de disciplina × bimestre × aluno). Ordem estável
+   * (data, id) para o boletim individual e o da turma saírem iguais.
+   */
+  private avaliacoesComNotas(turmaId: string, matriculaIds: string[]) {
+    return prisma.avaliacao.findMany({
+      where: { turmaId },
+      include: {
+        notas: { where: { matriculaId: { in: matriculaIds } } },
+      },
+      orderBy: [{ data: "asc" }, { id: "asc" }],
+    });
+  }
+
+  /**
+   * Gera boletim completo de um aluno.
+   */
+  async getBoletim(
+    matriculaId: string,
+    turmaId?: string,
+    hoje: Date = hojeNaRede()
+  ): Promise<Boletim> {
+    // Busca matrícula
+    const matricula = await prisma.matricula.findUnique({
+      where: { id: matriculaId },
+      select: { id: true, nomeAluno: true, numeroMatricula: true, turmaId: true },
+    });
+
+    if (!matricula) {
+      throw new NotFoundError("NF_004");
+    }
+
+    const turmaEfetiva = turmaId || matricula.turmaId;
+    if (!turmaEfetiva) {
+      throw new Error("Aluno não está vinculado a uma turma");
+    }
+
+    const contexto = await this.contextoDoBoletim(turmaEfetiva);
+    const [avaliacoes, frequencia] = await Promise.all([
+      this.avaliacoesComNotas(turmaEfetiva, [matriculaId]),
+      // Frequência geral (uma única vez, usada em todas as disciplinas)
+      frequenciaService.calcularEstatisticas(matriculaId, turmaEfetiva),
+    ]);
+
+    return montarBoletim(matricula, contexto, avaliacoes, frequencia, hoje);
+  }
+
+  /**
+   * Boletim de TODOS os alunos ATIVOS da turma (opcionalmente só as
+   * matrículas do ano letivo informado), com a MESMA conta do boletim
+   * individual (montarBoletim) e um número fixo de consultas, qualquer que
+   * seja o tamanho da turma: turma, disciplinas, configuração, matrículas,
+   * avaliações+notas e frequências da turma.
+   */
+  async getBoletimTurma(
+    turmaId: string,
+    anoLetivo?: number,
+    hoje: Date = hojeNaRede()
+  ): Promise<BoletimTurma> {
+    const contexto = await this.contextoDoBoletim(turmaId);
+
+    const matriculas = await prisma.matricula.findMany({
+      // Todas as situações (ATIVA, CONCLUIDA, TRANSFERIDA...): as telas de
+      // conselho/recuperação listam a turma inteira, inclusive quem o próprio
+      // conselho acabou de concluir. Quem não está no resumo de frequência
+      // (só ATIVA) tem a frequência calculada individualmente abaixo.
+      where: {
+        turmaId,
+        ...(anoLetivo !== undefined && { anoLetivo }),
+      },
+      select: { id: true, nomeAluno: true, numeroMatricula: true },
+      orderBy: [{ nomeAluno: "asc" }, { id: "asc" }],
+    });
+
+    if (matriculas.length === 0) {
+      return { turma: resumoDaTurma(contexto.turma), boletins: [] };
+    }
+
+    const ids = matriculas.map((m) => m.id);
+    const [avaliacoes, resumoFrequencia] = await Promise.all([
+      this.avaliacoesComNotas(turmaId, ids),
+      // Mesmas estatísticas de frequenciaService.calcularEstatisticas, para a
+      // turma inteira em uma consulta
+      frequenciaService.getResumoTurma(turmaId),
+    ]);
+    const frequenciaPorMatricula = new Map(
+      resumoFrequencia.map((r) => [r.matricula.id, r.estatisticas])
+    );
+
+    const boletins: Boletim[] = [];
+    for (const matricula of matriculas) {
+      // Avaliações vistas por ESTE aluno: notas[0] = a nota dele (ou nenhuma),
+      // exatamente como na consulta do boletim individual
+      const doAluno = avaliacoes.map((av) => ({
+        ...av,
+        notas: av.notas.filter((n) => n.matriculaId === matricula.id),
+      }));
+      // Matrícula que mudou de status entre as duas consultas: busca a dela
+      const frequencia =
+        frequenciaPorMatricula.get(matricula.id) ??
+        (await frequenciaService.calcularEstatisticas(matricula.id, turmaId));
+      boletins.push(montarBoletim(matricula, contexto, doAluno, frequencia, hoje));
+    }
+
+    return { turma: resumoDaTurma(contexto.turma), boletins };
+  }
+
+  /**
+   * Retorna situação final em uma disciplina específica — mesma regra
+   * (configuração de avaliação da rede) e mesma conta do boletim.
    */
   async getSituacaoFinal(
     matriculaId: string,
     turmaId: string,
-    disciplinaId: string
+    disciplinaId: string,
+    hoje: Date = hojeNaRede()
   ) {
-    const mediaFinal = await this.calcularMediaFinal(
-      matriculaId,
-      turmaId,
-      disciplinaId
-    );
-
-    // Conta bimestres com nota
-    let bimestresComNota = 0;
-    for (let bim = 1; bim <= 4; bim++) {
-      const media = await this.calcularMedia(
-        matriculaId,
-        turmaId,
-        disciplinaId,
-        bim
-      );
-      if (media !== null) bimestresComNota++;
+    const turma = await prisma.turma.findUnique({
+      where: { id: turmaId },
+      select: {
+        anoLetivo: true,
+        escolaId: true,
+        serie: { select: { nivel: { select: { etapaId: true } } } },
+      },
+    });
+    if (!turma) {
+      throw new NotFoundError("NF_005");
     }
 
-    const frequencia = await frequenciaService.calcularEstatisticas(
-      matriculaId,
-      turmaId
-    );
+    const [medias, regra, frequencia] = await Promise.all([
+      this.mediasPorBimestre(matriculaId, turmaId, disciplinaId, hoje),
+      this.regraDaTurma({
+        anoLetivo: turma.anoLetivo,
+        escolaId: turma.escolaId,
+        etapaId: turma.serie.nivel.etapaId,
+      }),
+      frequenciaService.calcularEstatisticas(matriculaId, turmaId),
+    ]);
+    const mediaFinal = mediaDosBimestres(medias);
+    const bimestresComNota = medias.filter((m) => m !== null).length;
 
-    const situacao = this.determinaSituacao(
+    const situacao = determinaSituacao(
       mediaFinal,
       bimestresComNota,
-      frequencia.percentualPresenca
+      frequencia,
+      regra
     );
 
     return {

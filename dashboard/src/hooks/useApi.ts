@@ -1778,6 +1778,15 @@ export function useFrequenciasPorData(turmaId: string, data: string) {
   });
 }
 
+/** Aulas da grade da turma no dia (frequência por aula). */
+export function useAulasDoDia(turmaId: string, data: string) {
+  return useQuery({
+    queryKey: ["frequencias", "aulas", turmaId, data],
+    queryFn: () => frequenciaApi.aulasDoDia(turmaId, data),
+    enabled: !!turmaId && !!data,
+  });
+}
+
 export function useEstatisticasFrequencia(
   matriculaId: string | undefined,
   turmaId: string | undefined,
@@ -1858,6 +1867,7 @@ export function useRegistrarFrequenciaTurma() {
     mutationFn: (data: {
       turmaId: string;
       data: string;
+      gradeHorariaId?: string;
       presencas: Array<{
         matriculaId: string;
         status: "PRESENTE" | "FALTA" | "JUSTIFICADA";

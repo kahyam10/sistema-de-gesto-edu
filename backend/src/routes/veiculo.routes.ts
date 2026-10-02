@@ -1,12 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { veiculoService } from "../services/veiculo.service.js";
 import {
   createVeiculoSchema,
   updateVeiculoSchema,
 } from "../schemas/transporte.schemas.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function veiculoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -50,15 +49,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
 
         return reply.send(await veiculoService.findAll(filters));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar veículos";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -89,17 +80,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
         const dias = request.query.dias ? parseInt(request.query.dias) : 30;
         return reply.send(await veiculoService.alertasVencimentos(dias));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar alertas de vencimento";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -121,15 +102,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
       try {
         return reply.send(await veiculoService.findById(request.params.id));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar veículo";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -150,15 +123,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
         const veiculo = await veiculoService.create(data);
         return reply.status(201).send(veiculo);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao cadastrar veículo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -182,15 +147,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
         const veiculo = await veiculoService.update(request.params.id, data);
         return reply.send(veiculo);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar veículo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -213,15 +170,7 @@ export async function veiculoRoutes(app: FastifyInstance) {
         await veiculoService.delete(request.params.id);
         return reply.send({ message: "Veículo deletado com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar veículo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
+import { frequenciaAbaixoDoMinimo } from "./frequencia.service.js";
 import type { ExportacaoPresencaQuery } from "../schemas/exportacao.schemas.js";
 
 /**
@@ -41,7 +42,7 @@ export interface LinhaSistemaPresenca {
   presencas: number;
   faltas: number; // status FALTA
   faltasJustificadas: number;
-  percentualFrequencia: number; // inteiro, Math.round (mesma fórmula do frequenciaService)
+  percentualFrequencia: number; // inteiro, Math.round (mesma fórmula do frequenciaService) sobre AULAS registradas
   periodo: string; // "MM/AAAA"
 }
 
@@ -69,8 +70,20 @@ function objetoCenso(valor: unknown): Record<string, unknown> {
 }
 
 export class ExportacaoPresencaService {
+  /**
+   * Célula de texto do CSV (aberto no Excel: BOM + ";"). Além de trocar os
+   * separadores, neutraliza injeção de fórmula (CSV/formula injection):
+   * conteúdo que começa com =, +, -, @, tab ou CR ganha o prefixo "'" e é
+   * exibido como texto. Números (idade, totais, percentuais) não passam por
+   * aqui como texto: um number é devolvido sem prefixo, então um valor
+   * numérico negativo legítimo continua numérico.
+   */
   private campo(v: unknown): string {
-    return String(v ?? "").replace(/[|\r\n;]/g, " ").trim();
+    if (typeof v === "number") return Number.isFinite(v) ? String(v) : "";
+    const texto = String(v ?? "");
+    const perigoso = /^[=+\-@\t\r]/.test(texto);
+    const limpo = texto.replace(/[|\r\n;]/g, " ").trim();
+    return perigoso || /^[=+\-@]/.test(limpo) ? `'${limpo}` : limpo;
   }
 
   private soDigitos(v?: string | null): string {
@@ -211,9 +224,13 @@ export class ExportacaoPresencaService {
         continue;
       }
 
-      // JUSTIFICADA não conta como presença (D2)
+      // Cada registro é UMA AULA (frequência por aula; turmas sem grade têm
+      // um registro por dia): o percentual é sobre as aulas registradas.
+      // JUSTIFICADA não conta como presença (D2). A inclusão compara a razão
+      // EXATA com o limiar (74,5% está abaixo de 75%), como no restante do
+      // sistema; a coluna do arquivo continua com o percentual arredondado.
       const percentual = Math.round((stats.presente / totalAulas) * 100);
-      if (percentual >= limiar) continue;
+      if (!frequenciaAbaixoDoMinimo(stats.presente, totalAulas, limiar)) continue;
 
       linhas.push({
         codigoInepEscola: codigoInepDe(matricula.escola),

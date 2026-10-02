@@ -1,6 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { filtroLeitura } from "../lib/escopo.js";
 import { NotFoundError, BusinessError } from "../errors/index.js";
+
+/** Escopo de AtendimentoAEE para includes (a extensão não filtra includes). */
+function atendimentosNoEscopo(): Prisma.AtendimentoAEEWhereInput | undefined {
+  const escopo = contextoAtual()?.escopo;
+  return ((escopo && filtroLeitura("AtendimentoAEE", escopo)) ?? undefined) as Prisma.AtendimentoAEEWhereInput | undefined;
+}
 
 export interface CreatePEIInput {
   matriculaId: string;
@@ -401,6 +409,7 @@ export class AEEService {
       include: {
         escola: true,
         atendimentos: {
+          where: atendimentosNoEscopo(),
           include: {
             pei: {
               include: {

@@ -1,8 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { escolaService } from "../services/index.js";
-import { createEscolaSchema, updateEscolaSchema } from "../schemas/index.js";
+import { createEscolaSchema, updateEscolaSchema, censoEscolaSchema } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function escolasRoutes(app: FastifyInstance) {
   // Listar todas as escolas
@@ -11,15 +10,7 @@ export async function escolasRoutes(app: FastifyInstance) {
       const escolas = await escolaService.findAll();
       return reply.send(escolas);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao listar escolas";
-      return reply.status(500).send({ error: message });
+      return responderErroRota(error, reply, 500);
     }
   });
 
@@ -40,15 +31,7 @@ export async function escolasRoutes(app: FastifyInstance) {
 
         return reply.send(escola);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar escola";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -70,17 +53,7 @@ export async function escolasRoutes(app: FastifyInstance) {
 
         return reply.send(estatisticas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar estatísticas";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -101,15 +74,7 @@ export async function escolasRoutes(app: FastifyInstance) {
       const escola = await escolaService.create(data);
       return reply.status(201).send(escola);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error ? error.message : "Erro ao criar escola";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -126,15 +91,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         const escola = await escolaService.update(id, data);
         return reply.send(escola);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar escola";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -148,18 +105,13 @@ export async function escolasRoutes(app: FastifyInstance) {
     ) => {
       try {
         const { id } = request.params;
-        const escola = await escolaService.updateCenso(id, request.body);
+        const escola = await escolaService.updateCenso(
+          id,
+          censoEscolaSchema.parse(request.body)
+        );
         return reply.send(escola);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao salvar censo";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -176,15 +128,7 @@ export async function escolasRoutes(app: FastifyInstance) {
         await escolaService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar escola";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

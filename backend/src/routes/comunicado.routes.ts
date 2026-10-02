@@ -47,11 +47,11 @@ export async function comunicadoRoutes(app: FastifyInstance) {
 
     // Suporte a paginação
     if (page && limit) {
-      const result = await comunicadoService.findAllPaginated(filters, { page, limit });
+      const result = await comunicadoService.findAllPaginated(filters, { page, limit }, request.user);
       return reply.status(200).send(result);
     }
 
-    const comunicados = await comunicadoService.findAll(filters);
+    const comunicados = await comunicadoService.findAll(filters, request.user);
     return reply.status(200).send(comunicados);
   });
 
@@ -76,7 +76,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
-    const comunicado = await comunicadoService.findById(id);
+    const comunicado = await comunicadoService.findById(id, request.user);
     return reply.status(200).send(comunicado);
   });
 
@@ -110,7 +110,7 @@ export async function comunicadoRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const data = createComunicadoSchema.parse(request.body);
-    const comunicado = await comunicadoService.create(data);
+    const comunicado = await comunicadoService.create(data, request.user);
     return reply.status(201).send(comunicado);
   });
 

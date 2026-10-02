@@ -94,7 +94,9 @@ model AuditLog {
 
   @@index([userId])
   @@index([acao, createdAt])
+  @@index([acao, ip, createdAt]) // limite de login por IP (lib/limite-login.ts)
   @@index([recurso, recursoId])
+  @@index([createdAt]) // listagem da auditoria (mais recentes primeiro)
   @@map("audit_logs")
 }
 
@@ -334,6 +336,8 @@ model Turma {
   lideresTurma        LiderTurma[]
   planosAula          PlanoAula[]
 
+  // Turmas da escola no ano (portais, aprendizagem, filtros de escopo por escola)
+  @@index([escolaId, anoLetivo])
   @@map("turmas")
 }
 
@@ -418,6 +422,14 @@ model Matricula {
   // Módulo 3 — usuários (responsáveis/aluno) com acesso ao portal desta matrícula
   acessos           MatriculaUsuario[]
 
+  // Alunos ativos da turma (chamada, notas, portais, aprendizagem)
+  @@index([turmaId, status])
+  // Escola/ano (resumo da escola, sem turma, exportações, escopo por escola)
+  @@index([escolaId, anoLetivo, status])
+  // Consolidado da rede no ano (SEMEC, exportação Presença)
+  @@index([anoLetivo, status])
+  // Checagem de matrícula ativa duplicada pelo CPF
+  @@index([cpfAluno])
   @@map("matriculas")
 }
 
@@ -524,6 +536,7 @@ model EscolaProfissional {
   profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
 
   @@unique([escolaId, profissionalId])
+  @@index([profissionalId])
   @@map("escolas_profissionais")
 }
 
@@ -540,6 +553,7 @@ model TurmaProfessor {
   profissional ProfissionalEducacao @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
 
   @@unique([turmaId, profissionalId])
+  @@index([profissionalId]) // turmas do professor (portal/app do professor)
   @@map("turmas_professores")
 }
 
@@ -675,6 +689,9 @@ model GradeHoraria {
   profissionalId String?
   profissional   ProfissionalEducacao? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
 
+  // Chamadas feitas nesta aula (frequência por aula)
+  frequencias   Frequencia[]
+
   @@index([turmaId])
   @@index([profissionalId])
   @@map("grade_horaria")
@@ -695,11 +712,26 @@ model Frequencia {
   turmaId        String
   turma          Turma @relation(fields: [turmaId], references: [id], onDelete: Cascade)
 
+  // Frequência POR AULA: quando a turma tem grade no dia da semana, cada aula
+  // da grade tem a própria chamada (Matemática às 7h, Português às 9h). Sem
+  // grade no dia (ex.: Educação Infantil), segue a chamada diária.
+  // aulaChave = id da aula da grade, ou "DIA" na chamada diária (registros
+  // anteriores à mudança viraram "DIA" pelo default). Não usa o FK na chave
+  // única: se a aula sair da grade, gradeHorariaId vira null (SetNull), mas a
+  // chave e a cópia de disciplina/horaInicio preservam o histórico.
+  gradeHorariaId String?
+  gradeHoraria   GradeHoraria? @relation(fields: [gradeHorariaId], references: [id], onDelete: SetNull)
+  disciplina     String?  // cópia da aula no momento da chamada
+  horaInicio     String?  // cópia da aula no momento da chamada ("07:30")
+  aulaChave      String   @default("DIA")
+
   // Índices para otimização
   @@index([matriculaId])
   @@index([turmaId])
   @@index([data])
-  @@unique([matriculaId, turmaId, data]) // Um registro por aluno por turma por dia
+  @@index([gradeHorariaId])
+  @@unique([matriculaId, turmaId, data, aulaChave]) // Um registro por aluno por aula (ou por dia, na chamada diária)
+  @@index([turmaId, data]) // chamada do dia da turma
   @@map("frequencias")
 }
 model Disciplina {

@@ -35,3 +35,21 @@ export function diasAte(data: string, hoje: string = hojeNaRede()): number {
   };
   return Math.round((utc(data) - utc(hoje)) / 86_400_000);
 }
+
+/**
+ * URL vinda do usuário (ex.: anexo de comunicado) que pode virar link
+ * clicável: só `https:`. Devolve a URL normalizada ou null (http:,
+ * javascript:, data:, relativa, inválida...). Registros antigos no banco
+ * ainda podem ter esses valores — quem renderiza decide pelo retorno.
+ */
+export function urlSegura(url: string | null | undefined): string | null {
+  if (typeof url !== "string") return null;
+  const texto = url.trim();
+  if (!texto) return null;
+  try {
+    const u = new URL(texto);
+    return u.protocol === "https:" && u.hostname ? u.href : null;
+  } catch {
+    return null;
+  }
+}

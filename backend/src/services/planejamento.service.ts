@@ -266,7 +266,12 @@ export class PlanejamentoService {
     }
     if (atividades?.length) {
       const ids = [...new Set(atividades)];
-      const achadas = await prisma.atividadePedagogica.count({ where: { id: { in: ids }, ativo: true } });
+      // Só atividades da rede ou da escola da TURMA do plano: a extensão de
+      // escopo não confere o vínculo aninhado (atividades: { create }), e o
+      // professor de duas escolas (ou a gestão) ligaria atividade de outra escola
+      const achadas = await prisma.atividadePedagogica.count({
+        where: { id: { in: ids }, ativo: true, OR: [{ escolaId: null }, { escolaId: turma.escolaId }] },
+      });
       if (achadas !== ids.length) throw new NotFoundError("NF_001", { recurso: "atividade" });
     }
   }
@@ -315,13 +320,20 @@ export class PlanejamentoService {
     await this.validarVinculos(turma, atual.disciplinaId, d.conteudoProgramaticoId, d.atividades);
     const { atividades, ...campos } = d;
     const p = await prisma.$transaction(async (tx) => {
+      // Condição de status NA PRÓPRIA escrita: se o plano foi enviado entre a
+      // leitura acima e aqui, nada é gravado (0 linhas → conflito)
+      const { count } = await tx.planoAula.updateMany({
+        where: { id, autorId: u.id, status: { in: EDITAVEL } },
+        data: campos,
+      });
+      if (count === 0) throw new BusinessError("BIZ_039", { status: "alterado por outra operação" });
       if (atividades) {
         await tx.planoAulaAtividade.deleteMany({ where: { planoId: id } });
         await tx.planoAulaAtividade.createMany({
           data: [...new Set(atividades)].map((atividadeId) => ({ planoId: id, atividadeId })),
         });
       }
-      return tx.planoAula.update({ where: { id }, data: campos, include: incluirPlano });
+      return tx.planoAula.findUniqueOrThrow({ where: { id }, include: incluirPlano });
     });
     return formatarPlano(p);
   }
@@ -330,22 +342,26 @@ export class PlanejamentoService {
     if (ehGestao(u)) {
       const existe = await prisma.planoAula.findFirst({ where: { AND: [{ id }, visivelPara(u)] }, select: { id: true } });
       if (!existe) throw new NotFoundError("NF_001", { recurso: "plano de aula" });
-    } else {
-      const atual = await this.planoDoAutor(id, u);
-      if (!EDITAVEL.includes(atual.status)) throw new BusinessError("BIZ_039", { status: atual.status });
+      await prisma.planoAula.delete({ where: { id } });
+      return { ok: true };
     }
-    await prisma.planoAula.delete({ where: { id } });
+    const atual = await this.planoDoAutor(id, u);
+    if (!EDITAVEL.includes(atual.status)) throw new BusinessError("BIZ_039", { status: atual.status });
+    // Status conferido na própria exclusão (corrida com "enviar")
+    const { count } = await prisma.planoAula.deleteMany({ where: { id, autorId: u.id, status: { in: EDITAVEL } } });
+    if (count === 0) throw new BusinessError("BIZ_039", { status: "alterado por outra operação" });
     return { ok: true };
   }
 
   async enviarPlano(id: string, u: Usuario) {
     const atual = await this.planoDoAutor(id, u);
     if (!EDITAVEL.includes(atual.status)) throw new BusinessError("BIZ_039", { status: atual.status });
-    const p = await prisma.planoAula.update({
-      where: { id },
+    const { count } = await prisma.planoAula.updateMany({
+      where: { id, autorId: u.id, status: { in: EDITAVEL } },
       data: { status: "ENVIADO", enviadoEm: new Date() },
-      include: incluirPlano,
     });
+    if (count === 0) throw new BusinessError("BIZ_039", { status: "alterado por outra operação" });
+    const p = await prisma.planoAula.findUniqueOrThrow({ where: { id }, include: incluirPlano });
     return formatarPlano(p);
   }
 
@@ -359,11 +375,13 @@ export class PlanejamentoService {
     if (atual.status !== "ENVIADO") throw new BusinessError("BIZ_039", { status: atual.status });
     if (atual.autorId === u.id) throw new BusinessError("BIZ_043");
     if (d.decisao === "DEVOLVIDO" && !d.parecer) throw new BusinessError("BIZ_044");
-    const p = await prisma.planoAula.update({
-      where: { id },
+    // Só revisa o que AINDA está enviado (duas revisões simultâneas: a segunda dá conflito)
+    const { count } = await prisma.planoAula.updateMany({
+      where: { id, status: "ENVIADO" },
       data: { status: d.decisao, parecer: d.parecer ?? null, revisadoPorId: u.id, revisadoEm: new Date() },
-      include: incluirPlano,
     });
+    if (count === 0) throw new BusinessError("BIZ_039", { status: "alterado por outra operação" });
+    const p = await prisma.planoAula.findUniqueOrThrow({ where: { id }, include: incluirPlano });
     return formatarPlano(p);
   }
 

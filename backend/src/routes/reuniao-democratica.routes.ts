@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { reuniaoDemocraticaService } from "../services/reuniao-democratica.service.js";
 import {
   createReuniaoDemocraticaSchema,
@@ -8,6 +6,8 @@ import {
   registrarAtaSchema,
 } from "../schemas/democratica.schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { consultaListaSchema } from "../schemas/index.js";
 
 export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -59,29 +59,21 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const {
-          escolaId,
-          orgao,
-          status,
-          colegiadoId,
-          dataInicio,
-          dataFim,
-          page,
-          limit,
-        } = request.query;
+        const { escolaId, orgao, status, colegiadoId } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const filters: NonNullable<Parameters<typeof reuniaoDemocraticaService.findAllPaginated>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (orgao) filters.orgao = orgao;
         if (status) filters.status = status;
         if (colegiadoId) filters.colegiadoId = colegiadoId;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           const result = await reuniaoDemocraticaService.findAllPaginated(
             filters,
-            { page: parseInt(page), limit: parseInt(limit) }
+            { page: consulta.page, limit: consulta.limit }
           );
           return reply.send(result);
         }
@@ -89,15 +81,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         const reunioes = await reuniaoDemocraticaService.findAll(filters);
         return reply.send(reunioes);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar reuniões";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -128,15 +112,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         );
         return reply.send(reuniao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar reunião";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -183,15 +159,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         const reuniao = await reuniaoDemocraticaService.create(body);
         return reply.status(201).send(reuniao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar reunião";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -224,15 +192,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         );
         return reply.send(reuniao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar reunião";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -260,15 +220,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         await reuniaoDemocraticaService.delete(request.params.id);
         return reply.send({ message: "Reunião deletada com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover reunião";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -342,15 +294,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         );
         return reply.send(reuniao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao registrar ata";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -381,15 +325,7 @@ export async function reuniaoDemocraticaRoutes(app: FastifyInstance) {
         );
         return reply.send(reuniao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao cancelar reunião";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

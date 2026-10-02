@@ -40,6 +40,53 @@ function assinaturaValida(buffer: Buffer, mimeType: string): boolean {
   }
 }
 
+// Cliente da transação interativa (o `prisma` daqui é um cliente estendido)
+type Tx = Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+const MAX_TENTATIVAS_CHECKLIST = 10;
+
+/**
+ * Marca/desmarca um tipo no checklist `documentosEntregues` (jsonb
+ * Record<tipo, boolean>) de forma ATÔMICA, sem SQL cru: lê o valor, monta o
+ * novo e grava com compare-and-swap (`updateMany` filtrando pelo valor lido).
+ * Se outro upload/exclusão gravou no meio, o filtro não casa (count 0) e
+ * relê/repete — antes, dois uploads simultâneos liam o mesmo checklist e o
+ * segundo apagava a marca do primeiro. No Postgres o UPDATE concorrente
+ * espera a trava da linha e reavalia o WHERE na versão nova, então não há
+ * janela entre a comparação e a escrita.
+ */
+async function marcarChecklist(
+  tx: Tx,
+  matriculaId: string,
+  tipo: string,
+  // valor fixo, ou recalculado a cada tentativa (null = nada a gravar)
+  valor: boolean | (() => Promise<boolean | null>)
+) {
+  for (let i = 0; i < MAX_TENTATIVAS_CHECKLIST; i++) {
+    const entregue = typeof valor === "boolean" ? valor : await valor();
+    if (entregue === null) return;
+    const atual = await tx.matricula.findUnique({
+      where: { id: matriculaId },
+      select: { documentosEntregues: true },
+    });
+    if (!atual) throw new NotFoundError("NF_004");
+    const lido = atual.documentosEntregues;
+    const checklist = {
+      ...((lido as Record<string, boolean> | null) ?? {}),
+      [tipo]: entregue,
+    };
+    const { count } = await tx.matricula.updateMany({
+      where: {
+        id: matriculaId,
+        documentosEntregues:
+          lido === null ? { equals: Prisma.AnyNull } : { equals: lido as Prisma.InputJsonValue },
+      },
+      data: { documentosEntregues: checklist },
+    });
+    if (count === 1) return;
+  }
+  throw new Error("Não foi possível atualizar o checklist de documentos (concorrência); tente novamente");
+}
+
 export class DocumentoMatriculaService {
   async list(matriculaId: string) {
     const matricula = await prisma.matricula.findUnique({ where: { id: matriculaId } });
@@ -89,14 +136,7 @@ export class DocumentoMatriculaService {
           },
         });
         // Checklist (jsonb Record<tipo, boolean>): anexar digitalizado marca o tipo como entregue
-        const checklist = {
-          ...((matricula.documentosEntregues as Record<string, boolean> | null) ?? {}),
-        };
-        checklist[input.tipo] = true;
-        await tx.matricula.update({
-          where: { id: input.matriculaId },
-          data: { documentosEntregues: checklist },
-        });
+        await marcarChecklist(tx, input.matriculaId, input.tipo, true);
         return documento;
       });
     } catch (error) {
@@ -124,23 +164,14 @@ export class DocumentoMatriculaService {
 
     await prisma.$transaction(async (tx) => {
       await tx.documentoMatricula.delete({ where: { id: documentoId } });
-      // Último arquivo do tipo? Desmarca no checklist
-      const restantes = await tx.documentoMatricula.count({
-        where: { matriculaId, tipo: documento.tipo },
+      // Último arquivo do tipo? Desmarca no checklist. A contagem é refeita a
+      // cada tentativa: se um upload do mesmo tipo terminou no meio, não desmarca.
+      await marcarChecklist(tx, matriculaId, documento.tipo, async () => {
+        const restantes = await tx.documentoMatricula.count({
+          where: { matriculaId, tipo: documento.tipo },
+        });
+        return restantes === 0 ? false : null;
       });
-      if (restantes === 0) {
-        const matricula = await tx.matricula.findUnique({ where: { id: matriculaId } });
-        if (matricula) {
-          const checklist = {
-            ...((matricula.documentosEntregues as Record<string, boolean> | null) ?? {}),
-          };
-          checklist[documento.tipo] = false;
-          await tx.matricula.update({
-            where: { id: matriculaId },
-            data: { documentosEntregues: checklist },
-          });
-        }
-      }
     });
     // Arquivo físico por último: se falhar, o registro já saiu (órfão é inócuo e logado)
     await getStorageDriver().delete(documento.storageKey);

@@ -42,3 +42,15 @@ describe("recorrência do calendário", () => {
     expect(xs[0].titulo).toBe("Formação");
   });
 });
+
+describe("recorrência: dataInicio é o início da repetição", () => {
+  it("04/03 (quarta) + SEMANAL na SEGUNDA → 09/03, 16/03 (a própria 04/03 não é ocorrência)", () => {
+    expect(iso(ocorrencias(ev("2026-03-04", "SEMANAL", "SEGUNDA"), d("2026-03-01"), d("2026-03-20"), null)))
+      .toEqual(["2026-03-09", "2026-03-16"]);
+  });
+
+  it("MENSAL com dia já passado no mês da dataInicio começa no mês seguinte", () => {
+    expect(iso(ocorrencias(ev("2026-03-20", "MENSAL", "10"), d("2026-03-01"), d("2026-05-31"), null)))
+      .toEqual(["2026-04-10", "2026-05-10"]);
+  });
+});

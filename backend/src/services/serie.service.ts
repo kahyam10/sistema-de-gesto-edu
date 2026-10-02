@@ -1,5 +1,18 @@
 import { prisma } from "../lib/prisma.js";
 import { CreateSerieInput, UpdateSerieInput } from "../schemas/index.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { filtroLeitura } from "../lib/escopo.js";
+
+/**
+ * Includes não passam pela extensão de escopo do Prisma (ela filtra só o model
+ * da consulta raiz): o filtro de leitura do model incluído vai aqui, a partir
+ * do escopo da requisição. Sem contexto/escopo (gestão da rede, jobs) = {}.
+ */
+function ondeNoEscopo(model: string): { where?: Record<string, unknown> } {
+  const escopo = contextoAtual()?.escopo;
+  const filtro = escopo ? filtroLeitura(model, escopo) : null;
+  return filtro ? { where: filtro } : {};
+}
 
 export class SerieService {
   async findAll() {
@@ -32,7 +45,8 @@ export class SerieService {
             },
           },
         },
-        turmas: true,
+        // Turmas de outras escolas/professores ficam de fora para quem tem escopo
+        turmas: { ...ondeNoEscopo("Turma") },
       },
     });
   }

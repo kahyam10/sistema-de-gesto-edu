@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_TEXTO_CURTO, MAX_TEXTO_LIVRE } from "./index.js";
 
 // ==================== MÓDULO 7: TRANSPORTE ESCOLAR (schemas) ====================
 
@@ -13,12 +14,12 @@ export const turnoTransporteEnum = z.enum([
 export const createVeiculoSchema = z.object({
   placa: z.string().min(7, "Placa inválida").max(8),
   tipo: z.enum(["ONIBUS", "MICRO_ONIBUS", "VAN", "KOMBI", "LANCHA", "OUTRO"]),
-  marca: z.string().optional(),
-  modelo: z.string().optional(),
+  marca: z.string().max(MAX_TEXTO_CURTO).optional(),
+  modelo: z.string().max(MAX_TEXTO_CURTO).optional(),
   anoFabricacao: z.number().int().min(1980).max(2100).optional(),
   capacidade: z.number().int().positive("Capacidade deve ser maior que zero"),
-  renavam: z.string().optional(),
-  chassi: z.string().optional(),
+  renavam: z.string().max(MAX_TEXTO_CURTO).optional(),
+  chassi: z.string().max(MAX_TEXTO_CURTO).optional(),
   tipoPropriedade: z
     .enum(["PROPRIO", "TERCEIRIZADO", "CEDIDO"])
     .default("PROPRIO"),
@@ -32,10 +33,10 @@ export const updateVeiculoSchema = createVeiculoSchema.partial();
 
 // ==================== MOTORISTAS ====================
 export const createMotoristaSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
+  nome: z.string().max(MAX_TEXTO_CURTO).min(3, "Nome deve ter no mínimo 3 caracteres"),
   cpf: z.string().min(11, "CPF inválido").max(14),
-  telefone: z.string().optional(),
-  cnhNumero: z.string().min(5, "Número da CNH inválido"),
+  telefone: z.string().max(MAX_TEXTO_CURTO).optional(),
+  cnhNumero: z.string().max(MAX_TEXTO_CURTO).min(5, "Número da CNH inválido"),
   cnhCategoria: z.enum(["D", "E"]),
   cnhValidade: z.coerce.date(),
   cursoTransporteEscolar: z.boolean().default(false),
@@ -47,11 +48,11 @@ export const updateMotoristaSchema = createMotoristaSchema.partial();
 
 // ==================== ROTAS DE TRANSPORTE ====================
 export const createRotaTransporteSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
-  codigo: z.string().min(1, "Código é obrigatório"),
+  nome: z.string().max(MAX_TEXTO_CURTO).min(3, "Nome deve ter no mínimo 3 caracteres"),
+  codigo: z.string().max(MAX_TEXTO_CURTO).min(1, "Código é obrigatório"),
   turno: turnoTransporteEnum,
   tipo: z.enum(["RURAL", "URBANA", "FLUVIAL"]).default("RURAL"),
-  itinerario: z.string().min(5, "Descreva o itinerário"),
+  itinerario: z.string().max(MAX_TEXTO_LIVRE).min(5, "Descreva o itinerário"),
   kmDiario: z.number().positive().optional(),
   horarioSaida: z
     .string()
@@ -61,23 +62,23 @@ export const createRotaTransporteSchema = z.object({
     .string()
     .regex(/^\d{2}:\d{2}$/, "Formato HH:MM")
     .optional(),
-  veiculoId: z.string().optional(),
-  motoristaId: z.string().optional(),
+  veiculoId: z.string().max(MAX_TEXTO_CURTO).optional(),
+  motoristaId: z.string().max(MAX_TEXTO_CURTO).optional(),
   ativo: z.boolean().default(true),
 });
 export const updateRotaTransporteSchema = createRotaTransporteSchema.partial();
 
 export const vincularAlunoRotaSchema = z.object({
-  matriculaId: z.string().min(1, "Matrícula é obrigatória"),
-  pontoEmbarque: z.string().optional(),
+  matriculaId: z.string().max(MAX_TEXTO_CURTO).min(1, "Matrícula é obrigatória"),
+  pontoEmbarque: z.string().max(MAX_TEXTO_CURTO).optional(),
 });
 export const vincularEscolaRotaSchema = z.object({
-  escolaId: z.string().min(1, "Escola é obrigatória"),
+  escolaId: z.string().max(MAX_TEXTO_CURTO).min(1, "Escola é obrigatória"),
 });
 
 // ==================== MANUTENÇÕES ====================
 export const createManutencaoSchema = z.object({
-  veiculoId: z.string().min(1, "Veículo é obrigatório"),
+  veiculoId: z.string().max(MAX_TEXTO_CURTO).min(1, "Veículo é obrigatório"),
   tipo: z.enum([
     "PREVENTIVA",
     "CORRETIVA",
@@ -87,16 +88,16 @@ export const createManutencaoSchema = z.object({
     "FREIOS",
     "OUTRA",
   ]),
-  descricao: z.string().min(3, "Descrição deve ter no mínimo 3 caracteres"),
+  descricao: z.string().max(MAX_TEXTO_LIVRE).min(3, "Descrição deve ter no mínimo 3 caracteres"),
   dataAgendada: z.coerce.date(),
   dataRealizada: z.coerce.date().optional(),
   custo: z.number().min(0).optional(),
   kmRegistrado: z.number().int().min(0).optional(),
-  oficina: z.string().optional(),
+  oficina: z.string().max(MAX_TEXTO_CURTO).optional(),
   status: z
     .enum(["AGENDADA", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"])
     .default("AGENDADA"),
-  observacoes: z.string().optional(),
+  observacoes: z.string().max(MAX_TEXTO_LIVRE).optional(),
 });
 export const updateManutencaoSchema = createManutencaoSchema
   .partial()

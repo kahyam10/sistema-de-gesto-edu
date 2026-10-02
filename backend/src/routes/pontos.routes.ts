@@ -4,8 +4,11 @@ import {
   createPontoSchema,
   updatePontoSchema,
   registrarPontoSchema,
+  consultaListaSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { relatorioMensalParamsSchema } from "../schemas/parametros.schemas.js";
 
 export async function pontosRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -133,29 +136,31 @@ Lista todos os registros de ponto eletrônico do sistema.
       }>,
       reply: FastifyReply
     ) => {
+      try {
+        const { profissionalId, escolaId, tipoRegistro } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
-      const { profissionalId, escolaId, dataInicio, dataFim, tipoRegistro, page, limit } =
-        request.query;
+        const filters: NonNullable<Parameters<typeof pontoService.findAllPaginated>[0]> = {};
+        if (profissionalId) filters.profissionalId = profissionalId;
+        if (escolaId) filters.escolaId = escolaId;
+        if (tipoRegistro) filters.tipoRegistro = tipoRegistro;
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
-      const filters: NonNullable<Parameters<typeof pontoService.findAllPaginated>[0]> = {};
-      if (profissionalId) filters.profissionalId = profissionalId;
-      if (escolaId) filters.escolaId = escolaId;
-      if (tipoRegistro) filters.tipoRegistro = tipoRegistro;
-      if (dataInicio) filters.dataInicio = new Date(dataInicio);
-      if (dataFim) filters.dataFim = new Date(dataFim);
+        // Suporte a paginação
+        if (consulta.page && consulta.limit) {
+          const result = await pontoService.findAllPaginated(filters, {
+            page: consulta.page,
+            limit: consulta.limit,
+          });
+          return reply.send(result);
+        }
 
-      // Suporte a paginação
-      if (page && limit) {
-        const result = await pontoService.findAllPaginated(filters, {
-          page: parseInt(page),
-          limit: parseInt(limit),
-        });
-        return reply.send(result);
+        const pontos = await pontoService.findAll(filters);
+        return reply.send(pontos);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
       }
-
-      const pontos = await pontoService.findAll(filters);
-      return reply.send(pontos);
-
     }
   );
 
@@ -234,11 +239,13 @@ Cria um registro de ponto manual (uso administrativo).
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-
-      const body = createPontoSchema.parse(request.body);
-      const ponto = await pontoService.create(body);
-      return reply.status(201).send(ponto);
-
+      try {
+        const body = createPontoSchema.parse(request.body);
+        const ponto = await pontoService.create(body);
+        return reply.status(201).send(ponto);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -317,13 +324,17 @@ Registra entrada ou saída do profissional em tempo real.
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      // Modelo administrativo: o registro de ponto é feito pela equipe
-      // operacional (guard global restringe leitura/escrita a OPERACAO).
-      // Auto-registro pelo próprio profissional exigirá vínculo
-      // User↔ProfissionalEducacao (não existe no schema atual).
-      const body = registrarPontoSchema.parse(request.body);
-      const ponto = await pontoService.registrarPonto(body);
-      return reply.status(201).send(ponto);
+      try {
+        // Modelo administrativo: o registro de ponto é feito pela equipe
+        // operacional (guard global restringe leitura/escrita a OPERACAO).
+        // Auto-registro pelo próprio profissional exigirá vínculo
+        // User↔ProfissionalEducacao (não existe no schema atual).
+        const body = registrarPontoSchema.parse(request.body);
+        const ponto = await pontoService.registrarPonto(body);
+        return reply.status(201).send(ponto);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -407,16 +418,18 @@ Retorna os detalhes completos de um registro de ponto específico.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
+      try {
+        const { id } = request.params;
+        const ponto = await pontoService.findById(id);
 
-      const { id } = request.params;
-      const ponto = await pontoService.findById(id);
+        if (!ponto) {
+          return reply.status(404).send({ error: "Ponto não encontrado" });
+        }
 
-      if (!ponto) {
-        return reply.status(404).send({ error: "Ponto não encontrado" });
+        return reply.send(ponto);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
       }
-
-      return reply.send(ponto);
-
     }
   );
 
@@ -498,12 +511,14 @@ Atualiza um registro de ponto existente.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-
-      const { id } = request.params;
-      const body = updatePontoSchema.parse(request.body);
-      const ponto = await pontoService.update(id, body);
-      return reply.send(ponto);
-
+      try {
+        const { id } = request.params;
+        const body = updatePontoSchema.parse(request.body);
+        const ponto = await pontoService.update(id, body);
+        return reply.send(ponto);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -567,11 +582,13 @@ Remove um registro de ponto do sistema.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-
-      const { id } = request.params;
-      await pontoService.delete(id);
-      return reply.send({ message: "Ponto removido com sucesso" });
-
+      try {
+        const { id } = request.params;
+        await pontoService.delete(id);
+        return reply.send({ message: "Ponto removido com sucesso" });
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -699,15 +716,17 @@ Gera relatório completo de ponto de um profissional em um mês específico.
       }>,
       reply: FastifyReply
     ) => {
-
-      const { profissionalId, mes, ano } = request.params;
-      const relatorio = await pontoService.relatorioMensal(
-        profissionalId,
-        parseInt(mes),
-        parseInt(ano)
-      );
-      return reply.send(relatorio);
-
+      try {
+        const { profissionalId, mes, ano } = relatorioMensalParamsSchema.parse(request.params);
+        const relatorio = await pontoService.relatorioMensal(
+          profissionalId,
+          mes,
+          ano
+        );
+        return reply.send(relatorio);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 }

@@ -243,7 +243,9 @@ export class MatriculaService {
 
   /**
    * Cria (ou reaproveita) o usuário RESPONSAVEL e o vincula à matrícula.
-   * - email já existe → reutiliza o usuário (senha NÃO é alterada), apenas vincula.
+   * - email já existe → reutiliza o usuário (senha NÃO é alterada), apenas vincula —
+   *   SÓ se a conta for de RESPONSAVEL. Conta de servidor/equipe (ou de outro
+   *   papel) nunca vira acesso de responsável: AUTH_004 (409).
    * - email não existe → exige nome+senha (BIZ_024) e cria User role RESPONSAVEL.
    * - vínculo já existe ativo → BIZ_022; existe inativo → reativa.
    */
@@ -263,6 +265,8 @@ export class MatriculaService {
             role: "RESPONSAVEL",
           },
         });
+      } else if (user.role !== "RESPONSAVEL") {
+        throw new BusinessError("AUTH_004", { motivo: "e-mail pertence a uma conta que não é de responsável" });
       }
       const existente = await tx.matriculaUsuario.findUnique({
         where: { matriculaId_userId: { matriculaId, userId: user.id } },

@@ -20,10 +20,8 @@ export function InicioProfessorScreen({ navigation }: Props) {
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
 
   const { profissional, turmas, aulasHoje, frequenciasPendentesHoje } = q.data;
-  const pendentes = new Set(frequenciasPendentesHoje.map((p) => p.turmaId));
-  const horaChamada = new Map(
-    (q.data.chamadasRegistradasHoje ?? []).map((c) => [c.turmaId, c.registradaEm ? horaBR(c.registradaEm) : null])
-  );
+  // Frequência por aula: pendência e "feita às" são de cada AULA
+  const pendentes = new Set(frequenciasPendentesHoje.map((p) => p.gradeHorariaId));
   const turmaPorId = new Map(turmas.map((t) => [t.id, t]));
   const escolas = [...new Set(turmas.map((t) => t.escola.nome))];
   const disciplinas = [...new Set(turmas.map((t) => t.disciplina).filter((d): d is string => !!d))];
@@ -57,10 +55,11 @@ export function InicioProfessorScreen({ navigation }: Props) {
         <Texto suave>Nenhuma aula na sua grade hoje. As turmas estão na aba Turmas.</Texto>
       ) : (
         aulasHoje.map((a) => {
-          const pendente = pendentes.has(a.turmaId);
+          const pendente = pendentes.has(a.gradeHorariaId);
           const turma = turmaPorId.get(a.turmaId);
+          const feitaAs = a.chamadaRegistradaEm ? horaBR(a.chamadaRegistradaEm) : null;
           return (
-            <Cartao key={`${a.turmaId}-${a.horaInicio}`} style={{ flexDirection: "row", gap: 14 }}>
+            <Cartao key={a.gradeHorariaId} style={{ flexDirection: "row", gap: 14 }}>
               <View style={s.horario}>
                 <Text style={s.hora}>{a.horaInicio}</Text>
                 <Text style={s.horaFim}>{a.horaFim}</Text>
@@ -73,14 +72,16 @@ export function InicioProfessorScreen({ navigation }: Props) {
                   </Texto>
                 </View>
                 <Selo
-                  texto={pendente ? "Chamada pendente" : horaChamada.get(a.turmaId) ? `Chamada feita às ${horaChamada.get(a.turmaId)}` : "Chamada feita"}
+                  texto={pendente ? "Chamada pendente" : feitaAs ? `Chamada feita às ${feitaAs}` : "Chamada feita"}
                   tom={pendente ? "alerta" : "sucesso"}
                 />
                 <Botao
                   compacto
                   titulo={pendente ? "Fazer chamada" : "Revisar chamada"}
                   variante={pendente ? "primario" : "secundario"}
-                  onPress={() => navigation.navigate("Chamada", { turmaId: a.turmaId, turmaNome: a.turmaNome })}
+                  onPress={() =>
+                    navigation.navigate("Chamada", { turmaId: a.turmaId, turmaNome: a.turmaNome, gradeHorariaId: a.gradeHorariaId })
+                  }
                 />
               </View>
             </Cartao>

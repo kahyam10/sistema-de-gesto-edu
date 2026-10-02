@@ -1,7 +1,7 @@
 "use client";
 
 import { hojeNaRede } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,9 @@ import {
   useFrequenciasPorData,
   useAlunosBaixaFrequencia,
   useResumoFrequenciaTurma,
+  useAulasDoDia,
 } from "@/hooks/useApi";
+import { AULA_DIA } from "@/lib/api";
 import { Check, X, FileText, Users, Warning, CalendarCheck, ChartLine } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -52,12 +54,27 @@ interface FrequenciaAluno {
   observacao?: string;
 }
 
-export function FrequenciaManager() {
-  const anoAtual = new Date().getFullYear();
-  const dataHoje = hojeNaRede();
+/** Data pura "AAAA-MM-DD" → "DD/MM/AAAA" (em UTC: sem virar o dia anterior no fuso da Bahia). */
+const dataBR = (iso: string) => new Date(iso.slice(0, 10)).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+const horaBR = (iso: string) =>
+  new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Bahia" });
 
-  const [turmaId, setTurmaId] = useState<string>("");
-  const [data, setData] = useState<string>(dataHoje);
+export function FrequenciaManager() {
+  const dataHoje = hojeNaRede();
+  const anoAtual = Number(dataHoje.slice(0, 4));
+
+  const [turmaId, setTurmaIdState] = useState<string>("");
+  const [data, setDataState] = useState<string>(dataHoje);
+  // Frequência por aula: aula da grade escolhida (turma com grade no dia)
+  const [gradeHorariaId, setGradeHorariaId] = useState<string>("");
+  const setTurmaId = (v: string) => {
+    setTurmaIdState(v);
+    setGradeHorariaId("");
+  };
+  const setData = (v: string) => {
+    setDataState(v);
+    setGradeHorariaId("");
+  };
   const [frequencias, setFrequencias] = useState<FrequenciaAluno[]>([]);
   const [alunoSelecionado, setAlunoSelecionado] = useState<FrequenciaAluno | null>(null);
   const [dialogJustificativa, setDialogJustificativa] = useState(false);
@@ -71,9 +88,27 @@ export function FrequenciaManager() {
     turmaId
   );
   const { data: resumoTurma = [], isLoading: loadingResumo } = useResumoFrequenciaTurma(turmaId);
+  const { data: aulasDia, isLoading: loadingAulas } = useAulasDoDia(turmaId, data);
   const registrarMutation = useRegistrarFrequenciaTurma();
 
   const turmaSelecionada = turmas.find((t) => t.id === turmaId);
+
+  // Turma com grade no dia → chamada por aula (escolher a aula antes de marcar);
+  // sem grade → chamada diária ("DIA"), como sempre.
+  const porAula = aulasDia?.modo === "AULA";
+  const aulaSelecionada = porAula
+    ? aulasDia?.aulas.find((a) => a.gradeHorariaId === gradeHorariaId)
+    : undefined;
+  const aulaChave = porAula ? (aulaSelecionada ? aulaSelecionada.gradeHorariaId : null) : AULA_DIA;
+
+  // Registros do dia SÓ da aula escolhida (ou da chamada diária)
+  const existentesDaAula = useMemo(
+    () =>
+      aulaChave === null
+        ? undefined
+        : frequenciasExistentes?.filter((f) => (f.aulaChave ?? AULA_DIA) === aulaChave),
+    [frequenciasExistentes, aulaChave]
+  );
 
   // Carrega alunos da turma quando turma é selecionada
   useEffect(() => {
@@ -82,18 +117,18 @@ export function FrequenciaManager() {
         (m) => m.status === "ATIVA"
       );
 
-      // Se já existem frequências para esta data, carrega elas
-      if (frequenciasExistentes && frequenciasExistentes.length > 0) {
+      // Se já existem frequências para esta data (e aula), carrega elas
+      if (existentesDaAula && existentesDaAula.length > 0) {
         const freqMap = new Map(
-          frequenciasExistentes.map((f) => [
+          existentesDaAula.map((f) => [
             f.matriculaId,
             {
               matriculaId: f.matriculaId,
               nomeAluno: f.matricula?.nomeAluno || "",
               numeroMatricula: f.matricula?.numeroMatricula || "",
               status: f.status,
-              justificativa: f.justificativa,
-              observacao: f.observacao,
+              justificativa: f.justificativa ?? undefined,
+              observacao: f.observacao ?? undefined,
             },
           ])
         );
@@ -126,7 +161,7 @@ export function FrequenciaManager() {
     } else {
       setFrequencias([]);
     }
-  }, [turmaSelecionada, frequenciasExistentes]);
+  }, [turmaSelecionada, existentesDaAula]);
 
   const handleStatusChange = (matriculaId: string, status: "PRESENTE" | "FALTA" | "JUSTIFICADA") => {
     setFrequencias((prev) =>
@@ -180,6 +215,10 @@ export function FrequenciaManager() {
       toast.error("Selecione uma turma e uma data");
       return;
     }
+    if (porAula && !aulaSelecionada) {
+      toast.error("Selecione a aula para registrar a chamada");
+      return;
+    }
 
     // Valida se faltas justificadas têm justificativa
     const faltasJustificadasSemTexto = frequencias.filter(
@@ -197,6 +236,7 @@ export function FrequenciaManager() {
       await registrarMutation.mutateAsync({
         turmaId,
         data,
+        ...(aulaSelecionada && { gradeHorariaId: aulaSelecionada.gradeHorariaId }),
         presencas: frequencias.map((f) => ({
           matriculaId: f.matriculaId,
           status: f.status,
@@ -217,7 +257,7 @@ export function FrequenciaManager() {
   };
 
   // Verifica todos os estados de loading
-  if (loadingTurmas || loadingFrequencias || loadingBaixaFreq || loadingResumo) {
+  if (loadingTurmas || loadingFrequencias || loadingBaixaFreq || loadingResumo || loadingAulas) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
@@ -237,7 +277,7 @@ export function FrequenciaManager() {
             Registro de Frequência
           </CardTitle>
           <CardDescription>
-            Selecione a turma e a data para registrar a frequência dos alunos
+            Selecione a turma, a data e — quando a turma tem grade no dia — a aula
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -271,8 +311,74 @@ export function FrequenciaManager() {
               />
             </div>
           </div>
+
+          {/* Frequência por aula: escolher a aula do dia */}
+          {turmaId && aulasDia && porAula && (
+            <div className="space-y-2">
+              <Label htmlFor="aula">Aula</Label>
+              {aulasDia.aulas.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  A turma tem aulas na grade neste dia, mas nenhuma que você possa lançar.
+                </p>
+              ) : (
+                <Select value={gradeHorariaId} onValueChange={setGradeHorariaId}>
+                  <SelectTrigger id="aula">
+                    <SelectValue placeholder="Selecione a aula" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aulasDia.aulas.map((a) => (
+                      <SelectItem key={a.gradeHorariaId} value={a.gradeHorariaId}>
+                        {a.horaInicio}–{a.horaFim} · {a.disciplina}
+                        {a.profissional ? ` · ${a.profissional.nome}` : ""}
+                        {a.totalRegistros > 0 ? " (lançada)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+          {turmaId && aulasDia && !porAula && (
+            <p className="text-sm text-muted-foreground">
+              Sem aulas na grade neste dia: chamada diária.
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      {/* Aulas lançadas no dia */}
+      {turmaId && aulasDia && porAula && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Chamadas do dia</CardTitle>
+            <CardDescription>{dataBR(data)} · uma chamada por aula</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {aulasDia.aulas.map((a) => (
+              <div
+                key={a.gradeHorariaId}
+                className="flex items-center justify-between rounded border px-3 py-2 text-sm"
+              >
+                <span>
+                  <span className="font-mono">{a.horaInicio}–{a.horaFim}</span> · {a.disciplina}
+                  {a.profissional ? <span className="text-muted-foreground"> · {a.profissional.nome}</span> : null}
+                </span>
+                {a.totalRegistros > 0 && a.registradaEm ? (
+                  <Badge variant="default">Lançada às {horaBR(a.registradaEm)}</Badge>
+                ) : (
+                  <Badge variant="outline">Pendente</Badge>
+                )}
+              </div>
+            ))}
+            {aulasDia.chamadaDiaria.totalRegistros > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Há também {aulasDia.chamadaDiaria.totalRegistros} registro(s) de chamada diária neste dia
+                (lançados antes da chamada por aula) — continuam contando na frequência.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Alerta de Alunos com Baixa Frequência */}
       {turmaId && alunosBaixaFreq.length > 0 && (
@@ -307,7 +413,7 @@ export function FrequenciaManager() {
       )}
 
       {/* Lista de Frequência */}
-      {turmaId && frequencias.length > 0 && (
+      {turmaId && aulaChave !== null && frequencias.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -317,8 +423,10 @@ export function FrequenciaManager() {
                   Lista de Frequência
                 </CardTitle>
                 <CardDescription>
-                  {turmaSelecionada?.serie?.nome} - {turmaSelecionada?.nome} •{" "}
-                  {new Date(data + "T00:00:00").toLocaleDateString("pt-BR")}
+                  {turmaSelecionada?.serie?.nome} - {turmaSelecionada?.nome} • {dataBR(data)}
+                  {aulaSelecionada
+                    ? ` • ${aulaSelecionada.horaInicio} ${aulaSelecionada.disciplina}`
+                    : ""}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -437,7 +545,11 @@ export function FrequenciaManager() {
                 onClick={handleSalvar}
                 disabled={registrarMutation.isPending || loadingFrequencias}
               >
-                {registrarMutation.isPending ? "Salvando..." : "Salvar Frequência"}
+                {registrarMutation.isPending
+                  ? "Salvando..."
+                  : aulaSelecionada
+                    ? `Salvar chamada de ${aulaSelecionada.disciplina}`
+                    : "Salvar Frequência"}
               </Button>
             </div>
           </CardContent>
@@ -494,7 +606,7 @@ export function FrequenciaManager() {
         </Card>
       )}
 
-      {turmaId && frequencias.length === 0 && !loadingFrequencias && (
+      {turmaId && aulaChave !== null && frequencias.length === 0 && !loadingFrequencias && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Users size={48} className="text-muted-foreground mb-4" />

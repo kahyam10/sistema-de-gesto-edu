@@ -9,8 +9,8 @@ import {
 } from "../../components/ui";
 import type { ResponsavelStack } from "../../navigation/tipos";
 import { cores, espaco, fontes, LIMITE_PRESENCA, raio } from "../../theme";
-import { capitalizar, diaDaSemana, diaMes, media, nota } from "../../utils/formato";
-import { mediaParcial } from "./MeusAlunosScreen";
+import { capitalizar, diaDaSemana, diaMes, nota } from "../../utils/formato";
+import { descricaoAula, mediaDaDisciplina, mediaGeralDoAluno, ordenarRegistros, rotuloMedia, textoMedia } from "../../utils/medias";
 
 type Props = NativeStackScreenProps<ResponsavelStack, "Aluno">;
 type Aba = "boletim" | "frequencia";
@@ -71,27 +71,28 @@ function Boletim({ q }: { q: UseQueryResult<TBoletim> }) {
   if (q.isError) return <Erro erro={q.error} tentarDeNovo={() => q.refetch()} />;
   const b = q.data;
   const sit = SITUACAO[b.situacaoGeral];
+  const geral = mediaGeralDoAluno(b);
 
   return (
     <>
       <Cartao style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View style={{ gap: 4, flex: 1 }}>
           <Texto pequeno suave>{b.turma.serie} · {b.turma.nome}</Texto>
-          <Subtitulo>Média geral parcial</Subtitulo>
+          <Subtitulo>{rotuloMedia(geral, "Média geral")}</Subtitulo>
           <Selo texto={sit.texto} tom={sit.tom} />
         </View>
-        <Text style={s.mediaGrande}>{nota(mediaParcial(b))}</Text>
+        <Text style={s.mediaGrande}>{nota(geral.valor)}</Text>
       </Cartao>
       {b.disciplinas.length === 0 ? (
         <Vazio texto="Ainda não há notas lançadas." />
       ) : (
         b.disciplinas.map((d) => {
-          const md = d.mediaFinal ?? media(d.bimestres.map((x) => x.media));
+          const md = mediaDaDisciplina(d);
           return (
             <Cartao key={d.disciplinaId}>
               <View style={s.linhaTopo}>
                 <View style={{ flex: 1 }}><Subtitulo>{d.disciplinaNome}</Subtitulo></View>
-                <Selo texto={`Média ${nota(md)}`} tom={d.situacao === "EM_CURSO" ? "marca" : SITUACAO[d.situacao].tom} />
+                <Selo texto={textoMedia(md)} tom={d.situacao === "EM_CURSO" ? "marca" : SITUACAO[d.situacao].tom} />
               </View>
               <View style={s.bimestres}>
                 {[1, 2, 3, 4].map((n) => {
@@ -127,7 +128,8 @@ function Frequencia({ q }: { q: UseQueryResult<FrequenciaAluno> }) {
   if (!e) return <Vazio texto="O aluno ainda não está enturmado." />;
 
   const baixo = e.totalAulas > 0 && e.abaixoDoLimite;
-  const ultimos = [...registros].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 20);
+  // Frequência por aula: vários registros no mesmo dia (cada um com hora e disciplina)
+  const ultimos = ordenarRegistros(registros).slice(0, 20);
 
   return (
     <>
@@ -150,16 +152,20 @@ function Frequencia({ q }: { q: UseQueryResult<FrequenciaAluno> }) {
         </View>
       </Cartao>
       {baixo ? <Aviso tom="perigo" texto="A frequência está abaixo do mínimo. Converse com a coordenação da escola." /> : null}
-      {ultimos.length > 0 ? <Titulo>Últimos dias</Titulo> : null}
-      {ultimos.map((r) => (
-        <View key={r.id} style={s.registro}>
-          <View>
-            <Text style={s.regData}>{diaMes(r.data)}</Text>
-            <Texto pequeno suave>{diaDaSemana(r.data)}</Texto>
+      {ultimos.length > 0 ? <Titulo>Últimos registros</Titulo> : null}
+      {ultimos.map((r) => {
+        const aula = descricaoAula(r);
+        return (
+          <View key={r.id} style={s.registro}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.regData}>{diaMes(r.data)}</Text>
+              <Texto pequeno suave>{diaDaSemana(r.data)}</Texto>
+              {aula ? <Texto pequeno>{aula}</Texto> : null}
+            </View>
+            <Selo texto={STATUS[r.status].texto} tom={STATUS[r.status].tom} />
           </View>
-          <Selo texto={STATUS[r.status].texto} tom={STATUS[r.status].tom} />
-        </View>
-      ))}
+        );
+      })}
     </>
   );
 }

@@ -1,6 +1,13 @@
 import { prisma } from "../lib/prisma.js";
 import { expandir } from "../lib/recorrencia.js";
 
+// Datas do calendário são dias "puros" gravados à meia-noite UTC (lib/datas.ts):
+// toda conta de dia/dia da semana aqui é em UTC, nunca no fuso do servidor.
+const DIA_MS = 24 * 60 * 60 * 1000;
+const inicioDoDiaUTC = (d: Date) =>
+  new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+const diaISO = (d: Date) => d.toISOString().slice(0, 10);
+
 export interface CreateAnoLetivoInput {
   ano: number;
   ativo?: boolean;
@@ -313,11 +320,12 @@ export class CalendarioService {
   }
 
   async findEventosByData(anoLetivoId: string, data: Date, escolaId?: string) {
-    const startOfDay = new Date(data);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(data);
-    endOfDay.setHours(23, 59, 59, 999);
+    // Datas do calendário são dias puros (meia-noite UTC): o dia é o UTC,
+    // não o do fuso do servidor (setHours local quebrava fora de UTC)
+    const startOfDay = new Date(
+      Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate())
+    );
+    const endOfDay = new Date(startOfDay.getTime() + DIA_MS - 1);
 
     // Filtrar por escola se necessário
     if (escolaId) {
@@ -328,7 +336,8 @@ export class CalendarioService {
           dataInicio: { lte: endOfDay },
           AND: [
             {
-              OR: [{ dataFim: { gte: startOfDay } }, { dataFim: null }],
+              // dataFim null = evento de um dia só (o próprio dataInicio)
+        OR: [{ dataFim: { gte: startOfDay } }, { dataFim: null, dataInicio: { gte: startOfDay } }],
             },
             {
               OR: [{ escolaId: null }, { escolaId }],
@@ -348,7 +357,8 @@ export class CalendarioService {
         anoLetivoId,
         escolaId: null,
         dataInicio: { lte: endOfDay },
-        OR: [{ dataFim: { gte: startOfDay } }, { dataFim: null }],
+        // dataFim null = evento de um dia só (o próprio dataInicio)
+        OR: [{ dataFim: { gte: startOfDay } }, { dataFim: null, dataInicio: { gte: startOfDay } }],
       },
       include: {
         escola: true,
@@ -713,38 +723,40 @@ export class CalendarioService {
     eventos.forEach((evento) => {
       if (evento.tipo === "SABADO_LETIVO") {
         // Adiciona todos os sábados do intervalo do evento
-        const current = new Date(evento.dataInicio);
-        const end = evento.dataFim ? new Date(evento.dataFim) : current;
+        const current = inicioDoDiaUTC(evento.dataInicio);
+        // cópia: sem dataFim, `end` era o próprio `current` (mutado no laço → laço sem fim)
+        const end = evento.dataFim ? new Date(evento.dataFim) : new Date(current.getTime());
         while (current <= end) {
-          if (current.getDay() === 6) {
+          if (current.getUTCDay() === 6) {
             // Sábado
-            sabadosLetivosSet.add(current.toISOString().split("T")[0]);
+            sabadosLetivosSet.add(diaISO(current));
           }
-          current.setDate(current.getDate() + 1);
+          current.setUTCDate(current.getUTCDate() + 1);
         }
       }
 
       if (evento.reduzDiaLetivo) {
         // Adiciona todos os dias do intervalo do evento
-        const current = new Date(evento.dataInicio);
-        const end = evento.dataFim ? new Date(evento.dataFim) : current;
+        const current = inicioDoDiaUTC(evento.dataInicio);
+        // cópia: sem dataFim, `end` era o próprio `current` (mutado no laço → laço sem fim)
+        const end = evento.dataFim ? new Date(evento.dataFim) : new Date(current.getTime());
         while (current <= end) {
-          diasReduzidosSet.add(current.toISOString().split("T")[0]);
-          current.setDate(current.getDate() + 1);
+          diasReduzidosSet.add(diaISO(current));
+          current.setUTCDate(current.getUTCDate() + 1);
         }
       }
     });
 
     // Iterar por cada dia do período de aulas
-    const current = new Date(dataInicio);
+    const current = inicioDoDiaUTC(dataInicio);
     while (current <= dataFim) {
       diasTotais++;
-      const dayOfWeek = current.getDay();
-      const dateStr = current.toISOString().split("T")[0];
+      const dayOfWeek = current.getUTCDay();
+      const dateStr = diaISO(current);
 
       // Domingos nunca são letivos
       if (dayOfWeek === 0) {
-        current.setDate(current.getDate() + 1);
+        current.setUTCDate(current.getUTCDate() + 1);
         continue;
       }
 
@@ -756,7 +768,7 @@ export class CalendarioService {
             diasLetivos++;
           }
         }
-        current.setDate(current.getDate() + 1);
+        current.setUTCDate(current.getUTCDate() + 1);
         continue;
       }
 
@@ -767,7 +779,7 @@ export class CalendarioService {
         diasLetivos++;
       }
 
-      current.setDate(current.getDate() + 1);
+      current.setUTCDate(current.getUTCDate() + 1);
     }
 
     // Contar feriados (eventos que reduzem dia letivo)
@@ -803,8 +815,9 @@ export class CalendarioService {
     ano: number,
     escolaId?: string
   ) {
-    const startOfMonth = new Date(ano, mes - 1, 1);
-    const endOfMonth = new Date(ano, mes, 0, 23, 59, 59, 999);
+    // Limites do mês em UTC (datas do calendário são meia-noite UTC)
+    const startOfMonth = new Date(Date.UTC(ano, mes - 1, 1));
+    const endOfMonth = new Date(Date.UTC(ano, mes, 0, 23, 59, 59, 999));
 
     // Condição base de datas
     const dateCondition = [

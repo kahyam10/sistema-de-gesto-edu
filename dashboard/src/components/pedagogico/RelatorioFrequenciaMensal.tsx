@@ -33,7 +33,8 @@ import { CalendarCheck, FileText, Users } from "@phosphor-icons/react";
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { toast } from "sonner";
-import { frequenciaApi } from "@/lib/api";
+import { frequenciaApi, AULA_DIA } from "@/lib/api";
+import { hojeNaRede } from "@/lib/utils";
 
 const styles = StyleSheet.create({
   page: {
@@ -214,8 +215,10 @@ const RelatorioFrequenciaPDF: React.FC<RelatorioFrequenciaPDFProps> = ({
 };
 
 export function RelatorioFrequenciaMensal() {
-  const anoAtual = new Date().getFullYear();
-  const mesAtual = new Date().getMonth() + 1;
+  // "Hoje" da rede (Bahia), não o do navegador
+  const hoje = hojeNaRede();
+  const anoAtual = Number(hoje.slice(0, 4));
+  const mesAtual = Number(hoje.slice(5, 7));
 
   const [turmaId, setTurmaId] = useState<string>("");
   const [mes, setMes] = useState<string>(mesAtual.toString());
@@ -235,12 +238,12 @@ export function RelatorioFrequenciaMensal() {
 
     setLoading(true);
     try {
-      // Calcula primeiro e último dia do mês
-      const primeiroDia = new Date(ano, parseInt(mes) - 1, 1);
-      const ultimoDia = new Date(ano, parseInt(mes), 0);
-
-      const dataInicio = primeiroDia.toISOString().split('T')[0];
-      const dataFim = ultimoDia.toISOString().split('T')[0];
+      // Primeiro e último dia do mês como datas puras (AAAA-MM-DD), sem fuso
+      const m = parseInt(mes);
+      const ultimoDiaDoMes = new Date(Date.UTC(ano, m, 0)).getUTCDate();
+      const mm = String(m).padStart(2, "0");
+      const dataInicio = `${ano}-${mm}-01`;
+      const dataFim = `${ano}-${mm}-${String(ultimoDiaDoMes).padStart(2, "0")}`;
 
       // Cliente central: sessão por cookie + prefixo /api
       const data = await frequenciaApi.list({ turmaId, dataInicio, dataFim });
@@ -272,7 +275,8 @@ export function RelatorioFrequenciaMensal() {
       });
     });
 
-    // Conta as frequências por aluno
+    // Conta as frequências por aluno: cada registro é UMA AULA (frequência
+    // por aula; turmas sem grade têm um registro por dia)
     frequencias.forEach((freq) => {
       const aluno = alunosMap.get(freq.matriculaId);
       if (aluno) {
@@ -298,12 +302,13 @@ export function RelatorioFrequenciaMensal() {
     );
   }, [turmaSelecionada, frequencias]);
 
-  // Conta total de dias únicos com registro de frequência
+  // Total de aulas com chamada no período: cada (dia, aula) distinto — a
+  // chamada diária ("DIA") conta como uma aula do dia
   const totalAulasNoPeriodo = useMemo(() => {
-    const datasUnicas = new Set(
-      frequencias.map((f) => new Date(f.data).toISOString().split('T')[0])
+    const aulasUnicas = new Set(
+      frequencias.map((f) => `${f.data.slice(0, 10)}|${f.aulaChave ?? AULA_DIA}`)
     );
-    return datasUnicas.size;
+    return aulasUnicas.size;
   }, [frequencias]);
 
   const handleDownloadPDF = async () => {

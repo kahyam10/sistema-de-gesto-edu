@@ -122,7 +122,7 @@ export function BoletimAluno({ matriculaId }: { matriculaId: string }) {
             {boletim.frequencia.totalAulas} aula(s)
             {boletim.frequencia.abaixoDoLimite && (
               <span className="ml-2 font-semibold text-danger">
-                Atenção: abaixo do limite de 75%
+                Atenção: abaixo do limite mínimo de frequência
               </span>
             )}
           </p>

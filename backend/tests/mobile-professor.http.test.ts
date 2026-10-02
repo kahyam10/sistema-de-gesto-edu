@@ -104,14 +104,35 @@ describe("auth do app mobile", () => {
     expect(me.json().user.email).toBe("prof@teste.local");
   });
 
-  it("refresh rotaciona; reuso imediato → 409; logout revoga", async () => {
+  it("refresh rotaciona; reuso na janela → 200 com par REEMITIDO; usar o sucessor descartado derruba a família", async () => {
     const { body } = await loginMobile("prof@teste.local");
     const r1 = await app.inject({ method: "POST", url: "/api/auth/mobile/refresh", payload: { refreshToken: body.refreshToken } });
     expect(r1.statusCode).toBe(200);
     expect(r1.json().refreshToken).not.toBe(body.refreshToken);
+    // Resposta de r1 "perdida": o app reapresenta o token antigo dentro da janela
     const r2 = await app.inject({ method: "POST", url: "/api/auth/mobile/refresh", payload: { refreshToken: body.refreshToken } });
-    expect(r2.statusCode).toBe(409);
+    expect(r2.statusCode).toBe(200);
+    const reemitido = r2.json();
+    expect(typeof reemitido.accessToken).toBe("string");
+    expect(reemitido.refreshToken).not.toBe(body.refreshToken);
+    expect(reemitido.refreshToken).not.toBe(r1.json().refreshToken);
+    const me = await app.inject({ method: "GET", url: "/api/auth/me", headers: bearer(reemitido.accessToken) });
+    expect(me.statusCode).toBe(200);
 
+    // O sucessor de r1 foi descartado na reemissão: quem o apresenta tem uma cópia
+    const copia = await app.inject({ method: "POST", url: "/api/auth/mobile/refresh", payload: { refreshToken: r1.json().refreshToken } });
+    expect(copia.statusCode).toBe(401);
+    // ...e a família inteira cai, inclusive o par reemitido
+    const r3 = await app.inject({ method: "POST", url: "/api/auth/mobile/refresh", payload: { refreshToken: reemitido.refreshToken } });
+    expect(r3.statusCode).toBe(401);
+    const meDepois = await app.inject({ method: "GET", url: "/api/auth/me", headers: bearer(reemitido.accessToken) });
+    expect(meDepois.statusCode).toBe(401);
+  });
+
+  it("logout revoga o refresh", async () => {
+    const { body } = await loginMobile("prof@teste.local");
+    const r1 = await app.inject({ method: "POST", url: "/api/auth/mobile/refresh", payload: { refreshToken: body.refreshToken } });
+    expect(r1.statusCode).toBe(200);
     const novo = r1.json().refreshToken;
     const out = await app.inject({ method: "POST", url: "/api/auth/mobile/logout", payload: { refreshToken: novo } });
     expect(out.statusCode).toBe(204);

@@ -3,8 +3,12 @@ import { licencaService } from "../services/index.js";
 import {
   createLicencaSchema,
   updateLicencaSchema,
+  consultaListaSchema,
+  decisaoLicencaSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { periodoAnosQuerySchema } from "../schemas/parametros.schemas.js";
 
 export async function licencasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -141,29 +145,31 @@ Lista todas as licenças e afastamentos registrados no sistema.
       }>,
       reply: FastifyReply
     ) => {
+      try {
+        const { profissionalId, status, tipo } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
-      const { profissionalId, status, tipo, dataInicio, dataFim, page, limit } =
-        request.query;
+        const filters: NonNullable<Parameters<typeof licencaService.findAllPaginated>[0]> = {};
+        if (profissionalId) filters.profissionalId = profissionalId;
+        if (status) filters.status = status;
+        if (tipo) filters.tipo = tipo;
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
-      const filters: NonNullable<Parameters<typeof licencaService.findAllPaginated>[0]> = {};
-      if (profissionalId) filters.profissionalId = profissionalId;
-      if (status) filters.status = status;
-      if (tipo) filters.tipo = tipo;
-      if (dataInicio) filters.dataInicio = new Date(dataInicio);
-      if (dataFim) filters.dataFim = new Date(dataFim);
+        // Suporte a paginação
+        if (consulta.page && consulta.limit) {
+          const result = await licencaService.findAllPaginated(filters, {
+            page: consulta.page,
+            limit: consulta.limit,
+          });
+          return reply.send(result);
+        }
 
-      // Suporte a paginação
-      if (page && limit) {
-        const result = await licencaService.findAllPaginated(filters, {
-          page: parseInt(page),
-          limit: parseInt(limit),
-        });
-        return reply.send(result);
+        const licencas = await licencaService.findAll(filters);
+        return reply.send(licencas);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
       }
-
-      const licencas = await licencaService.findAll(filters);
-      return reply.send(licencas);
-
     }
   );
 
@@ -263,11 +269,13 @@ Cria uma nova solicitação de licença ou afastamento.
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-
-      const body = createLicencaSchema.parse(request.body);
-      const licenca = await licencaService.create(body);
-      return reply.status(201).send(licenca);
-
+      try {
+        const body = createLicencaSchema.parse(request.body);
+        const licenca = await licencaService.create(body);
+        return reply.status(201).send(licenca);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -346,16 +354,18 @@ Retorna os detalhes completos de uma licença específica.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
+      try {
+        const { id } = request.params;
+        const licenca = await licencaService.findById(id);
 
-      const { id } = request.params;
-      const licenca = await licencaService.findById(id);
+        if (!licenca) {
+          return reply.status(404).send({ error: "Licença não encontrada" });
+        }
 
-      if (!licenca) {
-        return reply.status(404).send({ error: "Licença não encontrada" });
+        return reply.send(licenca);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
       }
-
-      return reply.send(licenca);
-
     }
   );
 
@@ -428,12 +438,14 @@ Atualiza uma solicitação de licença.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-
-      const { id } = request.params;
-      const body = updateLicencaSchema.parse(request.body);
-      const licenca = await licencaService.update(id, body);
-      return reply.send(licenca);
-
+      try {
+        const { id } = request.params;
+        const body = updateLicencaSchema.parse(request.body);
+        const licenca = await licencaService.update(id, body);
+        return reply.send(licenca);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -472,9 +484,10 @@ Aprova ou rejeita uma solicitação de licença.
             id: { type: "string", description: "ID da licença" },
           },
         },
+        // Validado por decisaoLicencaSchema (zod). Aceita { aprovado, motivo }
+        // ou o formato do dashboard { status, justificativaRejeicao }.
         body: {
           type: "object",
-          required: ["aprovado"],
           properties: {
             aprovado: {
               type: "boolean",
@@ -483,8 +496,17 @@ Aprova ou rejeita uma solicitação de licença.
             },
             motivo: {
               type: "string",
-              description: "Motivo da rejeição (obrigatório se aprovado=false)",
+              description: "Motivo da rejeição (obrigatório ao rejeitar; até 10000 caracteres)",
               example: "Documentação incompleta",
+            },
+            status: {
+              type: "string",
+              enum: ["APROVADA", "REJEITADA"],
+              description: "Alternativa a `aprovado` (formato do dashboard)",
+            },
+            justificativaRejeicao: {
+              type: "string",
+              description: "Alternativa a `motivo` (formato do dashboard)",
             },
           },
         },
@@ -519,12 +541,11 @@ Aprova ou rejeita uma solicitação de licença.
       },
     },
     async (
-      request: FastifyRequest<{ Params: { id: string }; Body: { aprovado: boolean; motivo?: string } }>,
+      request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
 
       const { id } = request.params;
-      const { aprovado, motivo } = request.body as { aprovado: boolean; motivo?: string };
 
       // Aprovação exige identidade real e papel de gestão (sem fallback)
       const user = request.user as { id?: string; role?: string } | undefined;
@@ -537,17 +558,23 @@ Aprova ou rejeita uma solicitação de licença.
           .send({ error: "Apenas a gestão pode aprovar ou rejeitar licenças" });
       }
       const userId = user.id;
+      const { aprovado, motivo } = decisaoLicencaSchema.parse(request.body ?? {});
       const data = {
         aprovadaPor: userId,
         status: aprovado ? "APROVADA" as const : "REJEITADA" as const,
         justificativaRejeicao: !aprovado ? motivo : null,
       };
 
-      const licenca = await licencaService.aprovar(id, data);
-      return reply.send({
-        ...licenca,
-        message: aprovado ? "Licença aprovada com sucesso" : "Licença rejeitada"
-      });
+      try {
+        const licenca = await licencaService.aprovar(id, data);
+        return reply.send({
+          ...licenca,
+          message: aprovado ? "Licença aprovada com sucesso" : "Licença rejeitada"
+        });
+      } catch (error: unknown) {
+        // "Esta licença já foi processada" é mensagem de negócio (400)
+        return responderErroRota(error, reply);
+      }
 
     }
   );
@@ -623,11 +650,13 @@ Cancela uma licença aprovada ou pendente.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-
-      const { id } = request.params;
-      const licenca = await licencaService.cancelar(id);
-      return reply.send(licenca);
-
+      try {
+        const { id } = request.params;
+        const licenca = await licencaService.cancelar(id);
+        return reply.send(licenca);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -706,11 +735,13 @@ Remove permanentemente uma licença do sistema.
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-
-      const { id } = request.params;
-      await licencaService.delete(id);
-      return reply.send({ message: "Licença removida com sucesso" });
-
+      try {
+        const { id } = request.params;
+        await licencaService.delete(id);
+        return reply.send({ message: "Licença removida com sucesso" });
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -788,10 +819,12 @@ Retorna todas as licenças que estão ativas no momento atual.
       },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-
-      const licencas = await licencaService.findLicencasAtivas();
-      return reply.send(licencas);
-
+      try {
+        const licencas = await licencaService.findLicencasAtivas();
+        return reply.send(licencas);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 
@@ -915,17 +948,19 @@ Gera relatório completo de licenças de um profissional.
       }>,
       reply: FastifyReply
     ) => {
+      try {
+        const { profissionalId } = request.params;
+        const { anoInicio, anoFim } = periodoAnosQuerySchema.parse(request.query);
 
-      const { profissionalId } = request.params;
-      const { anoInicio, anoFim } = request.query;
-
-      const relatorio = await licencaService.relatorioPorProfissional(
-        profissionalId,
-        anoInicio ? parseInt(anoInicio) : undefined,
-        anoFim ? parseInt(anoFim) : undefined
-      );
-      return reply.send(relatorio);
-
+        const relatorio = await licencaService.relatorioPorProfissional(
+          profissionalId,
+          anoInicio,
+          anoFim
+        );
+        return reply.send(relatorio);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
+      }
     }
   );
 }

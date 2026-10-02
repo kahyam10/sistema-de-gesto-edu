@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { rotaTransporteService } from "../services/rota-transporte.service.js";
 import {
@@ -9,6 +7,7 @@ import {
   vincularAlunoRotaSchema,
   vincularEscolaRotaSchema,
 } from "../schemas/transporte.schemas.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function rotaTransporteRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -56,15 +55,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
 
         return reply.send(await rotaTransporteService.findAll(filters));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar rotas";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -88,15 +79,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
           await rotaTransporteService.findById(request.params.id)
         );
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar rota";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -117,15 +100,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         const rota = await rotaTransporteService.create(data);
         return reply.status(201).send(rota);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -152,15 +127,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         );
         return reply.send(rota);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -183,15 +150,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         await rotaTransporteService.delete(request.params.id);
         return reply.send({ message: "Rota deletada com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -218,17 +177,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         );
         return reply.status(201).send(vinculo);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao vincular escola à rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -254,17 +203,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         );
         return reply.send({ message: "Escola desvinculada da rota" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao desvincular escola da rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -293,17 +232,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         );
         return reply.status(201).send(vinculo);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao vincular aluno à rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -329,17 +258,7 @@ export async function rotaTransporteRoutes(app: FastifyInstance) {
         );
         return reply.send({ message: "Aluno desvinculado da rota" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao desvincular aluno da rota";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

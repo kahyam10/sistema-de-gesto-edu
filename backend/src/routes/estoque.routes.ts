@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { estoqueService } from "../services/estoque.service.js";
 import {
   createItemEstoqueSchema,
@@ -8,6 +6,8 @@ import {
   createMovimentacaoEstoqueSchema,
 } from "../schemas/alimentacao.schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { consultaListaSchema } from "../schemas/index.js";
 
 export async function estoqueRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -63,15 +63,7 @@ movimentações (entradas − saídas), nunca armazenado.
         const itens = await estoqueService.listItens(filters);
         return reply.send(itens);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar itens de estoque";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -102,15 +94,7 @@ movimentações (entradas − saídas), nunca armazenado.
         const item = await estoqueService.findItemById(id);
         return reply.send(item);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar item de estoque";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -148,15 +132,7 @@ movimentações (entradas − saídas), nunca armazenado.
         const item = await estoqueService.createItem(body);
         return reply.status(201).send(item);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar item de estoque";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -186,15 +162,7 @@ movimentações (entradas − saídas), nunca armazenado.
         const item = await estoqueService.updateItem(id, body);
         return reply.send(item);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar item de estoque";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -225,15 +193,7 @@ movimentações (entradas − saídas), nunca armazenado.
         await estoqueService.deleteItem(id);
         return reply.send({ message: "Item de estoque deletado com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar item de estoque";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -283,20 +243,20 @@ Lista a trilha de entradas/saídas com filtros e paginação opcional.
       reply: FastifyReply
     ) => {
       try {
-        const { itemId, escolaId, tipo, dataInicio, dataFim, page, limit } =
-          request.query;
+        const { itemId, escolaId, tipo } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const filters: NonNullable<Parameters<typeof estoqueService.listMovimentacoesPaginated>[0]> = {};
         if (itemId) filters.itemId = itemId;
         if (escolaId) filters.escolaId = escolaId;
         if (tipo) filters.tipo = tipo;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           const result = await estoqueService.listMovimentacoesPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: consulta.page,
+            limit: consulta.limit,
           });
           return reply.send(result);
         }
@@ -304,15 +264,7 @@ Lista a trilha de entradas/saídas com filtros e paginação opcional.
         const movimentacoes = await estoqueService.listMovimentacoes(filters);
         return reply.send(movimentacoes);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar movimentações";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -360,15 +312,7 @@ Registra ENTRADA, SAIDA, PERDA, AJUSTE_ENTRADA ou AJUSTE_SAIDA.
         const movimentacao = await estoqueService.registrarMovimentacao(body);
         return reply.status(201).send(movimentacao);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao registrar movimentação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -399,15 +343,7 @@ Registra ENTRADA, SAIDA, PERDA, AJUSTE_ENTRADA ou AJUSTE_SAIDA.
         await estoqueService.deleteMovimentacao(id);
         return reply.send({ message: "Movimentação deletada com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar movimentação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -441,15 +377,7 @@ despensa vazia deve alertar.
         const alertas = await estoqueService.alertasEstoqueMinimo(escolaId);
         return reply.send(alertas);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar alertas de estoque";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

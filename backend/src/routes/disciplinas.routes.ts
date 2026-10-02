@@ -1,12 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { disciplinaService } from "../services/index.js";
 import {
   createDisciplinaSchema,
   updateDisciplinaSchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 // Formato devolvido pelo service. O serializador descarta o que não estiver
 // aqui (e nulos em campo "string" viram ""), então acompanha o service.
@@ -105,15 +104,7 @@ Para listar disciplinas disponíveis para uma etapa específica ou todas as disc
         const disciplinas = await disciplinaService.findAll(filters);
         return reply.send(disciplinas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar disciplinas";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -183,17 +174,7 @@ Retorna os detalhes de uma disciplina específica.
 
         return reply.send(disciplina);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar disciplina";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -252,17 +233,7 @@ Para exibir as disciplinas disponíveis ao criar turmas ou lançar notas de uma 
         const disciplinas = await disciplinaService.findByEtapa(etapaId);
         return reply.send(disciplinas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar disciplinas por etapa";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -369,17 +340,7 @@ Cria uma nova disciplina no sistema.
         const disciplina = await disciplinaService.create(body);
         return reply.status(201).send(disciplina);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao criar disciplina";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -461,17 +422,7 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
         const disciplina = await disciplinaService.update(id, body);
         return reply.send(disciplina);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar disciplina";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -552,17 +503,7 @@ Considere desativar (\`ativo: false\`) em vez de deletar para manter histórico.
         await disciplinaService.delete(id);
         return reply.send({ message: "Disciplina removida com sucesso" });
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao remover disciplina";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

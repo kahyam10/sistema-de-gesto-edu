@@ -29,37 +29,68 @@ async function mensagemDeErro(res: Response): Promise<ApiError> {
   return new ApiError(res.status, msg, typeof p?.code === "string" ? p.code : undefined);
 }
 
-let renovacao: Promise<boolean> | null = null;
+/**
+ * Resultado de uma renovação:
+ * - "ok": par novo salvo (ou outra renovação já tinha salvo um par diferente);
+ * - "expirada": o servidor recusou — a sessão acabou;
+ * - "sem-rede": a resposta não chegou. Os tokens ficam como estão: se o
+ *   servidor chegou a rotacionar, reapresentar o mesmo refresh logo em seguida
+ *   devolve um par novo (o servidor reemite enquanto o sucessor perdido não
+ *   foi usado), então a próxima tentativa recupera a sessão.
+ */
+export type ResultadoRenovacao = "ok" | "expirada" | "sem-rede";
 
-/** Troca o refresh token por um novo par. Uma renovação por vez. */
-export function renovarSessao(): Promise<boolean> {
+let renovacao: Promise<ResultadoRenovacao> | null = null;
+
+async function renovarAgora(): Promise<ResultadoRenovacao> {
+  const refreshToken = await lerRefresh();
+  if (!refreshToken) return "expirada";
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/auth/mobile/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch {
+    return "sem-rede";
+  }
+  if (res.ok) {
+    let body: { accessToken?: unknown; refreshToken?: unknown };
+    try {
+      body = (await res.json()) as typeof body;
+    } catch {
+      // corpo cortado no meio: é resposta perdida, não sessão encerrada
+      return "sem-rede";
+    }
+    if (typeof body.accessToken !== "string" || typeof body.refreshToken !== "string") return "sem-rede";
+    await salvarTokens(body.accessToken, body.refreshToken);
+    return "ok";
+  }
+  if (res.status === 409) {
+    // O sucessor deste refresh já foi usado. Se outro fluxo salvou um par
+    // novo enquanto isso, ele vale; senão não há par utilizável.
+    const atual = await lerRefresh();
+    return atual && atual !== refreshToken ? "ok" : "expirada";
+  }
+  if (res.status >= 500 || res.status === 429) return "sem-rede"; // temporário: mantém os tokens
+  await limparTokens();
+  return "expirada";
+}
+
+/** Troca o refresh token por um novo par. Uma renovação por vez (single-flight). */
+export function renovarSessaoDetalhado(): Promise<ResultadoRenovacao> {
   if (!renovacao) {
-    renovacao = (async () => {
-      const refreshToken = await lerRefresh();
-      if (!refreshToken) return false;
-      try {
-        const res = await fetch(`${API_URL}/api/auth/mobile/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-        });
-        if (res.status === 409) return true; // outra requisição acabou de renovar
-        if (!res.ok) {
-          await limparTokens();
-          return false;
-        }
-        const body = (await res.json()) as { accessToken: string; refreshToken: string };
-        await salvarTokens(body.accessToken, body.refreshToken);
-        return true;
-      } catch {
-        // Sem rede: mantém os tokens para tentar depois
-        return false;
-      }
-    })().finally(() => {
+    renovacao = renovarAgora().finally(() => {
       renovacao = null;
     });
   }
   return renovacao;
+}
+
+/** Compatível com a versão anterior: true quando há um par novo pronto. */
+export async function renovarSessao(): Promise<boolean> {
+  return (await renovarSessaoDetalhado()) === "ok";
 }
 
 type Metodo = "GET" | "POST" | "PUT" | "DELETE";
@@ -88,8 +119,17 @@ export async function api<T>(caminho: string, opcoes: { method?: Metodo; body?: 
   }
 
   if (res.status === 401 && auth) {
-    if (await renovarSessao()) {
-      res = await executar();
+    const renovou = await renovarSessaoDetalhado();
+    if (renovou === "sem-rede") {
+      // Não derruba a sessão por falta de rede: os tokens continuam guardados
+      throw new ApiError(0, "Sem conexão com o servidor. Verifique a internet.");
+    }
+    if (renovou === "ok") {
+      try {
+        res = await executar();
+      } catch {
+        throw new ApiError(0, "Sem conexão com o servidor. Verifique a internet.");
+      }
     }
     if (res.status === 401) {
       aoExpirarSessao?.();

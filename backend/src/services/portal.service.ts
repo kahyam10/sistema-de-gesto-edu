@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { BusinessError, NotFoundError, PermissionError } from "../errors/index.js";
-import { frequenciaService } from "./frequencia.service.js";
+import { frequenciaService, frequenciaAbaixoDoMinimo, AULA_DIA, diaSemanaDaData } from "./frequencia.service.js";
 import { notaService } from "./nota.service.js";
 import { expandir } from "../lib/recorrencia.js";
 import { hojeNaRede } from "../lib/datas.js";
@@ -73,15 +73,30 @@ export class PortalService {
     ]);
     if (!profissional) throw new NotFoundError("NF_006");
 
-    // Pendência = turma com aula hoje SEM nenhum registro de frequência na data
+    // Frequência POR AULA: pendência = aula de hoje (do professor) SEM a
+    // chamada daquela aula. Uma chamada diária ("DIA", registros anteriores à
+    // mudança) da turma no dia também conta como feita.
     const turmaIdsComAulaHoje = [...new Set(aulasHoje.map((a) => a.turmaId))];
     // Chamadas de hoje com o horário do último registro (para "feita às HH:MM")
-    const frequenciasHoje = await prisma.frequencia.groupBy({
-      by: ["turmaId"],
+    const chamadasHoje = await prisma.frequencia.groupBy({
+      by: ["turmaId", "aulaChave"],
       where: { turmaId: { in: turmaIdsComAulaHoje }, data: { gte: inicioDia, lte: fimDia } },
       _max: { updatedAt: true },
     });
-    const turmasComFrequencia = new Set(frequenciasHoje.map((f) => f.turmaId));
+    const chaveChamada = (turmaId: string, aulaChave: string) => `${turmaId}|${aulaChave}`;
+    const chamadaPorAula = new Map(
+      chamadasHoje.map((c) => [chaveChamada(c.turmaId, c.aulaChave), c._max.updatedAt])
+    );
+    const registradaEmDaAula = (a: { id: string; turmaId: string }) =>
+      chamadaPorAula.get(chaveChamada(a.turmaId, a.id)) ??
+      chamadaPorAula.get(chaveChamada(a.turmaId, AULA_DIA)) ??
+      null;
+    const ultimaPorTurma = new Map<string, Date | null>();
+    for (const c of chamadasHoje) {
+      const atual = ultimaPorTurma.get(c.turmaId) ?? null;
+      const m = c._max.updatedAt;
+      ultimaPorTurma.set(c.turmaId, m && (!atual || m > atual) ? m : atual);
+    }
 
     return {
       profissional,
@@ -97,20 +112,30 @@ export class PortalService {
         totalAlunosAtivos: v.turma._count.matriculas,
       })),
       aulasHoje: aulasHoje.map((a) => ({
+        gradeHorariaId: a.id,
         turmaId: a.turmaId,
         turmaNome: a.turma.nome,
         disciplina: a.disciplina,
         horaInicio: a.horaInicio,
         horaFim: a.horaFim,
+        // Chamada desta aula (ou a diária da turma) já feita hoje
+        chamadaRegistradaEm: registradaEmDaAula(a),
       })),
-      chamadasRegistradasHoje: frequenciasHoje.map((f) => ({
-        turmaId: f.turmaId,
-        registradaEm: f._max.updatedAt,
+      // Por turma: último registro de chamada de hoje (qualquer aula)
+      chamadasRegistradasHoje: [...ultimaPorTurma.entries()].map(([turmaId, registradaEm]) => ({
+        turmaId,
+        registradaEm,
       })),
+      // Uma entrada por AULA pendente (antes: uma por turma)
       frequenciasPendentesHoje: aulasHoje
-        .filter((a) => !turmasComFrequencia.has(a.turmaId))
-        .map((a) => ({ turmaId: a.turmaId, turmaNome: a.turma.nome }))
-        .filter((v, i, arr) => arr.findIndex((x) => x.turmaId === v.turmaId) === i),
+        .filter((a) => registradaEmDaAula(a) === null)
+        .map((a) => ({
+          turmaId: a.turmaId,
+          turmaNome: a.turma.nome,
+          gradeHorariaId: a.id,
+          disciplina: a.disciplina,
+          horaInicio: a.horaInicio,
+        })),
     };
   }
 
@@ -128,10 +153,15 @@ export class PortalService {
   /**
    * Chamada do dia para o app do professor: alunos ATIVOS da turma com o status
    * já lançado na data (ou null). Só campos necessários — nada de CPF, saúde etc.
+   *
+   * Frequência POR AULA: `modo` = "AULA" quando a turma tem grade nesse dia da
+   * semana; `aulas` traz as aulas que ESTE professor pode lançar (as dele e as
+   * sem professor na grade), cada uma com os registros já feitos. Em `alunos`,
+   * status/justificativa são os da chamada diária ("DIA").
    */
   async chamadaDaTurma(userId: string, turmaId: string, data: Date) {
-    await this.validarTurmaDoProfessor(userId, turmaId);
-    const [turma, alunos, registros] = await Promise.all([
+    const profissionalId = await this.validarTurmaDoProfessor(userId, turmaId);
+    const [turma, alunos, registros, gradeDoDia] = await Promise.all([
       prisma.turma.findUnique({
         where: { id: turmaId },
         select: { id: true, nome: true, turno: true, escola: { select: { nome: true } } },
@@ -143,20 +173,49 @@ export class PortalService {
       }),
       prisma.frequencia.findMany({
         where: { turmaId, data },
-        select: { matriculaId: true, status: true, justificativa: true, updatedAt: true },
+        select: { matriculaId: true, status: true, justificativa: true, updatedAt: true, aulaChave: true },
+      }),
+      prisma.gradeHoraria.findMany({
+        where: { turmaId, diaSemana: diaSemanaDaData(data) },
+        select: {
+          id: true, disciplina: true, horaInicio: true, horaFim: true, profissionalId: true,
+          profissional: { select: { nome: true } },
+        },
+        orderBy: [{ horaInicio: "asc" }, { disciplina: "asc" }],
       }),
     ]);
     if (!turma) throw new NotFoundError("NF_005");
-    const porAluno = new Map(registros.map((r) => [r.matriculaId, r]));
-    const ultimo = registros.reduce<Date | null>(
-      (m, r) => (m === null || r.updatedAt > m ? r.updatedAt : m),
-      null
-    );
+    const ultimoDe = (lista: typeof registros) =>
+      lista.reduce<Date | null>((m, r) => (m === null || r.updatedAt > m ? r.updatedAt : m), null);
+    const diarios = registros.filter((r) => r.aulaChave === AULA_DIA);
+    const porAluno = new Map(diarios.map((r) => [r.matriculaId, r]));
+    const aulas = gradeDoDia
+      .filter((a) => a.profissionalId === null || a.profissionalId === profissionalId)
+      .map((a) => {
+        const daAula = registros.filter((r) => r.aulaChave === a.id);
+        return {
+          gradeHorariaId: a.id,
+          disciplina: a.disciplina,
+          horaInicio: a.horaInicio,
+          horaFim: a.horaFim,
+          professorNome: a.profissional?.nome ?? null,
+          jaRegistrada: daAula.length > 0,
+          registradaEm: ultimoDe(daAula),
+          registros: daAula.map((r) => ({
+            matriculaId: r.matriculaId,
+            status: r.status,
+            justificativa: r.justificativa,
+          })),
+        };
+      });
     return {
       turma,
       data: data.toISOString().slice(0, 10),
-      jaRegistrada: registros.length > 0,
-      registradaEm: ultimo,
+      modo: gradeDoDia.length > 0 ? "AULA" : "DIA",
+      aulas,
+      // Chamada diária (modo "DIA")
+      jaRegistrada: diarios.length > 0,
+      registradaEm: ultimoDe(diarios),
       alunos: alunos.map((a) => ({
         id: a.id,
         nomeAluno: a.nomeAluno,
@@ -246,7 +305,8 @@ export class PortalService {
         ...a,
         totalAulas: c?.total ?? 0,
         percentualPresenca,
-        abaixoDoLimite: percentualPresenca !== null && percentualPresenca < 75,
+        // razão exata: 149/200 = 74,5% aparece como 75%, mas está abaixo do limite
+        abaixoDoLimite: !!c && c.total > 0 && frequenciaAbaixoDoMinimo(c.presencas, c.total),
       };
     });
     const comAulas = lista.filter((a) => a.percentualPresenca !== null);
@@ -331,7 +391,9 @@ export class PortalService {
     if (!matricula.turmaId) return { matricula, estatisticas: null, registros: [] };
     const [estatisticas, registros] = await Promise.all([
       frequenciaService.calcularEstatisticas(matriculaId, matricula.turmaId, dataInicio, dataFim),
-      frequenciaService.list({ matriculaId, dataInicio, dataFim }),
+      // Mesmo recorte das estatísticas: só a turma atual (que já é do ano
+      // letivo dela) e o período pedido — antes vinha o histórico inteiro.
+      frequenciaService.list({ matriculaId, turmaId: matricula.turmaId, dataInicio, dataFim }),
     ]);
     return { matricula, estatisticas, registros };
   }
@@ -420,6 +482,7 @@ export class PortalService {
         totalAlunosAtivos: t._count.matriculas,
         percentualFrequencia:
           freq && freq.total > 0 ? Math.round((freq.presencas / freq.total) * 100) : null,
+        abaixoDe75: !!freq && freq.total > 0 && frequenciaAbaixoDoMinimo(freq.presencas, freq.total),
       };
     });
     const totalRegistros = [...porTurma.values()].reduce((a, b) => a + b.total, 0);
@@ -440,11 +503,9 @@ export class PortalService {
         percentualPresenca:
           totalRegistros > 0 ? Math.round((totalPresencas / totalRegistros) * 100) : null,
         totalRegistros,
-        turmasAbaixoDe75: turmasResumo.filter(
-          (t) => t.percentualFrequencia !== null && t.percentualFrequencia < 75
-        ).length,
+        turmasAbaixoDe75: turmasResumo.filter((t) => t.abaixoDe75).length,
       },
-      turmas: turmasResumo,
+      turmas: turmasResumo.map(({ abaixoDe75: _a, ...t }) => t),
     };
   }
 

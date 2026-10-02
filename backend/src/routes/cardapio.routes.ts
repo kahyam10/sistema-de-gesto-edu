@@ -1,12 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { cardapioService } from "../services/cardapio.service.js";
 import {
   createCardapioSchema,
   updateCardapioSchema,
 } from "../schemas/alimentacao.schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { consultaListaSchema } from "../schemas/index.js";
 
 export async function cardapioRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -62,21 +62,21 @@ Cardápio com \`escolaId\` nulo é da rede (publicado pela SEMEC).
       reply: FastifyReply
     ) => {
       try {
-        const { escolaId, turno, tipoRefeicao, dataInicio, dataFim, ativo, page, limit } =
-          request.query;
+        const { escolaId, turno, tipoRefeicao, ativo } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const filters: NonNullable<Parameters<typeof cardapioService.findAllPaginated>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (turno) filters.turno = turno;
         if (tipoRefeicao) filters.tipoRefeicao = tipoRefeicao;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
         if (ativo !== undefined) filters.ativo = ativo === "true";
 
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           const result = await cardapioService.findAllPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: consulta.page,
+            limit: consulta.limit,
           });
           return reply.send(result);
         }
@@ -84,15 +84,7 @@ Cardápio com \`escolaId\` nulo é da rede (publicado pela SEMEC).
         const cardapios = await cardapioService.findAll(filters);
         return reply.send(cardapios);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar cardápios";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -121,15 +113,7 @@ Cardápio com \`escolaId\` nulo é da rede (publicado pela SEMEC).
         const cardapio = await cardapioService.findById(id);
         return reply.send(cardapio);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar cardápio";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -184,15 +168,7 @@ Cria um cardápio planejado para escola/data/turno/tipo de refeição.
         const cardapio = await cardapioService.create(body);
         return reply.status(201).send(cardapio);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar cardápio";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -222,15 +198,7 @@ Cria um cardápio planejado para escola/data/turno/tipo de refeição.
         const cardapio = await cardapioService.update(id, body);
         return reply.send(cardapio);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar cardápio";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -259,15 +227,7 @@ Cria um cardápio planejado para escola/data/turno/tipo de refeição.
         await cardapioService.delete(id);
         return reply.send({ message: "Cardápio deletado com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar cardápio";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

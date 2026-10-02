@@ -1,11 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { nivelEnsinoService } from "../services/index.js";
 import {
   createNivelEnsinoSchema,
   updateNivelEnsinoSchema,
 } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function niveisEnsinoRoutes(app: FastifyInstance) {
   // Listar todos os níveis de ensino
@@ -14,17 +13,7 @@ export async function niveisEnsinoRoutes(app: FastifyInstance) {
       const niveis = await nivelEnsinoService.findAll();
       return reply.send(niveis);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Erro ao listar níveis de ensino";
-      return reply.status(500).send({ error: message });
+      return responderErroRota(error, reply, 500);
     }
   });
 
@@ -40,17 +29,7 @@ export async function niveisEnsinoRoutes(app: FastifyInstance) {
         const niveis = await nivelEnsinoService.findByEtapaId(etapaId);
         return reply.send(niveis);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar níveis da etapa";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -74,17 +53,7 @@ export async function niveisEnsinoRoutes(app: FastifyInstance) {
 
         return reply.send(nivel);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar nível de ensino";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -96,17 +65,7 @@ export async function niveisEnsinoRoutes(app: FastifyInstance) {
       const nivel = await nivelEnsinoService.create(data);
       return reply.status(201).send(nivel);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Erro ao criar nível de ensino";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -123,17 +82,7 @@ export async function niveisEnsinoRoutes(app: FastifyInstance) {
         const nivel = await nivelEnsinoService.update(id, data);
         return reply.send(nivel);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar nível de ensino";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -150,17 +99,7 @@ export async function niveisEnsinoRoutes(app: FastifyInstance) {
         await nivelEnsinoService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao deletar nível de ensino";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

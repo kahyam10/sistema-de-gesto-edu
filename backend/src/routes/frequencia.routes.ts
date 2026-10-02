@@ -1,13 +1,55 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { frequenciaService } from "../services/index.js";
 import {
   createFrequenciaSchema,
   updateFrequenciaSchema,
   registrarFrequenciaTurmaSchema,
+  consultaListaSchema,
+  dataTextoSchema,
+  chamadaDoDiaQuerySchema,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { profissionalDoUsuario } from "../lib/propriedade-professor.js";
+
+// Campos de um registro de frequência na resposta da lista. Anuláveis como
+// ["string","null"]: com "string" o serializador trocaria null por "".
+const REGISTRO_FREQUENCIA = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    matriculaId: { type: "string" },
+    turmaId: { type: "string" },
+    data: { type: "string", format: "date-time" },
+    status: { type: "string", enum: ["PRESENTE", "FALTA", "JUSTIFICADA"] },
+    justificativa: { type: ["string", "null"] },
+    observacao: { type: ["string", "null"] },
+    // Frequência por aula: aula da grade (null = chamada diária ou aula
+    // removida da grade), cópia da disciplina/horário e a chave da aula
+    gradeHorariaId: { type: ["string", "null"] },
+    disciplina: { type: ["string", "null"] },
+    horaInicio: { type: ["string", "null"] },
+    aulaChave: { type: "string" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    matricula: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        numeroMatricula: { type: "string" },
+        nomeAluno: { type: "string" },
+      },
+    },
+    turma: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        nome: { type: "string" },
+        serie: { type: "object", properties: { nome: { type: "string" } } },
+      },
+    },
+  },
+} as const;
 
 export async function frequenciaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -83,18 +125,7 @@ Lista registros de frequência com suporte a filtros e paginação.
             oneOf: [
               {
                 type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    matriculaId: { type: "string" },
-                    turmaId: { type: "string" },
-                    data: { type: "string", format: "date-time" },
-                    status: { type: "string", enum: ["PRESENTE", "FALTA", "JUSTIFICADA"] },
-                    justificativa: { type: "string" },
-                    observacao: { type: "string" },
-                  },
-                },
+                items: REGISTRO_FREQUENCIA,
               },
               {
                 type: "object",
@@ -146,18 +177,19 @@ Lista registros de frequência com suporte a filtros e paginação.
       reply: FastifyReply
     ) => {
       try {
-        const { turmaId, matriculaId, dataInicio, dataFim, page, limit } = request.query;
+        const { turmaId, matriculaId } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const params: NonNullable<Parameters<typeof frequenciaService.listPaginated>[0]> = {};
         if (turmaId) params.turmaId = turmaId;
         if (matriculaId) params.matriculaId = matriculaId;
-        if (dataInicio) params.dataInicio = new Date(dataInicio);
-        if (dataFim) params.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) params.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) params.dataFim = consulta.dataFim;
 
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           const result = await frequenciaService.listPaginated(params, {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: consulta.page,
+            limit: consulta.limit,
           });
           return reply.send(result);
         }
@@ -165,15 +197,7 @@ Lista registros de frequência com suporte a filtros e paginação.
         const frequencias = await frequenciaService.list(params);
         return reply.send(frequencias);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar frequências";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -249,15 +273,7 @@ Retorna os detalhes de um registro de frequência específico.
 
         return reply.send(frequencia);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar frequência";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -323,6 +339,10 @@ Cria um novo registro de frequência para um aluno.
               type: "string",
               description: "Observações adicionais",
             },
+            gradeHorariaId: {
+              type: "string",
+              description: "Aula da grade (obrigatória se a turma tem aulas no dia da semana)",
+            },
           },
         },
         response: {
@@ -352,6 +372,7 @@ Cria um novo registro de frequência para um aluno.
           status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
           justificativa?: string;
           observacao?: string;
+          gradeHorariaId?: string;
         };
       }>,
       reply: FastifyReply
@@ -362,15 +383,7 @@ Cria um novo registro de frequência para um aluno.
 
         return reply.status(201).send(frequencia);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar frequência";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -396,8 +409,13 @@ Registra frequência de múltiplos alunos de uma turma de uma só vez.
 - \`justificativa\`: Justificativa (opcional)
 - \`observacao\`: Observações (opcional)
 
+**Frequência por aula:**
+- Turma com aulas na grade no dia da semana: informe \`gradeHorariaId\` (a aula); cada aula tem a própria chamada
+- Turma sem grade no dia (ex.: Educação Infantil): chamada diária, sem \`gradeHorariaId\`
+- Misturar é recusado (400). Professor só lança aulas em que é o professor da grade (ou sem professor definido)
+
 **Uso:**
-Ideal para registro diário de frequência no início da aula. Permite registrar todos os alunos de uma vez.
+Permite registrar todos os alunos de uma vez.
 
 **Regras:**
 - Não permite registros duplicados
@@ -419,6 +437,10 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
               format: "date",
               description: "Data da frequência",
               example: "2026-02-12",
+            },
+            gradeHorariaId: {
+              type: "string",
+              description: "Aula da grade (obrigatória se a turma tem aulas no dia da semana)",
             },
             presencas: {
               type: "array",
@@ -466,6 +488,7 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
         Body: {
           turmaId: string;
           data: string;
+          gradeHorariaId?: string;
           presencas: Array<{
             matriculaId: string;
             status: "PRESENTE" | "FALTA" | "JUSTIFICADA";
@@ -477,26 +500,17 @@ Ideal para registro diário de frequência no início da aula. Permite registrar
       reply: FastifyReply
     ) => {
       try {
-        const { turmaId, data, presencas } = registrarFrequenciaTurmaSchema.parse(request.body);
+        const { turmaId, data, gradeHorariaId, presencas } = registrarFrequenciaTurmaSchema.parse(request.body);
         const resultado = await frequenciaService.registrarTurma({
           turmaId,
           data,
+          gradeHorariaId,
           presencas,
         });
 
         return reply.status(201).send(resultado);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao registrar frequência da turma";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -594,17 +608,7 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
 
         return reply.send(frequencia);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar frequência";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -683,15 +687,7 @@ Considere atualizar o status em vez de deletar para manter histórico.
 
         return reply.send({ message: "Frequência removida com sucesso" });
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error ? error.message : "Erro ao remover frequência";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -784,28 +780,18 @@ Sem filtros de data, considera todo o ano letivo.
     ) => {
       try {
         const { matriculaId, turmaId } = request.params;
-        const { dataInicio, dataFim } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const estatisticas = await frequenciaService.calcularEstatisticas(
           matriculaId,
           turmaId,
-          dataInicio ? new Date(dataInicio) : undefined,
-          dataFim ? new Date(dataFim) : undefined
+          consulta.dataInicio,
+          consulta.dataFim
         );
 
         return reply.send(estatisticas);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao calcular estatísticas";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -895,27 +881,17 @@ Alunos ordenados por percentual de frequência (menor primeiro).
     ) => {
       try {
         const { turmaId } = request.params;
-        const { dataInicio, dataFim } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const alunos = await frequenciaService.listarAlunosComBaixaFrequencia(
           turmaId,
-          dataInicio ? new Date(dataInicio) : undefined,
-          dataFim ? new Date(dataFim) : undefined
+          consulta.dataInicio,
+          consulta.dataFim
         );
 
         return reply.send(alunos);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao listar alunos com baixa frequência";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -1002,27 +978,17 @@ Ideal para relatórios gerenciais e acompanhamento da turma como um todo.
     ) => {
       try {
         const { turmaId } = request.params;
-        const { dataInicio, dataFim } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const resumo = await frequenciaService.getResumoTurma(
           turmaId,
-          dataInicio ? new Date(dataInicio) : undefined,
-          dataFim ? new Date(dataFim) : undefined
+          consulta.dataInicio,
+          consulta.dataFim
         );
 
         return reply.send(resumo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao gerar resumo de frequência";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -1043,6 +1009,10 @@ Retorna todos os registros de frequência de uma turma em uma data específica.
 - Status de cada registro
 - Justificativas (se houver)
 
+**Frequência por aula:** cada registro traz \`gradeHorariaId\`, \`disciplina\`,
+\`horaInicio\` e \`aulaChave\` (id da aula ou "DIA" na chamada diária).
+Filtre uma aula com \`?aulaChave=<id da aula>\` (ou \`DIA\`).
+
 **Uso:**
 Ideal para visualizar o registro de chamada de um dia específico.
 Permite verificar se a frequência já foi registrada para aquela data.
@@ -1062,6 +1032,15 @@ Permite verificar se a frequência já foi registrada para aquela data.
               format: "date",
               description: "Data da frequência (formato: YYYY-MM-DD)",
               example: "2026-02-12",
+            },
+          },
+        },
+        querystring: {
+          type: "object",
+          properties: {
+            aulaChave: {
+              type: "string",
+              description: "Só a chamada desta aula (id da aula da grade) ou \"DIA\" (chamada diária)",
             },
           },
         },
@@ -1086,29 +1065,111 @@ Permite verificar se a frequência já foi registrada para aquela data.
     async (
       request: FastifyRequest<{
         Params: { turmaId: string; data: string };
+        Querystring: { aulaChave?: string };
       }>,
       reply: FastifyReply
     ) => {
       try {
         const { turmaId, data } = request.params;
+        const { aulaChave } = chamadaDoDiaQuerySchema.parse(request.query);
         const frequencias = await frequenciaService.buscarPorData(
           turmaId,
-          new Date(data)
+          dataTextoSchema.parse(data),
+          aulaChave
         );
 
         return reply.send(frequencias);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
+        return responderErroRota(error, reply);
       }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar frequências por data";
-        return reply.status(400).send({ error: message });
+    }
+  );
+
+  // Aulas da grade da turma no dia (frequência por aula)
+  app.get(
+    "/turma/:turmaId/aulas/:data",
+    {
+      schema: {
+        tags: ["Frequência"],
+        summary: "Aulas do dia da turma para a chamada",
+        description: `
+Lista as aulas da grade da turma no dia da semana da data, com o andamento da
+chamada de cada uma.
+
+- \`modo\`: "AULA" (a turma tem grade nesse dia: chamada por aula) ou "DIA"
+  (sem grade nesse dia: chamada diária)
+- Para PROFESSOR, lista só as aulas dele e as sem professor definido na grade
+        `,
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["turmaId", "data"],
+          properties: {
+            turmaId: { type: "string", description: "ID da turma" },
+            data: { type: "string", format: "date", description: "Data (AAAA-MM-DD)", example: "2026-02-12" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              data: { type: "string" },
+              diaSemana: { type: "string" },
+              modo: { type: "string", enum: ["AULA", "DIA"] },
+              aulas: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    gradeHorariaId: { type: "string" },
+                    disciplina: { type: "string" },
+                    horaInicio: { type: "string" },
+                    horaFim: { type: "string" },
+                    profissional: {
+                      anyOf: [
+                        { type: "null" },
+                        { type: "object", properties: { id: { type: "string" }, nome: { type: "string" } } },
+                      ],
+                    },
+                    totalRegistros: { type: "integer" },
+                    registradaEm: { type: ["string", "null"], format: "date-time" },
+                  },
+                },
+              },
+              chamadaDiaria: {
+                type: "object",
+                properties: {
+                  totalRegistros: { type: "integer" },
+                  registradaEm: { type: ["string", "null"], format: "date-time" },
+                },
+              },
+            },
+          },
+          400: { description: "Requisição inválida", type: "object", properties: { error: { type: "string" } } },
+          401: { description: "Não autorizado", type: "object", properties: { error: { type: "string" } } },
+          404: { description: "Turma não encontrada", type: "object", properties: { error: { type: "string" } } },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{ Params: { turmaId: string; data: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { turmaId, data } = request.params;
+        // Professor vê só as próprias aulas (e as sem professor na grade)
+        const profissionalId =
+          request.user?.role === "PROFESSOR"
+            ? (await profissionalDoUsuario(request.user.id)) ?? ""
+            : undefined;
+        const resultado = await frequenciaService.aulasDoDia(
+          turmaId,
+          dataTextoSchema.parse(data),
+          profissionalId
+        );
+        return reply.send(resultado);
+      } catch (error: unknown) {
+        return responderErroRota(error, reply);
       }
     }
   );

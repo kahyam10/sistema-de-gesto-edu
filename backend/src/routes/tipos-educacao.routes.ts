@@ -1,11 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { tipoEducacaoService } from "../services/index.js";
 import {
   createTipoEducacaoSchema,
   updateTipoEducacaoSchema,
 } from "../schemas/index.js";
+import { responderErroRota } from "../lib/erro-rota.js";
 
 export async function tiposEducacaoRoutes(app: FastifyInstance) {
   // Listar todos os tipos de educação
@@ -14,17 +13,7 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
       const tipos = await tipoEducacaoService.findAll();
       return reply.send(tipos);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Erro ao listar tipos de educação";
-      return reply.status(500).send({ error: message });
+      return responderErroRota(error, reply, 500);
     }
   });
 
@@ -47,17 +36,7 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
 
         return reply.send(tipo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar tipo de educação";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -69,17 +48,7 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
       const tipo = await tipoEducacaoService.create(data);
       return reply.status(201).send(tipo);
     } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Erro ao criar tipo de educação";
-      return reply.status(400).send({ error: message });
+      return responderErroRota(error, reply);
     }
   });
 
@@ -96,17 +65,7 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
         const tipo = await tipoEducacaoService.update(id, data);
         return reply.send(tipo);
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar tipo de educação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -123,17 +82,7 @@ export async function tiposEducacaoRoutes(app: FastifyInstance) {
         await tipoEducacaoService.delete(id);
         return reply.status(204).send();
       } catch (error: unknown) {
-      if (error instanceof AppError) {
-        return reply.status(error.statusCode).send({ error: error.message });
-      }
-      if (error instanceof ZodError) {
-        return reply.status(400).send(formatarErroZod(error));
-      }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao deletar tipo de educação";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

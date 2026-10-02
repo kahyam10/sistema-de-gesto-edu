@@ -2,6 +2,14 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, BusinessError } from "../errors/AppError.js";
 import { hojeNaRede } from "../lib/datas.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { filtroLeitura } from "../lib/escopo.js";
+
+/** Filtro de escopo de Matricula para includes (a extensão não filtra includes). */
+function matriculasNoEscopo(): Prisma.MatriculaWhereInput {
+  const escopo = contextoAtual()?.escopo;
+  return ((escopo && filtroLeitura("Matricula", escopo)) ?? {}) as Prisma.MatriculaWhereInput;
+}
 
 
 export class ReuniaoPaisService {
@@ -215,6 +223,7 @@ export class ReuniaoPaisService {
    * Busca uma reunião por ID
    */
   async findById(id: string) {
+    const daMatricula = matriculasNoEscopo();
     const reuniao = await prisma.reuniaoPais.findUnique({
       where: { id },
       include: {
@@ -228,7 +237,7 @@ export class ReuniaoPaisService {
             },
             matriculas: {
               where: {
-                status: "ATIVA",
+                AND: [{ status: "ATIVA" }, daMatricula],
               },
               select: {
                 id: true,
@@ -240,6 +249,7 @@ export class ReuniaoPaisService {
         },
         profissional: { select: { id: true, nome: true, tipo: true } },
         presencas: {
+          where: { matricula: daMatricula },
           include: {
             matricula: {
               select: {

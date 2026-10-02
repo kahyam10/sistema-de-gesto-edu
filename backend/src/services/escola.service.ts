@@ -1,6 +1,19 @@
 import { prisma } from "../lib/prisma.js";
 import { Prisma } from "@prisma/client";
 import { CreateEscolaInput, UpdateEscolaInput } from "../schemas/index.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { filtroLeitura } from "../lib/escopo.js";
+
+/**
+ * Includes não passam pela extensão de escopo do Prisma (ela filtra só o model
+ * da consulta raiz): o filtro de leitura do model incluído vai aqui, a partir
+ * do escopo da requisição. Sem contexto/escopo (gestão da rede, jobs) = {}.
+ */
+function ondeNoEscopo(model: string): { where?: Record<string, unknown> } {
+  const escopo = contextoAtual()?.escopo;
+  const filtro = escopo ? filtroLeitura(model, escopo) : null;
+  return filtro ? { where: filtro } : {};
+}
 
 export class EscolaService {
   async findAll() {
@@ -18,8 +31,8 @@ export class EscolaService {
       where: { id },
       include: {
         etapas: { include: { etapa: true } },
-        turmas: { include: { serie: true } },
-        profissionais: true,
+        turmas: { ...ondeNoEscopo("Turma"), include: { serie: true } },
+        profissionais: { ...ondeNoEscopo("EscolaProfissional") },
         diretor: { select: { id: true, nome: true, tipo: true, email: true, telefone: true, dadosCenso: true } },
       },
     });
@@ -113,9 +126,13 @@ export class EscolaService {
     const escola = await prisma.escola.findUnique({
       where: { id },
       include: {
+        // Professor: só as turmas e os alunos do seu escopo (antes, o include
+        // trazia as matrículas de todas as turmas da escola)
         turmas: {
-          include: {
-            matriculas: true,
+          ...ondeNoEscopo("Turma"),
+          select: {
+            capacidadeMaxima: true,
+            _count: { select: { matriculas: { ...ondeNoEscopo("Matricula") } } },
           },
         },
       },
@@ -125,7 +142,7 @@ export class EscolaService {
 
     const totalTurmas = escola.turmas.length;
     const totalAlunos = escola.turmas.reduce(
-      (acc, turma) => acc + turma.matriculas.length,
+      (acc, turma) => acc + turma._count.matriculas,
       0
     );
     const capacidadeTotal = escola.turmas.reduce(

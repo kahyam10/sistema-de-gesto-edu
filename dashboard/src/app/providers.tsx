@@ -7,7 +7,7 @@ import { Toaster } from 'sonner'
 import { AuthProvider } from '@/lib/auth'
 import { AuthGate } from '@/components/AuthGate'
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -30,6 +30,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="light"
         enableSystem={false}
         disableTransitionOnChange
+        nonce={nonce}
       >
         <AuthProvider>
           <AuthGate>{children}</AuthGate>

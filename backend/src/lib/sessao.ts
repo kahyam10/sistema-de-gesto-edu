@@ -11,7 +11,8 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { CookieSerializeOptions } from "@fastify/cookie";
-import { prisma } from "./prisma.js";
+import type { Prisma } from "@prisma/client";
+import { prisma, prismaSemEscopo } from "./prisma.js";
 
 export const COOKIE_ACCESS = "ge_access";
 export const COOKIE_REFRESH = "ge_refresh";
@@ -169,11 +170,93 @@ type ResultadoRotacao =
   | { ok: true; access: string; refresh: string; csrfToken: string; user: UsuarioSessao }
   | Exclude<ResultadoRenovacao, { ok: true }>;
 
-/** Troca o refresh token por um novo (rotação) e emite novo access token. */
+// Motivo gravado no sucessor descartado por uma reemissão (resposta perdida
+// no app). Esse token nunca chegou ao app: se alguém o apresentar, é cópia.
+const MOTIVO_REEMITIDO = "REEMITIDO";
+
+function usuarioDe(u: { id: string; email: string; nome: string; role: string; escolaId: string | null }): UsuarioSessao {
+  // papel atualizado a cada renovação
+  return { id: u.id, email: u.email, nome: u.nome, role: u.role, escolaId: u.escolaId };
+}
+
+type RegistroComUsuario = Prisma.SessaoRefreshGetPayload<{ include: { user: true } }>;
+
+/**
+ * App mobile: o servidor rotacionou, mas a resposta se perdeu (rede caiu, app
+ * morto) e o app reapresenta o token antigo dentro da janela de tolerância.
+ * Se o sucessor criado por aquela rotação AINDA NÃO FOI USADO, ele é revogado
+ * (motivo REEMITIDO) e um novo par é emitido no lugar dele. O novo registro
+ * herda o createdAt do sucessor (= rotacionadoEm do token antigo), então novas
+ * repetições continuam presas à MESMA janela, que não se estende.
+ * Devolve null quando não dá para reemitir (sucessor já usado ou corrida).
+ */
+async function reemitirSucessor(
+  app: FastifyInstance,
+  registro: RegistroComUsuario,
+  ctx: ContextoRequisicao,
+  agora: Date
+): Promise<Extract<ResultadoRotacao, { ok: true }> | null> {
+  const marco = registro.rotacionadoEm!;
+  const sucessores = await prisma.sessaoRefresh.findMany({
+    where: {
+      familia: registro.familia,
+      id: { not: registro.id },
+      createdAt: marco,
+      rotacionadoEm: null,
+      revogadoEm: null,
+    },
+    select: { id: true },
+    take: 2,
+  });
+  if (sucessores.length !== 1) return null;
+
+  const novo = tokenAleatorio();
+  const expiraEm = new Date(
+    Math.min(agora.getTime() + dias(REFRESH_DIAS), registro.familiaExpiraEm.getTime())
+  );
+  const trocou = await prisma.$transaction(async (tx) => {
+    const marcado = await tx.sessaoRefresh.updateMany({
+      where: { id: sucessores[0].id, rotacionadoEm: null, revogadoEm: null },
+      data: { revogadoEm: agora, motivoRevogacao: MOTIVO_REEMITIDO },
+    });
+    if (marcado.count === 0) return false;
+    await tx.sessaoRefresh.create({
+      data: {
+        familia: registro.familia,
+        tokenHash: hashToken(novo),
+        csrfToken: registro.csrfToken,
+        expiraEm,
+        familiaExpiraEm: registro.familiaExpiraEm,
+        userId: registro.userId,
+        ip: ctx.ip,
+        userAgent: ctx.userAgent,
+        createdAt: marco,
+      },
+    });
+    return true;
+  });
+  if (!trocou) return null;
+  const user = usuarioDe(registro.user);
+  return {
+    ok: true,
+    access: assinarAccess(app, user, registro.csrfToken, registro.familia),
+    refresh: novo,
+    csrfToken: registro.csrfToken,
+    user,
+  };
+}
+
+/**
+ * Troca o refresh token por um novo (rotação) e emite novo access token.
+ * `reemitir`: só o app mobile (ver reemitirSucessor). Na web, duas abas
+ * dividem o mesmo cookie e o 409 basta — reemitir lá revogaria o cookie que a
+ * outra aba acabou de gravar.
+ */
 async function rotacionar(
   app: FastifyInstance,
   refreshAtual: string | undefined,
-  ctx: ContextoRequisicao
+  ctx: ContextoRequisicao,
+  reemitir = false
 ): Promise<ResultadoRotacao> {
   if (!refreshAtual) return { ok: false, motivo: "AUSENTE" };
   const registro = await prisma.sessaoRefresh.findUnique({
@@ -181,11 +264,26 @@ async function rotacionar(
     include: { user: true },
   });
   if (!registro) return { ok: false, motivo: "INVALIDO" };
-  if (registro.revogadoEm) return { ok: false, motivo: "REVOGADO" };
+  if (registro.revogadoEm) {
+    if (registro.motivoRevogacao === MOTIVO_REEMITIDO) {
+      // Sucessor que nunca chegou ao app legítimo sendo usado: alguém o copiou
+      await revogarFamilia(registro.familia, "REUSO_DETECTADO");
+      return { ok: false, motivo: "REUSO_DETECTADO", userId: registro.userId };
+    }
+    return { ok: false, motivo: "REVOGADO" };
+  }
 
   const agora = new Date();
   if (registro.rotacionadoEm) {
     if (agora.getTime() - registro.rotacionadoEm.getTime() <= TOLERANCIA_REUSO_MS) {
+      if (
+        reemitir &&
+        registro.familiaExpiraEm > agora &&
+        registro.user.ativo
+      ) {
+        const r = await reemitirSucessor(app, registro, ctx, agora);
+        if (r) return r;
+      }
       return { ok: false, motivo: "CONCORRENTE" };
     }
     // Token antigo reapresentado depois da janela: alguém guardou uma cópia.
@@ -221,20 +319,15 @@ async function rotacionar(
         userId: registro.userId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
+        // = rotacionadoEm do antecessor: identifica o sucessor numa reemissão
+        createdAt: agora,
       },
     });
     return true;
   });
   if (!trocou) return { ok: false, motivo: "CONCORRENTE" };
 
-  const u = registro.user;
-  const user: UsuarioSessao = {
-    id: u.id,
-    email: u.email,
-    nome: u.nome,
-    role: u.role, // papel atualizado a cada renovação
-    escolaId: u.escolaId,
-  };
+  const user = usuarioDe(registro.user);
   return {
     ok: true,
     access: assinarAccess(app, user, registro.csrfToken, registro.familia),
@@ -266,13 +359,35 @@ export async function renovarSessaoMobile(
   | { ok: true; tokens: TokensMobile; user: UsuarioSessao }
   | Exclude<ResultadoRenovacao, { ok: true }>
 > {
-  const r = await rotacionar(app, refreshAtual, ctx);
+  const r = await rotacionar(app, refreshAtual, ctx, true);
   if (!r.ok) return r;
   return {
     ok: true,
     user: r.user,
     tokens: { accessToken: r.access, refreshToken: r.refresh, expiresIn: ACCESS_MIN * 60 },
   };
+}
+
+/**
+ * O access token (JWT) sozinho continuaria valendo até expirar mesmo depois
+ * de logout, reuso detectado ou desativação do usuário. O guard chama isto em
+ * TODA requisição autenticada: a família do claim "sid" precisa existir, não
+ * estar revogada nem expirada, pertencer ao usuário do token e o usuário estar
+ * ativo. Uma consulta por chave (familia é indexada), select mínimo.
+ */
+export async function sessaoValida(sid: unknown, userId: unknown): Promise<boolean> {
+  if (typeof sid !== "string" || sid.length === 0 || typeof userId !== "string") return false;
+  const registro = await prismaSemEscopo.sessaoRefresh.findFirst({
+    where: {
+      familia: sid,
+      userId,
+      revogadoEm: null,
+      familiaExpiraEm: { gt: new Date() },
+      user: { ativo: true },
+    },
+    select: { id: true },
+  });
+  return registro !== null;
 }
 
 export async function revogarFamilia(familia: string, motivo: string) {

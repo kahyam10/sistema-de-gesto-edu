@@ -1,6 +1,80 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError } from "../errors/AppError.js";
+import { NotFoundError, PermissionError } from "../errors/AppError.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { GESTAO, PEDAGOGICO } from "../lib/rbac.js";
+import { portalService } from "./portal.service.js";
+
+/** Usuário da sessão (request.user), passado pela rota. */
+export interface UsuarioSessao {
+  id: string;
+  role: string;
+}
+
+const papelDaRequisicao = (u?: UsuarioSessao) => u?.role ?? contextoAtual()?.papel;
+
+/** RESPONSAVEL, USER e papéis desconhecidos: só leem o que é deles (portal). */
+const ehPapelDoPortal = (papel: string | undefined) => papel !== undefined && !PEDAGOGICO.includes(papel);
+
+/**
+ * Filtro extra de leitura para quem não é da equipe: só comunicados
+ * publicados, ativos, não expirados e destinados a ele (rede ou escolas/
+ * turmas/etapas dos alunos vinculados — o MESMO filtro do portal).
+ * undefined = sem filtro extra (equipe: vale o escopo da extensão);
+ * null = nada visível (sem usuário identificado ou sem vínculo).
+ */
+async function filtroDoPortal(u?: UsuarioSessao): Promise<Prisma.ComunicadoWhereInput | null | undefined> {
+  if (!ehPapelDoPortal(papelDaRequisicao(u))) return undefined;
+  if (!u) return null;
+  return (await portalService.whereComunicados(u.id)) as Prisma.ComunicadoWhereInput | null;
+}
+
+/**
+ * Quem tem escopo só altera comunicados das próprias escolas — nunca os da
+ * rede (escolaId nulo), que são da gestão. A extensão já filtra a escrita;
+ * isto dá um 403 explícito em vez de "não encontrado".
+ */
+function garantirEditavel(escolaId: string | null) {
+  const e = contextoAtual()?.escopo;
+  if (!e) return;
+  const ok = e.tipo === "ESCOLA"
+    ? escolaId !== null && escolaId === e.escolaId
+    : escolaId !== null && e.escolaIds.includes(escolaId);
+  if (!ok) throw new PermissionError("PERM_007", { detalhe: "comunicado da rede ou de outra escola" });
+}
+
+/**
+ * Autor do comunicado. A gestão da rede assina como quiser (ex.: "SEMEC");
+ * os demais assinam SEMPRE pela sessão — o corpo não escolhe o nome (antes,
+ * qualquer um publicava como "SEMEC").
+ */
+async function autorDaSessao(
+  data: { autorId?: string; autorNome: string },
+  u?: UsuarioSessao
+): Promise<{ autorId: string | undefined; autorNome: string }> {
+  const papel = papelDaRequisicao(u);
+  if (papel === undefined || GESTAO.includes(papel)) return { autorId: data.autorId, autorNome: data.autorNome };
+
+  if (u) {
+    const user = await prisma.user.findUnique({
+      where: { id: u.id },
+      select: { nome: true, profissionalId: true, profissional: { select: { nome: true } } },
+    });
+    if (!user) throw new PermissionError("PERM_001");
+    return { autorId: user.profissionalId ?? undefined, autorNome: user.profissional?.nome ?? user.nome };
+  }
+  // Sem o usuário (rota que ainda não o repassa): deriva do escopo da sessão
+  const e = contextoAtual()?.escopo;
+  if (e?.tipo === "PROFESSOR" && e.profissionalId) {
+    const prof = await prisma.profissionalEducacao.findUnique({ where: { id: e.profissionalId }, select: { nome: true } });
+    if (prof) return { autorId: e.profissionalId, autorNome: prof.nome };
+  }
+  if (e?.tipo === "ESCOLA" && e.escolaId) {
+    const escola = await prisma.escola.findUnique({ where: { id: e.escolaId }, select: { nome: true } });
+    if (escola) return { autorId: undefined, autorNome: escola.nome };
+  }
+  throw new PermissionError("PERM_001");
+}
 
 
 export class ComunicadoService {
@@ -22,7 +96,14 @@ export class ComunicadoService {
     destaque?: boolean;
     autorId?: string;
     autorNome: string;
-  }) {
+  }, usuario?: UsuarioSessao) {
+    // Professor publica só nas escolas em que leciona: nunca "para a rede"
+    const e = contextoAtual()?.escopo;
+    if (e?.tipo === "PROFESSOR" && !(data.escolaId && e.escolaIds.includes(data.escolaId))) {
+      throw new PermissionError("PERM_007", { detalhe: "comunicado sem escola ou de outra escola" });
+    }
+    const autor = await autorDaSessao(data, usuario);
+
     // Validar escola se fornecida
     if (data.escolaId) {
       const escola = await prisma.escola.findUnique({
@@ -54,11 +135,11 @@ export class ComunicadoService {
     }
 
     // Validar autor se fornecido
-    if (data.autorId) {
-      const autor = await prisma.profissionalEducacao.findUnique({
-        where: { id: data.autorId },
+    if (autor.autorId) {
+      const profissional = await prisma.profissionalEducacao.findUnique({
+        where: { id: autor.autorId },
       });
-      if (!autor) {
+      if (!profissional) {
         throw new NotFoundError("NF_006");
       }
     }
@@ -77,8 +158,8 @@ export class ComunicadoService {
         dataPublicacao: data.dataPublicacao || new Date(),
         dataExpiracao: data.dataExpiracao,
         destaque: data.destaque || false,
-        autorId: data.autorId,
-        autorNome: data.autorNome,
+        autorId: autor.autorId,
+        autorNome: autor.autorNome,
       },
       include: {
         escola: true,
@@ -116,7 +197,9 @@ export class ComunicadoService {
     destinatarios?: string;
     ativo?: boolean;
     destaque?: boolean;
-  }) {
+  }, usuario?: UsuarioSessao) {
+    const doPortal = await filtroDoPortal(usuario);
+    if (doPortal === null) return [];
     const where: Prisma.ComunicadoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
@@ -135,7 +218,7 @@ export class ComunicadoService {
     ];
 
     const comunicados = await prisma.comunicado.findMany({
-      where,
+      where: doPortal ? { AND: [where, doPortal] } : where,
       include: {
         escola: true,
         turma: {
@@ -178,9 +261,14 @@ export class ComunicadoService {
       ativo?: boolean;
       destaque?: boolean;
     },
-    pagination: { page: number; limit: number }
+    pagination: { page: number; limit: number },
+    usuario?: UsuarioSessao
   ) {
     const skip = (pagination.page - 1) * pagination.limit;
+    const doPortal = await filtroDoPortal(usuario);
+    if (doPortal === null) {
+      return { data: [], pagination: { page: pagination.page, limit: pagination.limit, total: 0, totalPages: 0 } };
+    }
     const where: Prisma.ComunicadoWhereInput = {};
 
     if (filters?.escolaId) where.escolaId = filters.escolaId;
@@ -197,6 +285,8 @@ export class ComunicadoService {
       { dataExpiracao: null },
       { dataExpiracao: { gte: new Date() } },
     ];
+
+    if (doPortal) where.AND = [doPortal];
 
     const include = {
       escola: true,
@@ -246,9 +336,11 @@ export class ComunicadoService {
   /**
    * Busca um comunicado por ID
    */
-  async findById(id: string) {
-    const comunicado = await prisma.comunicado.findUnique({
-      where: { id },
+  async findById(id: string, usuario?: UsuarioSessao) {
+    const doPortal = await filtroDoPortal(usuario);
+    if (doPortal === null) throw new NotFoundError("NF_027");
+    const comunicado = await prisma.comunicado.findFirst({
+      where: doPortal ? { AND: [{ id }, doPortal] } : { id },
       include: {
         escola: true,
         turma: {
@@ -262,7 +354,8 @@ export class ComunicadoService {
         },
         etapa: true,
         autor: { select: { id: true, nome: true, tipo: true } },
-        destinatariosLeitura: true,
+        // Quem é do portal vê só o próprio recibo de leitura
+        destinatariosLeitura: doPortal && usuario ? { where: { userId: usuario.id } } : true,
         _count: {
           select: {
             destinatariosLeitura: true,
@@ -304,6 +397,7 @@ export class ComunicadoService {
     if (!comunicado) {
       throw new NotFoundError("NF_027");
     }
+    garantirEditavel(comunicado.escolaId);
 
     // Validar turma se fornecida
     if (data.turmaId) {
@@ -363,6 +457,7 @@ export class ComunicadoService {
     if (!comunicado) {
       throw new NotFoundError("NF_027");
     }
+    garantirEditavel(comunicado.escolaId);
 
     await prisma.comunicado.delete({
       where: { id },
@@ -474,13 +569,20 @@ export class ComunicadoService {
    * Busca comunicados por usuário (não lidos, lidos, todos)
    */
   async findByUser(userId: string, filtro?: "NAO_LIDOS" | "LIDOS" | "TODOS") {
-    const where: Prisma.ComunicadoWhereInput = {
+    let where: Prisma.ComunicadoWhereInput = {
       ativo: true,
       OR: [
         { dataExpiracao: null },
         { dataExpiracao: { gte: new Date() } },
       ],
     };
+    // Responsável/USER (a rota já garante que é a própria lista): só os
+    // comunicados destinados a ele, como no portal
+    if (ehPapelDoPortal(contextoAtual()?.papel)) {
+      const doPortal = (await portalService.whereComunicados(userId)) as Prisma.ComunicadoWhereInput | null;
+      if (!doPortal) return [];
+      where = doPortal;
+    }
 
     const comunicados = await prisma.comunicado.findMany({
       where,

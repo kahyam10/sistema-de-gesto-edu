@@ -1,12 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { ZodError } from "zod";
-import { AppError, formatarErroZod } from "../errors/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { motoristaService } from "../services/motorista.service.js";
 import {
   createMotoristaSchema,
   updateMotoristaSchema,
 } from "../schemas/transporte.schemas.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { diasAlertaQuerySchema } from "../schemas/parametros.schemas.js";
 
 export async function motoristaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -45,15 +45,7 @@ export async function motoristaRoutes(app: FastifyInstance) {
 
         return reply.send(await motoristaService.findAll(filters));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar motoristas";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -81,20 +73,10 @@ export async function motoristaRoutes(app: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const dias = request.query.dias ? parseInt(request.query.dias) : 30;
+        const { dias } = diasAlertaQuerySchema.parse(request.query);
         return reply.send(await motoristaService.alertasCnh(dias));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar alertas de CNH";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -116,15 +98,7 @@ export async function motoristaRoutes(app: FastifyInstance) {
       try {
         return reply.send(await motoristaService.findById(request.params.id));
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar motorista";
-        return reply.status(500).send({ error: message });
+        return responderErroRota(error, reply, 500);
       }
     }
   );
@@ -145,17 +119,7 @@ export async function motoristaRoutes(app: FastifyInstance) {
         const motorista = await motoristaService.create(data);
         return reply.status(201).send(motorista);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao cadastrar motorista";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -182,17 +146,7 @@ export async function motoristaRoutes(app: FastifyInstance) {
         );
         return reply.send(motorista);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar motorista";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -215,15 +169,7 @@ export async function motoristaRoutes(app: FastifyInstance) {
         await motoristaService.delete(request.params.id);
         return reply.send({ message: "Motorista deletado com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar motorista";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

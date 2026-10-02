@@ -1,6 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { AppError, formatarErroZod } from "../errors/index.js";
-import { ZodError } from "zod";
 import { refeicaoService } from "../services/refeicao.service.js";
 import {
   createRegistroRefeicaoSchema,
@@ -8,6 +6,8 @@ import {
   relatorioPnaeQuerySchema,
 } from "../schemas/alimentacao.schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { responderErroRota } from "../lib/erro-rota.js";
+import { consultaListaSchema } from "../schemas/index.js";
 
 export async function refeicaoRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -59,20 +59,20 @@ Lista refeições efetivamente servidas (base do relatório FNDE/PNAE).
       reply: FastifyReply
     ) => {
       try {
-        const { escolaId, turno, tipoRefeicao, dataInicio, dataFim, page, limit } =
-          request.query;
+        const { escolaId, turno, tipoRefeicao } = request.query;
+        const consulta = consultaListaSchema.parse(request.query);
 
         const filters: NonNullable<Parameters<typeof refeicaoService.findAllPaginated>[0]> = {};
         if (escolaId) filters.escolaId = escolaId;
         if (turno) filters.turno = turno;
         if (tipoRefeicao) filters.tipoRefeicao = tipoRefeicao;
-        if (dataInicio) filters.dataInicio = new Date(dataInicio);
-        if (dataFim) filters.dataFim = new Date(dataFim);
+        if (consulta.dataInicio) filters.dataInicio = consulta.dataInicio;
+        if (consulta.dataFim) filters.dataFim = consulta.dataFim;
 
-        if (page && limit) {
+        if (consulta.page && consulta.limit) {
           const result = await refeicaoService.findAllPaginated(filters, {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: consulta.page,
+            limit: consulta.limit,
           });
           return reply.send(result);
         }
@@ -80,15 +80,7 @@ Lista refeições efetivamente servidas (base do relatório FNDE/PNAE).
         const refeicoes = await refeicaoService.findAll(filters);
         return reply.send(refeicoes);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao listar registros de refeição";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -126,15 +118,7 @@ Consolida refeições servidas por escola no período e o custo dos insumos
         const relatorio = await refeicaoService.relatorioPnae(query);
         return reply.send(relatorio);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao gerar relatório PNAE";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -163,15 +147,7 @@ Consolida refeições servidas por escola no período e o custo dos insumos
         const registro = await refeicaoService.findById(id);
         return reply.send(registro);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao buscar registro de refeição";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -214,15 +190,7 @@ Registra as refeições servidas em uma escola por dia/turno/tipo.
         const registro = await refeicaoService.create(body);
         return reply.status(201).send(registro);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao criar registro de refeição";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -252,15 +220,7 @@ Registra as refeições servidas em uma escola por dia/turno/tipo.
         const registro = await refeicaoService.update(id, body);
         return reply.send(registro);
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao atualizar registro de refeição";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );
@@ -289,15 +249,7 @@ Registra as refeições servidas em uma escola por dia/turno/tipo.
         await refeicaoService.delete(id);
         return reply.send({ message: "Registro de refeição deletado com sucesso" });
       } catch (error: unknown) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message });
-        }
-        if (error instanceof ZodError) {
-          return reply.status(400).send(formatarErroZod(error));
-        }
-        const message =
-          error instanceof Error ? error.message : "Erro ao deletar registro de refeição";
-        return reply.status(400).send({ error: message });
+        return responderErroRota(error, reply);
       }
     }
   );

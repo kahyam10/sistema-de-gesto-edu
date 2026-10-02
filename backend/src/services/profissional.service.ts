@@ -4,6 +4,19 @@ import {
   CreateProfissionalInput,
   UpdateProfissionalInput,
 } from "../schemas/index.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { filtroLeitura } from "../lib/escopo.js";
+
+/**
+ * Includes não passam pela extensão de escopo do Prisma (ela filtra só o model
+ * da consulta raiz): o filtro de leitura do model incluído vai aqui, a partir
+ * do escopo da requisição. Sem contexto/escopo (gestão da rede, jobs) = {}.
+ */
+function ondeNoEscopo(model: string): { where?: Record<string, unknown> } {
+  const escopo = contextoAtual()?.escopo;
+  const filtro = escopo ? filtroLeitura(model, escopo) : null;
+  return filtro ? { where: filtro } : {};
+}
 
 export class ProfissionalService {
   async findAll(filters?: { tipo?: string; ativo?: boolean }) {
@@ -11,9 +24,12 @@ export class ProfissionalService {
       where: filters,
       include: {
         escolas: {
+          ...ondeNoEscopo("EscolaProfissional"),
           include: { escola: true },
         },
+        // Vínculos com turmas de outras escolas/professores ficam de fora
         turmas: {
+          ...ondeNoEscopo("TurmaProfessor"),
           include: { turma: { include: { escola: true, serie: true } } },
         },
         formacoes: {
@@ -29,9 +45,12 @@ export class ProfissionalService {
       where: { id },
       include: {
         escolas: {
+          ...ondeNoEscopo("EscolaProfissional"),
           include: { escola: true },
         },
+        // Vínculos com turmas de outras escolas/professores ficam de fora
         turmas: {
+          ...ondeNoEscopo("TurmaProfessor"),
           include: { turma: { include: { escola: true, serie: true } } },
         },
         formacoes: {
@@ -55,7 +74,7 @@ export class ProfissionalService {
         },
       },
       include: {
-        escolas: { include: { escola: true } },
+        escolas: { ...ondeNoEscopo("EscolaProfissional"), include: { escola: true } },
       },
       orderBy: { nome: "asc" },
     });

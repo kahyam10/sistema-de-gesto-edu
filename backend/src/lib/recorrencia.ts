@@ -1,11 +1,15 @@
 // Eventos recorrentes do calendário letivo (EventoCalendario.recorrente).
 //
 // Regras (as datas do calendário são dias "puros", gravados à meia-noite UTC):
-// - a primeira ocorrência é a própria dataInicio;
+// - dataInicio é o INÍCIO da repetição: a primeira ocorrência é a primeira
+//   data >= dataInicio que cai na regra. A própria dataInicio só é ocorrência
+//   se cair na regra (ex.: dataInicio 04/03/2026, quarta, SEMANAL na SEGUNDA
+//   → 09/03, 16/03, … — "toda segunda a partir de 04/03"; a quarta 04/03 não);
 // - SEMANAL: repete no dia da semana de diaRecorrencia (SEGUNDA…DOMINGO) ou,
-//   se vazio, no dia da semana da dataInicio;
+//   se vazio, no dia da semana da dataInicio (aí a dataInicio é a 1ª);
 // - MENSAL: repete no dia do mês de diaRecorrencia ("1"…"31") ou no dia da
-//   dataInicio; meses sem esse dia (ex.: 31 em abril) são pulados;
+//   dataInicio; meses sem esse dia (ex.: 31 em abril) são pulados; dia já
+//   passado no mês da dataInicio fica para o mês seguinte;
 // - ANUAL: mesmo dia e mês da dataInicio (29/02 só em ano bissexto);
 // - dataFim, quando existe, é a DURAÇÃO de cada ocorrência (como num evento
 //   comum), não o fim da repetição;
