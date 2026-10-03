@@ -145,6 +145,12 @@ export interface Boletim {
     bimestres: Array<{ bimestre: number; media: number | null }>;
     mediaFinal: number | null;
     situacao: Situacao;
+    /**
+     * Frequência só desta disciplina (chamada por aula), para exibição: a
+     * situação segue a frequência geral. null = nenhuma aula registrada.
+     * Opcional: backend anterior não manda o campo.
+     */
+    frequencia?: { totalAulas: number; presencas: number; faltas: number; percentualPresenca: number } | null;
   }>;
   frequencia: { percentualPresenca: number; totalAulas: number; presencas: number; faltas: number; abaixoDoLimite: boolean };
   situacaoGeral: Situacao;

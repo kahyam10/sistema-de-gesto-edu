@@ -4,11 +4,18 @@ import { mediaDasAvaliacoes, mediaDosBimestres } from "../lib/media.js";
 import { hojeNaRede } from "../lib/datas.js";
 import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.js";
 import { NotFoundError } from "../errors/index.js";
-import { CreateNotaInput, LancarNotasTurmaInput, UpdateNotaInput } from "../schemas/index.js";
+import {
+  CreateNotaInput,
+  LancarNotasTurmaInput,
+  UpdateNotaInput,
+  NOTA_MINIMA_RECUPERACAO_PADRAO,
+} from "../schemas/index.js";
 import {
   frequenciaService,
   frequenciaAbaixoDoMinimo,
+  chaveDisciplina,
   FREQUENCIA_MINIMA_PADRAO,
+  type FrequenciaDisciplina,
 } from "./frequencia.service.js";
 
 interface BoletimDisciplina {
@@ -29,6 +36,12 @@ interface BoletimDisciplina {
   }>;
   mediaFinal: number | null;
   situacao: "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO";
+  /**
+   * Frequência só desta disciplina (chamada por aula), para EXIBIÇÃO: a
+   * situação continua pela frequência geral. null = nenhuma aula desta
+   * disciplina registrada (ex.: só chamada diária).
+   */
+  frequencia: FrequenciaDisciplina | null;
 }
 
 export interface Boletim {
@@ -61,9 +74,11 @@ export interface BoletimTurma {
 
 type Situacao = "APROVADO" | "RECUPERACAO" | "REPROVADO" | "EM_CURSO";
 
-/** Regra de aprovação da turma (configuração de avaliação vigente; padrão 6,0 / 75% / 4 períodos). */
+/** Regra de aprovação da turma (configuração de avaliação vigente; padrão 6,0 / 3,0 / 75% / 4 períodos). */
 export interface RegraAprovacao {
   mediaMinima: number;
+  /** Piso entre recuperação e reprovação (abaixo dele: REPROVADO direto). */
+  notaMinimaRecuperacao: number;
   frequenciaMinima: number;
   periodos: number;
 }
@@ -114,8 +129,8 @@ export function determinaSituacao(
   // Aprovado (média mínima da configuração de avaliação vigente; padrão 6,0)
   if (mediaFinal >= regra.mediaMinima) return "APROVADO";
 
-  // Recuperação
-  if (mediaFinal >= 3.0) return "RECUPERACAO";
+  // Recuperação (piso da configuração de avaliação vigente; padrão 3,0)
+  if (mediaFinal >= regra.notaMinimaRecuperacao) return "RECUPERACAO";
 
   // Reprovado por nota
   return "REPROVADO";
@@ -169,6 +184,7 @@ function montarBoletim(
   { turma, disciplinas, regra }: ContextoBoletim,
   avaliacoes: AvaliacaoDoBoletim[],
   frequencia: EstatisticasDoBoletim,
+  frequenciaPorDisciplina: Map<string, FrequenciaDisciplina> | undefined,
   hoje: Date
 ): Boletim {
   const porDisciplinaBimestre = new Map<string, AvaliacaoDoBoletim[]>();
@@ -220,6 +236,8 @@ function montarBoletim(
       bimestres,
       mediaFinal,
       situacao: determinaSituacao(mediaFinal, bimestresComNota, frequencia, regra),
+      // Casamento pelo nome normalizado (a grade/chamada guarda o nome)
+      frequencia: frequenciaPorDisciplina?.get(chaveDisciplina(disciplina.nome)) ?? null,
     });
   }
 
@@ -591,6 +609,7 @@ export class NotaService {
     );
     return {
       mediaMinima: cfg?.mediaMinima ?? 6.0,
+      notaMinimaRecuperacao: cfg?.notaMinimaRecuperacao ?? NOTA_MINIMA_RECUPERACAO_PADRAO,
       frequenciaMinima: cfg?.percentualFrequenciaMinima ?? FREQUENCIA_MINIMA_PADRAO,
       periodos: Math.min(cfg?.numeroPeriodos ?? 4, 4),
     };
@@ -676,13 +695,22 @@ export class NotaService {
     }
 
     const contexto = await this.contextoDoBoletim(turmaEfetiva);
-    const [avaliacoes, frequencia] = await Promise.all([
+    const [avaliacoes, frequencia, porDisciplina] = await Promise.all([
       this.avaliacoesComNotas(turmaEfetiva, [matriculaId]),
       // Frequência geral (uma única vez, usada em todas as disciplinas)
       frequenciaService.calcularEstatisticas(matriculaId, turmaEfetiva),
+      // Frequência por disciplina (só exibição)
+      frequenciaService.porDisciplina(turmaEfetiva, [matriculaId]),
     ]);
 
-    return montarBoletim(matricula, contexto, avaliacoes, frequencia, hoje);
+    return montarBoletim(
+      matricula,
+      contexto,
+      avaliacoes,
+      frequencia,
+      porDisciplina.get(matriculaId),
+      hoje
+    );
   }
 
   /**
@@ -690,7 +718,7 @@ export class NotaService {
    * matrículas do ano letivo informado), com a MESMA conta do boletim
    * individual (montarBoletim) e um número fixo de consultas, qualquer que
    * seja o tamanho da turma: turma, disciplinas, configuração, matrículas,
-   * avaliações+notas e frequências da turma.
+   * avaliações+notas, frequências da turma e frequência por disciplina.
    */
   async getBoletimTurma(
     turmaId: string,
@@ -717,11 +745,13 @@ export class NotaService {
     }
 
     const ids = matriculas.map((m) => m.id);
-    const [avaliacoes, resumoFrequencia] = await Promise.all([
+    const [avaliacoes, resumoFrequencia, porDisciplina] = await Promise.all([
       this.avaliacoesComNotas(turmaId, ids),
       // Mesmas estatísticas de frequenciaService.calcularEstatisticas, para a
       // turma inteira em uma consulta
       frequenciaService.getResumoTurma(turmaId),
+      // Frequência por disciplina de todas as matrículas, em uma consulta
+      frequenciaService.porDisciplina(turmaId, ids),
     ]);
     const frequenciaPorMatricula = new Map(
       resumoFrequencia.map((r) => [r.matricula.id, r.estatisticas])
@@ -739,7 +769,9 @@ export class NotaService {
       const frequencia =
         frequenciaPorMatricula.get(matricula.id) ??
         (await frequenciaService.calcularEstatisticas(matricula.id, turmaId));
-      boletins.push(montarBoletim(matricula, contexto, doAluno, frequencia, hoje));
+      boletins.push(
+        montarBoletim(matricula, contexto, doAluno, frequencia, porDisciplina.get(matricula.id), hoje)
+      );
     }
 
     return { turma: resumoDaTurma(contexto.turma), boletins };

@@ -22,12 +22,12 @@ describe("filterNavForRole", () => {
     expect(hrefs).toContain("/gestao-democratica");
   });
 
-  it("SECRETARIA vê RH e Exportações (equipe operacional)", () => {
+  it("SECRETARIA vê RH (lotação/ACs), mas não Exportações (só ADMIN, SEMEC e COORDENADOR)", () => {
     const hrefs = filterNavForRole("SECRETARIA").flatMap((s) =>
       s.items.map((i) => i.href)
     );
     expect(hrefs).toContain("/rh");
-    expect(hrefs).toContain("/exportacoes");
+    expect(hrefs).not.toContain("/exportacoes");
     expect(hrefs).toContain("/alimentacao");
     expect(hrefs).toContain("/transporte");
   });

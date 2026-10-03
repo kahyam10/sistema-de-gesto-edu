@@ -30,7 +30,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTurmas, useUpdateMatricula } from "@/hooks/useApi";
 import { useBoletinsDaTurma, useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
-import { alunoDoBoletim, formatarMedia, tomDaMedia, type AlunoConselho, type SituacaoApi } from "@/lib/medias";
+import {
+  alunoDoBoletim,
+  formatarMedia,
+  limitesDaConfiguracao,
+  tomDaMedia,
+  type AlunoConselho,
+  type SituacaoApi,
+} from "@/lib/medias";
 import { CheckCircle, XCircle, Warning, Users, Clock } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -51,7 +58,21 @@ export function ConselhoClasseManager() {
   // avaliação realizada sem nota = 0, configuração de avaliação da rede).
   const { porMatricula, isLoading: loadingBoletins, erros: errosBoletim } = useBoletinsDaTurma(turmaSelecionada);
   const { config, isLoading: loadingConfig } = useConfiguracaoDaTurma(turmaSelecionada);
-  const mediaMinima = config?.mediaMinima ?? null;
+  const { mediaMinima, notaMinimaRecuperacao } = limitesDaConfiguracao(config);
+  // Variante do badge pelos limites da configuração: faixa de recuperação em
+  // âmbar, abaixo do piso (reprovação direta) em vermelho
+  const varianteDaMedia = (valor: number | null, ok: "default" | "outline") => {
+    switch (tomDaMedia(valor, mediaMinima, notaMinimaRecuperacao)) {
+      case "ok":
+        return ok;
+      case "abaixo":
+        return "warning" as const;
+      case "reprovacao":
+        return "destructive" as const;
+      default:
+        return "secondary" as const;
+    }
+  };
 
   const alunosConselho = useMemo(() => {
     if (!turmaSelecionada) return [];
@@ -351,13 +372,7 @@ export function ConselhoClasseManager() {
                           <TableCell className="font-medium">{aluno.nomeAluno}</TableCell>
                           <TableCell className="text-center">
                             <Badge
-                              variant={
-                                tomDaMedia(aluno.mediaGeral, mediaMinima) === "abaixo"
-                                  ? "destructive"
-                                  : tomDaMedia(aluno.mediaGeral, mediaMinima) === "ok"
-                                    ? "default"
-                                    : "secondary"
-                              }
+                              variant={varianteDaMedia(aluno.mediaGeral, "default")}
                             >
                               {formatarMedia(aluno.mediaGeral, 2)}
                             </Badge>
@@ -369,13 +384,7 @@ export function ConselhoClasseManager() {
                                 .map((d) => (
                                   <Badge
                                     key={d.disciplinaId}
-                                    variant={
-                                      tomDaMedia(d.media, mediaMinima) === "abaixo"
-                                        ? "destructive"
-                                        : tomDaMedia(d.media, mediaMinima) === "ok"
-                                          ? "outline"
-                                          : "secondary"
-                                    }
+                                    variant={varianteDaMedia(d.media, "outline")}
                                     className="text-xs"
                                     title={`${d.nome}: ${formatarMedia(d.media, 2)}${d.situacao === "EM_CURSO" ? " (parcial)" : ""}`}
                                   >
@@ -414,6 +423,12 @@ export function ConselhoClasseManager() {
               {loadingConfig ? null : config ? (
                 <p>
                   • <strong>Média mínima:</strong> {config.mediaMinima.toFixed(1)} •{" "}
+                  {notaMinimaRecuperacao !== null && (
+                    <>
+                      <strong>Nota mínima para recuperação:</strong> {notaMinimaRecuperacao.toFixed(1)} (abaixo
+                      dela, reprovação direta) •{" "}
+                    </>
+                  )}
                   <strong>Frequência mínima:</strong> {config.percentualFrequenciaMinima}%
                 </p>
               ) : (

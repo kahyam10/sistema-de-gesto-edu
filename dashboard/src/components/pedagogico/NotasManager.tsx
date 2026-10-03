@@ -50,6 +50,8 @@ import {
   ChartBar,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
+import { limitesDaConfiguracao, tomDaNota } from "@/lib/medias";
 
 interface NotaAluno {
   matriculaId: string;
@@ -161,12 +163,17 @@ export function NotasManager() {
     );
   };
 
+  // Cores pelos limites da configuração de avaliação (média mínima e piso de
+  // recuperação), na escala 0–10 — sem números fixos
+  const { config: configAvaliacao } = useConfiguracaoDaTurma(turmaSelecionada);
+  const { mediaMinima, notaMinimaRecuperacao } = limitesDaConfiguracao(configAvaliacao);
   const getNotaColor = (valor: string) => {
-    const num = parseFloat(valor);
-    if (isNaN(num) || valor === "") return "";
-    if (num >= 6) return "text-green-600 font-semibold";
-    if (num >= 3) return "text-yellow-600 font-semibold";
-    return "text-red-600 font-semibold";
+    if (valor === "") return "";
+    const tom = tomDaNota(parseFloat(valor), avaliacaoSelecionada?.valorMaximo, mediaMinima, notaMinimaRecuperacao);
+    if (tom === "ok") return "text-green-600 font-semibold";
+    if (tom === "abaixo") return "text-yellow-600 font-semibold";
+    if (tom === "reprovacao") return "text-red-600 font-semibold";
+    return "";
   };
 
   const estatisticas = useMemo(() => {

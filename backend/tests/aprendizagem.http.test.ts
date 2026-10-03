@@ -83,7 +83,7 @@ describe("acompanhamento de aprendizagens", () => {
     const r = await get("coord", `/api/aprendizagem/turma/${ids.turma}?bimestre=2`);
     expect(r.statusCode).toBe(200);
     const b = r.json();
-    expect(b.regra).toEqual({ mediaMinima: 7, frequenciaMinima: 80, origem: "CONFIGURACAO" });
+    expect(b.regra).toEqual({ mediaMinima: 7, notaMinimaRecuperacao: 3, frequenciaMinima: 80, origem: "CONFIGURACAO" });
     expect(b.bimestre).toBe(2);
     const [primeiro, segundo] = b.alunos;
     expect(primeiro.nomeAluno).toBe("Bruno M2");

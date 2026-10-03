@@ -9,6 +9,7 @@ import {
 import { authMiddleware } from "../middleware/auth.js";
 import { responderErroRota } from "../lib/erro-rota.js";
 import { periodoAnosQuerySchema } from "../schemas/parametros.schemas.js";
+import { RH_EXPORTACAO } from "../lib/rbac.js";
 
 export async function licencasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -24,13 +25,8 @@ export async function licencasRoutes(app: FastifyInstance) {
 Lista todas as licenças e afastamentos registrados no sistema.
 
 **Tipos de licença:**
-- \`MEDICA\`: Licença médica (atestado)
-- \`MATERNIDADE\`: Licença maternidade (120-180 dias)
-- \`PATERNIDADE\`: Licença paternidade (5-20 dias)
-- \`CASAMENTO\`: Licença por casamento (3 dias)
-- \`LUTO\`: Licença por luto (8 dias)
-- \`FERIAS\`: Férias regulamentares (30 dias)
-- \`OUTRAS\`: Outros tipos de afastamento
+- \`LICENCA_MEDICA\`, \`LICENCA_MATERNIDADE\`, \`LICENCA_PATERNIDADE\`,
+  \`LICENCA_PREMIO\`, \`LICENCA_SEM_VENCIMENTO\`, \`FERIAS\`
 
 **Status:**
 - \`PENDENTE\`: Aguardando aprovação
@@ -62,7 +58,8 @@ Lista todas as licenças e afastamentos registrados no sistema.
             },
             tipo: {
               type: "string",
-              enum: ["MEDICA", "MATERNIDADE", "PATERNIDADE", "CASAMENTO", "LUTO", "FERIAS", "OUTRAS"],
+              // Mesmos tipos de createLicencaSchema (os antigos não existiam no modelo)
+              enum: ["LICENCA_MEDICA", "LICENCA_MATERNIDADE", "LICENCA_PATERNIDADE", "LICENCA_PREMIO", "LICENCA_SEM_VENCIMENTO", "FERIAS"],
               description: "Tipo de licença",
             },
             dataInicio: {
@@ -82,46 +79,8 @@ Lista todas as licenças e afastamentos registrados no sistema.
           },
         },
         response: {
-          200: {
-            description: "Lista de licenças",
-            type: "object",
-            properties: {
-              data: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    profissionalId: { type: "string" },
-                    profissional: {
-                      type: "object",
-                      properties: {
-                        nome: { type: "string" },
-                        cargo: { type: "string" },
-                      },
-                    },
-                    tipo: { type: "string", example: "MEDICA" },
-                    status: { type: "string", example: "APROVADA" },
-                    dataInicio: { type: "string", format: "date" },
-                    dataFim: { type: "string", format: "date" },
-                    diasAfastamento: { type: "number", example: 3 },
-                    motivo: { type: "string" },
-                    documentoUrl: { type: "string", nullable: true },
-                    createdAt: { type: "string", format: "date-time" },
-                  },
-                },
-              },
-              pagination: {
-                    type: "object",
-                    properties: {
-                      page: { type: "integer" },
-                      limit: { type: "integer" },
-                      total: { type: "integer" },
-                      totalPages: { type: "integer" },
-                    },
-                  },
-            },
-          },          401: {
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT / LICENCA_RESUMO)
+          401: {
             description: "Não autorizado",
             type: "object",
             properties: {
@@ -248,7 +207,7 @@ Cria uma nova solicitação de licença ou afastamento.
           },
         },
         response: {
-          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 201 sem schema: a saída é curada pelo service (LICENCA_SELECT)
           400: {
             description: "Dados inválidos ou conflito de datas",
             type: "object",
@@ -305,36 +264,8 @@ Retorna os detalhes completos de uma licença específica.
           },
         },
         response: {
-          200: {
-            description: "Dados da licença",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              profissionalId: { type: "string" },
-              profissional: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  nome: { type: "string" },
-                  cargo: { type: "string" },
-                  matricula: { type: "string" },
-                },
-              },
-              tipo: { type: "string" },
-              status: { type: "string" },
-              dataInicio: { type: "string", format: "date" },
-              dataFim: { type: "string", format: "date" },
-              diasAfastamento: { type: "number" },
-              motivo: { type: "string" },
-              documentoUrl: { type: "string", nullable: true },
-              observacoes: { type: "string", nullable: true },
-              aprovadoPor: { type: "string", nullable: true },
-              dataAprovacao: { type: "string", format: "date-time", nullable: true },
-              motivoRejeicao: { type: "string", nullable: true },
-              createdAt: { type: "string", format: "date-time" },
-              updatedAt: { type: "string", format: "date-time" },
-            },
-          },          404: {
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT / LICENCA_RESUMO)
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {
@@ -402,13 +333,13 @@ Atualiza uma solicitação de licença.
           properties: {
             dataInicio: { type: "string", format: "date" },
             dataFim: { type: "string", format: "date" },
-            motivo: { type: "string" },
-            documentoUrl: { type: "string" },
-            observacoes: { type: "string" },
+            motivo: { type: "string", nullable: true },
+            documentoPath: { type: "string", nullable: true },
+            observacoes: { type: "string", nullable: true },
           },
         },
         response: {
-          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT)
           400: {
             description: "Erro ao atualizar",
             type: "object",
@@ -511,7 +442,7 @@ Aprova ou rejeita uma solicitação de licença.
           },
         },
         response: {
-          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT)
           400: {
             description: "Requisição inválida",
             type: "object",
@@ -552,7 +483,8 @@ Aprova ou rejeita uma solicitação de licença.
       if (!user?.id) {
         return reply.status(401).send({ error: "Não autorizado" });
       }
-      if (!["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR"].includes(user.role ?? "")) {
+      // Mesma lista do guard (lib/rbac.ts): DIRETOR não aprova mais licenças
+      if (!RH_EXPORTACAO.includes(user.role ?? "")) {
         return reply
           .status(403)
           .send({ error: "Apenas a gestão pode aprovar ou rejeitar licenças" });
@@ -614,7 +546,7 @@ Cancela uma licença aprovada ou pendente.
           },
         },
         response: {
-          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT)
           400: {
             description: "Erro ao cancelar",
             type: "object",
@@ -785,30 +717,8 @@ Retorna todas as licenças que estão ativas no momento atual.
         `,
         security: [{ bearerAuth: [] }],
         response: {
-          200: {
-            description: "Lista de licenças ativas",
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                profissionalId: { type: "string" },
-                profissional: {
-                  type: "object",
-                  properties: {
-                    nome: { type: "string" },
-                    cargo: { type: "string" },
-                    matricula: { type: "string" },
-                  },
-                },
-                tipo: { type: "string" },
-                dataInicio: { type: "string", format: "date" },
-                dataFim: { type: "string", format: "date" },
-                diasRestantes: { type: "number" },
-                motivo: { type: "string" },
-              },
-            },
-          },          401: {
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT / LICENCA_RESUMO)
+          401: {
             description: "Não autorizado",
             type: "object",
             properties: {
@@ -900,33 +810,7 @@ Gera relatório completo de licenças de um profissional.
           },
         },
         response: {
-          200: {
-            // Formato de LicencaService.getRelatorio. Da licença sai só o resumo:
-            // observações, documento e justificativa ficam no detalhe da licença.
-            description: "Relatório de licenças",
-            type: "object",
-            properties: {
-              totalDias: { type: "integer", example: 45 },
-              porTipo: { type: "object", additionalProperties: { type: "integer" }, example: { LICENCA_MEDICA: 15 } },
-              licencas: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    profissionalId: { type: "string" },
-                    tipo: { type: "string" },
-                    status: { type: "string" },
-                    dataInicio: { type: "string", format: "date-time" },
-                    dataFim: { type: "string", format: "date-time" },
-                    diasCorridos: { type: "integer" },
-                    diasUteis: { type: ["integer", "null"] },
-                    motivo: { type: ["string", "null"] },
-                  },
-                },
-              },
-            },
-          },
+          // 200 sem schema: a saída é curada pelo service (LICENCA_SELECT / LICENCA_RESUMO)
           404: {
             description: "Profissional não encontrado",
             type: "object",

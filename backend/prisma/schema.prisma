@@ -766,6 +766,9 @@ model ConfiguracaoAvaliacao {
   sistemaAvaliacao            String   @default("NOTA") // NOTA, CONCEITO
   numeroPeriodos              Int      @default(4) // Bimestres
   mediaMinima                 Float    @default(6.0)
+  // Piso entre recuperação e reprovação: média final abaixo dele = REPROVADO
+  // direto; entre ele e a média mínima = RECUPERACAO (0 ≤ piso ≤ mediaMinima)
+  notaMinimaRecuperacao       Float    @default(3.0)
   percentualFrequenciaMinima  Float    @default(75.0)
   recuperacaoParalela         Boolean  @default(false)
   recuperacaoFinal            Boolean  @default(true)

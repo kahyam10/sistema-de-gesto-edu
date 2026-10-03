@@ -1,5 +1,4 @@
 import type { Prisma } from "@prisma/client";
-import { Ponto } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import {
   CreatePontoInput,
@@ -7,11 +6,60 @@ import {
   RegistrarPontoInput,
 } from "../schemas/index.js";
 import { hojeNaRede } from "../lib/datas.js";
+import { contextoAtual } from "../lib/contexto.js";
+import { escolasDoEscopo, EscopoNegadoError } from "../lib/escopo.js";
 
+/**
+ * Ponto.escolaId ("escola onde registrou") não tem relação no schema, então a
+ * extensão de escopo só confere o profissional. Quem tem escopo de escola
+ * (coordenação) não registra ponto em OUTRA escola, mesmo de um profissional
+ * que também está lotado na sua. Escopo vem da sessão (contexto), nunca do corpo.
+ */
+function conferirEscolaDoPonto(escolaId: string | null | undefined): void {
+  const escopo = contextoAtual()?.escopo;
+  if (!escopo || escolaId === undefined || escolaId === null) return;
+  if (!escolasDoEscopo(escopo).includes(escolaId)) {
+    throw new EscopoNegadoError("Ponto.escolaId");
+  }
+}
+
+
+/**
+ * O que sai nas respostas de ponto (a rota não tem schema de resposta: a
+ * saída é curada aqui). latitude/longitude — geolocalização do servidor —
+ * NUNCA saem: são gravadas para controle, mas nenhuma tela as usa.
+ * Coluna nova no modelo só aparece na API se for incluída aqui.
+ */
+const PONTO_SELECT = {
+  id: true,
+  profissionalId: true,
+  escolaId: true,
+  data: true,
+  entrada: true,
+  saida: true,
+  entrada2: true,
+  saida2: true,
+  horasTrabalhadas: true,
+  tipoRegistro: true,
+  observacoes: true,
+  justificativa: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PontoSelect;
+
+/** Profissional no ponto: só identificação (nada de CPF, contato ou dados bancários). */
+const PONTO_COM_PROFISSIONAL = {
+  ...PONTO_SELECT,
+  profissional: { select: { id: true, nome: true, tipo: true } },
+} satisfies Prisma.PontoSelect;
+
+export type PontoResposta = Prisma.PontoGetPayload<{ select: typeof PONTO_SELECT }>;
+export type PontoComProfissional = Prisma.PontoGetPayload<{ select: typeof PONTO_COM_PROFISSIONAL }>;
 
 export class PontoService {
   // Cria um registro de ponto manual (admin)
-  async create(data: CreatePontoInput): Promise<Ponto> {
+  async create(data: CreatePontoInput): Promise<PontoResposta> {
+    conferirEscolaDoPonto(data.escolaId);
     // Calcula horas trabalhadas se tiver entrada e saída
     const horasTrabalhadas = this.calcularHoras(data);
 
@@ -20,18 +68,20 @@ export class PontoService {
         ...data,
         horasTrabalhadas,
       },
+      select: PONTO_SELECT,
     });
   }
 
   // Registra ponto (entrada/saída) - usado pelo profissional
   // Atômico: find + update/create em transação, com backstop no
   // @@unique([profissionalId, data]) contra registros duplicados no dia.
-  async registrarPonto(data: RegistrarPontoInput): Promise<Ponto> {
+  async registrarPonto(data: RegistrarPontoInput): Promise<PontoResposta> {
+    conferirEscolaDoPonto(data.escolaId);
     const hoje = hojeNaRede();
 
     return prisma.$transaction(async (tx) => {
     // Busca se já existe registro para hoje
-    let ponto = await tx.ponto.findFirst({
+    const ponto = await tx.ponto.findFirst({
       where: {
         profissionalId: data.profissionalId,
         data: hoje,
@@ -54,9 +104,10 @@ export class PontoService {
       const pontoAtualizado = { ...ponto, ...updateData };
       updateData.horasTrabalhadas = this.calcularHoras(pontoAtualizado);
 
-      ponto = await tx.ponto.update({
+      return tx.ponto.update({
         where: { id: ponto.id },
         data: updateData,
+        select: PONTO_SELECT,
       });
     } else {
       // Cria novo registro
@@ -75,12 +126,11 @@ export class PontoService {
 
       createData.horasTrabalhadas = this.calcularHoras(createData);
 
-      ponto = await tx.ponto.create({
+      return tx.ponto.create({
         data: createData,
+        select: PONTO_SELECT,
       });
     }
-
-    return ponto;
     });
   }
 
@@ -91,7 +141,7 @@ export class PontoService {
     dataInicio?: Date;
     dataFim?: Date;
     tipoRegistro?: string;
-  }): Promise<Ponto[]> {
+  }): Promise<PontoComProfissional[]> {
     const where: Prisma.PontoWhereInput = {};
 
     if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
@@ -106,15 +156,7 @@ export class PontoService {
 
     return await prisma.ponto.findMany({
       where,
-      include: {
-        profissional: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-          },
-        },
-      },
+      select: PONTO_COM_PROFISSIONAL,
       orderBy: { data: "desc" },
     });
   }
@@ -143,20 +185,10 @@ export class PontoService {
       if (filters.dataFim) where.data.lte = filters.dataFim;
     }
 
-    const include = {
-      profissional: {
-        select: {
-          id: true,
-          nome: true,
-          tipo: true,
-        },
-      },
-    };
-
     const [data, total] = await Promise.all([
       prisma.ponto.findMany({
         where,
-        include,
+        select: PONTO_COM_PROFISSIONAL,
         orderBy: { data: "desc" },
         skip,
         take: pagination.limit,
@@ -176,24 +208,16 @@ export class PontoService {
   }
 
   // Busca ponto por ID
-  async findById(id: string): Promise<Ponto | null> {
+  async findById(id: string): Promise<PontoComProfissional | null> {
     return await prisma.ponto.findUnique({
       where: { id },
-      include: {
-        profissional: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-            matricula: true,
-          },
-        },
-      },
+      select: PONTO_COM_PROFISSIONAL,
     });
   }
 
   // Atualiza ponto
-  async update(id: string, data: UpdatePontoInput): Promise<Ponto> {
+  async update(id: string, data: UpdatePontoInput): Promise<PontoResposta> {
+    conferirEscolaDoPonto(data.escolaId);
     // Recalcula horas se necessário
     if (data.entrada || data.saida || data.entrada2 || data.saida2) {
       const pontoAtual = await prisma.ponto.findUnique({ where: { id } });
@@ -202,6 +226,7 @@ export class PontoService {
         return await prisma.ponto.update({
           where: { id },
           data: { ...data, horasTrabalhadas: this.calcularHoras(pontoAtualizado) },
+          select: PONTO_SELECT,
         });
       }
     }
@@ -209,6 +234,7 @@ export class PontoService {
     return await prisma.ponto.update({
       where: { id },
       data,
+      select: PONTO_SELECT,
     });
   }
 
@@ -223,7 +249,7 @@ export class PontoService {
     mes: number,
     ano: number
   ): Promise<{
-    pontos: Ponto[];
+    pontos: PontoResposta[];
     totalHoras: number;
     diasTrabalhados: number;
     faltas: number;
@@ -240,6 +266,7 @@ export class PontoService {
           lte: dataFim,
         },
       },
+      select: PONTO_SELECT,
       orderBy: { data: "asc" },
     });
 

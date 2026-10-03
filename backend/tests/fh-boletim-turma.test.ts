@@ -191,7 +191,9 @@ describe("boletim da turma = boletim individual (mesma regra)", () => {
     expect(grande.n).toBe(7);
     expect(grande.contagem).toEqual(pequena.contagem);
     expect(grande.contagem["Avaliacao.findMany"]).toBe(1);
-    expect(grande.contagem["Frequencia.groupBy"]).toBeUndefined(); // nada de estatística por aluno
+    // nada de estatística por aluno: um único groupBy, o da frequência por
+    // disciplina da turma inteira (frente I)
+    expect(grande.contagem["Frequencia.groupBy"]).toBe(1);
     const total = Object.values(grande.contagem).reduce((a, b) => a + b, 0);
     expect(total).toBeLessThanOrEqual(8);
   });

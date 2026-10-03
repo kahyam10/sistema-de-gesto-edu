@@ -3,6 +3,7 @@ import { configuracaoAvaliacaoService } from "../services/index.js";
 import {
   createConfiguracaoAvaliacaoSchema,
   updateConfiguracaoAvaliacaoSchema,
+  MSG_PISO_ACIMA_DA_MEDIA,
 } from "../schemas/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { responderErroRota } from "../lib/erro-rota.js";
@@ -85,6 +86,11 @@ Lista todas as configurações de avaliação do sistema com filtros opcionais.
                   type: "number",
                   example: 6.0,
                   description: "Média mínima para aprovação",
+                },
+                notaMinimaRecuperacao: {
+                  type: "number",
+                  example: 3.0,
+                  description: "Nota mínima para recuperação (abaixo dela: reprovado direto)",
                 },
                 percentualFrequenciaMinima: {
                   type: "number",
@@ -191,6 +197,7 @@ Retorna os detalhes completos de uma configuração de avaliação específica.
               sistemaAvaliacao: { type: "string", enum: ["NOTA", "CONCEITO"] },
               numeroPeriodos: { type: "number" },
               mediaMinima: { type: "number" },
+              notaMinimaRecuperacao: { type: "number" },
               percentualFrequenciaMinima: { type: "number" },
               recuperacaoParalela: { type: "boolean" },
               recuperacaoFinal: { type: "boolean" },
@@ -276,6 +283,7 @@ Cria uma nova configuração de avaliação para um ano letivo.
 - \`percentualFrequenciaMinima\`: Frequência mínima em % (0-100)
 
 **Campos opcionais:**
+- \`notaMinimaRecuperacao\`: abaixo dela o aluno é reprovado direto, sem recuperação (0 ≤ valor ≤ mediaMinima; padrão 3,0)
 - \`recuperacaoParalela\`: Permite recuperação durante o ano (padrão: false)
 - \`recuperacaoFinal\`: Permite recuperação final (padrão: true)
 - \`escolaId\`: Aplicar apenas a uma escola específica
@@ -330,6 +338,14 @@ Cria uma nova configuração de avaliação para um ano letivo.
               default: 6.0,
               example: 6.0,
               description: "Média mínima para aprovação",
+            },
+            notaMinimaRecuperacao: {
+              type: "number",
+              minimum: 0,
+              maximum: 10,
+              example: 3.0,
+              description:
+                "Nota mínima para recuperação: abaixo dela o aluno é reprovado direto (0 ≤ valor ≤ mediaMinima; padrão 3,0)",
             },
             percentualFrequenciaMinima: {
               type: "number",
@@ -456,6 +472,11 @@ Atualiza uma configuração de avaliação existente.
               minimum: 0,
               maximum: 10,
             },
+            notaMinimaRecuperacao: {
+              type: "number",
+              minimum: 0,
+              maximum: 10,
+            },
             percentualFrequenciaMinima: {
               type: "number",
               minimum: 0,
@@ -500,6 +521,15 @@ Atualiza uma configuração de avaliação existente.
       try {
         const { id } = request.params;
         const body = updateConfiguracaoAvaliacaoSchema.parse(request.body);
+        // Só um dos limites no corpo: confere o piso contra o valor gravado
+        if (body.mediaMinima !== undefined || body.notaMinimaRecuperacao !== undefined) {
+          const atual = await configuracaoAvaliacaoService.findById(id);
+          if (atual) {
+            const media = body.mediaMinima ?? atual.mediaMinima;
+            const piso = body.notaMinimaRecuperacao ?? atual.notaMinimaRecuperacao;
+            if (piso > media) return reply.status(400).send({ error: MSG_PISO_ACIMA_DA_MEDIA });
+          }
+        }
         const config = await configuracaoAvaliacaoService.update(id, body);
         return reply.send(config);
       } catch (error: unknown) {

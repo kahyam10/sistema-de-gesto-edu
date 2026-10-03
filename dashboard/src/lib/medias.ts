@@ -59,14 +59,78 @@ export function formatarMedia(valor: number | null | undefined, casas = 1): stri
   return typeof valor === "number" && Number.isFinite(valor) ? valor.toFixed(casas) : "—";
 }
 
-/** Comparação com a média mínima da configuração; sem média ou sem configuração = "neutro". */
+/**
+ * Comparação com os limites da configuração de avaliação:
+ * - "ok": atinge a média mínima;
+ * - "abaixo": abaixo da média mínima, mas no piso de recuperação ou acima
+ *   (faixa de recuperação);
+ * - "reprovacao": abaixo do piso (`notaMinimaRecuperacao`) — reprovado direto;
+ * - "neutro": sem média ou sem configuração.
+ * Sem piso informado (configuração antiga), não há tom "reprovacao".
+ */
 export function tomDaMedia(
   valor: number | null | undefined,
   mediaMinima: number | null | undefined,
-): "ok" | "abaixo" | "neutro" {
+  notaMinimaRecuperacao?: number | null,
+): "ok" | "abaixo" | "reprovacao" | "neutro" {
   if (typeof valor !== "number" || !Number.isFinite(valor)) return "neutro";
   if (typeof mediaMinima !== "number") return "neutro";
-  return valor >= mediaMinima ? "ok" : "abaixo";
+  if (valor >= mediaMinima) return "ok";
+  if (typeof notaMinimaRecuperacao === "number" && valor < notaMinimaRecuperacao) return "reprovacao";
+  return "abaixo";
+}
+
+/**
+ * Tom de UMA nota de avaliação (lançamento de notas): converte para a escala
+ * 0–10 pelo valor máximo da avaliação (prova valendo 5 → nota 4 vira 8) e
+ * compara com os limites da configuração, como o boletim.
+ */
+export function tomDaNota(
+  valor: number | null | undefined,
+  valorMaximo: number | null | undefined,
+  mediaMinima: number | null | undefined,
+  notaMinimaRecuperacao?: number | null,
+): "ok" | "abaixo" | "reprovacao" | "neutro" {
+  if (typeof valor !== "number" || !Number.isFinite(valor)) return "neutro";
+  const max = typeof valorMaximo === "number" && valorMaximo > 0 ? valorMaximo : 10;
+  return tomDaMedia((valor / max) * 10, mediaMinima, notaMinimaRecuperacao);
+}
+
+/** Limites de nota da configuração vigente (null = sem configuração / sem piso). */
+export function limitesDaConfiguracao(config: ConfiguracaoAvaliacao | null | undefined): {
+  mediaMinima: number | null;
+  notaMinimaRecuperacao: number | null;
+} {
+  return {
+    mediaMinima: typeof config?.mediaMinima === "number" ? config.mediaMinima : null,
+    notaMinimaRecuperacao:
+      typeof config?.notaMinimaRecuperacao === "number" ? config.notaMinimaRecuperacao : null,
+  };
+}
+
+/**
+ * Validação do piso no formulário (mesma regra do backend: 0 ≤ piso ≤ média
+ * mínima). Devolve a mensagem de erro, ou null quando está ok.
+ */
+export function erroNotaMinimaRecuperacao(piso: string, mediaMinima: string): string | null {
+  if (piso.trim() === "") return "Informe a nota mínima para recuperação";
+  const p = Number(piso);
+  const m = Number(mediaMinima);
+  if (!Number.isFinite(p) || p < 0 || p > 10) return "A nota mínima para recuperação deve estar entre 0 e 10";
+  if (Number.isFinite(m) && p > m) return "Não pode ser maior que a média mínima";
+  return null;
+}
+
+/**
+ * Frequência de uma disciplina no boletim ("92%"); "—" quando não há aula
+ * registrada da disciplina (null/ausente). Só exibição: a situação segue a
+ * frequência geral.
+ */
+export function formatarFrequenciaDisciplina(
+  frequencia: { percentualPresenca: number; totalAulas: number } | null | undefined,
+): string {
+  if (!frequencia || !(frequencia.totalAulas > 0) || !Number.isFinite(frequencia.percentualPresenca)) return "—";
+  return `${frequencia.percentualPresenca}%`;
 }
 
 export interface DisciplinaConselho {

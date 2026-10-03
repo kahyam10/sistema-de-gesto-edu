@@ -48,12 +48,14 @@ import {
 import { GearSix, Plus, Pencil, Trash } from "@phosphor-icons/react";
 import { useEhGestao } from "@/hooks/use-papel";
 import type { ConfiguracaoAvaliacao } from "@/lib/api";
+import { erroNotaMinimaRecuperacao } from "@/lib/medias";
 
 interface ConfigForm {
   anoLetivo: string;
   sistemaAvaliacao: string;
   numeroPeriodos: string;
   mediaMinima: string;
+  notaMinimaRecuperacao: string;
   percentualFrequenciaMinima: string;
   recuperacaoParalela: boolean;
   recuperacaoFinal: boolean;
@@ -66,6 +68,7 @@ const emptyForm: ConfigForm = {
   sistemaAvaliacao: "NOTA",
   numeroPeriodos: "4",
   mediaMinima: "6.0",
+  notaMinimaRecuperacao: "3.0",
   percentualFrequenciaMinima: "75",
   recuperacaoParalela: false,
   recuperacaoFinal: true,
@@ -100,6 +103,8 @@ export function ConfiguracaoAvaliacaoManager() {
       sistemaAvaliacao: c.sistemaAvaliacao,
       numeroPeriodos: c.numeroPeriodos.toString(),
       mediaMinima: c.mediaMinima.toString(),
+      // Backend antigo sem o campo: o piso de sempre (3,0)
+      notaMinimaRecuperacao: (c.notaMinimaRecuperacao ?? 3).toString(),
       percentualFrequenciaMinima: c.percentualFrequenciaMinima.toString(),
       recuperacaoParalela: c.recuperacaoParalela,
       recuperacaoFinal: c.recuperacaoFinal,
@@ -109,12 +114,16 @@ export function ConfiguracaoAvaliacaoManager() {
     setDialogOpen(true);
   };
 
+  const erroPiso = erroNotaMinimaRecuperacao(form.notaMinimaRecuperacao, form.mediaMinima);
+
   const handleSave = () => {
+    if (erroPiso) return;
     const data = {
       anoLetivo: parseInt(form.anoLetivo),
       sistemaAvaliacao: form.sistemaAvaliacao,
       numeroPeriodos: parseInt(form.numeroPeriodos),
       mediaMinima: parseFloat(form.mediaMinima),
+      notaMinimaRecuperacao: parseFloat(form.notaMinimaRecuperacao),
       percentualFrequenciaMinima: parseFloat(form.percentualFrequenciaMinima),
       recuperacaoParalela: form.recuperacaoParalela,
       recuperacaoFinal: form.recuperacaoFinal,
@@ -196,6 +205,12 @@ export function ConfiguracaoAvaliacaoManager() {
                     <TableHead>Sistema</TableHead>
                     <TableHead className="text-center">Periodos</TableHead>
                     <TableHead className="text-center">Media Min.</TableHead>
+                    <TableHead
+                      className="text-center"
+                      title="Nota mínima para recuperação: abaixo dela o aluno é reprovado direto"
+                    >
+                      Min. Recup.
+                    </TableHead>
                     <TableHead className="text-center">Freq. Min.</TableHead>
                     <TableHead className="text-center">Recup.</TableHead>
                     <TableHead className="text-center w-24">Acoes</TableHead>
@@ -221,6 +236,9 @@ export function ConfiguracaoAvaliacaoManager() {
                       </TableCell>
                       <TableCell className="text-center font-semibold">
                         {c.mediaMinima}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {c.notaMinimaRecuperacao ?? "—"}
                       </TableCell>
                       <TableCell className="text-center">
                         {c.percentualFrequenciaMinima}%
@@ -359,6 +377,26 @@ export function ConfiguracaoAvaliacaoManager() {
                 />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="cfg-piso">Nota mínima para recuperação</Label>
+              <Input
+                id="cfg-piso"
+                type="number"
+                min="0"
+                max="10"
+                step="0.5"
+                value={form.notaMinimaRecuperacao}
+                aria-invalid={erroPiso ? true : undefined}
+                aria-describedby="cfg-piso-ajuda"
+                onChange={(e) =>
+                  setForm({ ...form, notaMinimaRecuperacao: e.target.value })
+                }
+              />
+              <p id="cfg-piso-ajuda" className={`text-xs ${erroPiso ? "text-red-600" : "text-muted-foreground"}`}>
+                {erroPiso ??
+                  "Abaixo dela o aluno é reprovado direto; entre ela e a média mínima, vai para recuperação."}
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Escola (opcional)</Label>
@@ -434,6 +472,7 @@ export function ConfiguracaoAvaliacaoManager() {
               onClick={handleSave}
               disabled={
                 !form.anoLetivo ||
+                !!erroPiso ||
                 createMutation.isPending ||
                 updateMutation.isPending
               }

@@ -10,7 +10,15 @@ import {
 import type { ResponsavelStack } from "../../navigation/tipos";
 import { cores, espaco, fontes, LIMITE_PRESENCA, raio } from "../../theme";
 import { capitalizar, diaDaSemana, diaMes, nota } from "../../utils/formato";
-import { descricaoAula, mediaDaDisciplina, mediaGeralDoAluno, ordenarRegistros, rotuloMedia, textoMedia } from "../../utils/medias";
+import {
+  descricaoAula,
+  mediaDaDisciplina,
+  mediaGeralDoAluno,
+  ordenarRegistros,
+  rotuloMedia,
+  textoFrequenciaDisciplina,
+  textoMedia,
+} from "../../utils/medias";
 
 type Props = NativeStackScreenProps<ResponsavelStack, "Aluno">;
 type Aba = "boletim" | "frequencia";
@@ -106,6 +114,7 @@ function Boletim({ q }: { q: UseQueryResult<TBoletim> }) {
                   );
                 })}
               </View>
+              <Texto pequeno suave>{textoFrequenciaDisciplina(d)}</Texto>
             </Cartao>
           );
         })

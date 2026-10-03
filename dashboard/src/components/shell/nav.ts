@@ -1,4 +1,5 @@
 import type { IconName } from '@/components/ui/icons';
+import { PAPEIS_RH } from '@/hooks/use-papel';
 
 export interface NavItem {
   href: string;
@@ -34,6 +35,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { href: '/cadastros/matriculas', label: 'Matrículas', icon: 'userPlus', roles: EQUIPE },
       { href: '/cadastros/escolas', label: 'Escolas', icon: 'building', roles: EQUIPE },
       { href: '/cadastros/profissionais', label: 'Profissionais', icon: 'users', roles: EQUIPE },
+      // RH segue com a equipe operacional por causa do quadro de lotação e das
+      // ACs; as abas de ponto e licenças só aparecem para PAPEIS_RH (rh/page.tsx)
       { href: '/rh', label: 'RH', icon: 'clock', roles: OPERACAO },
       { href: '/cadastros/calendario', label: 'Calendário Letivo', icon: 'calendarDays', roles: EQUIPE },
       { href: '/alimentacao', label: 'Alimentação', icon: 'utensils', roles: EQUIPE },
@@ -41,7 +44,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { href: '/gestao-democratica', label: 'Gestão Democrática', icon: 'scale', roles: EQUIPE },
       { href: '/programas', label: 'Programas Especiais', icon: 'clipboard', roles: EQUIPE },
       { href: '/comunicacao', label: 'Comunicação', icon: 'speaker', roles: EQUIPE },
-      { href: '/exportacoes', label: 'Exportações', icon: 'fileExport', roles: OPERACAO },
+      // Exportações oficiais: ADMIN, SEMEC e COORDENADOR (espelha RH_EXPORTACAO do backend)
+      { href: '/exportacoes', label: 'Exportações', icon: 'fileExport', roles: PAPEIS_RH },
     ],
   },
   {

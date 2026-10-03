@@ -32,6 +32,16 @@ export function mediaGeralDoAluno(b: Boletim): MediaExibida {
   return { valor, parcial: valor !== null && b.situacaoGeral === "EM_CURSO" };
 }
 
+/**
+ * Frequência da disciplina no boletim: "Freq. 92%"; "Freq. —" quando não há
+ * aula registrada da disciplina (null/ausente). Só exibição.
+ */
+export function textoFrequenciaDisciplina(d: Pick<DisciplinaBoletim, "frequencia">): string {
+  const f = d.frequencia;
+  if (!f || !(f.totalAulas > 0) || !Number.isFinite(f.percentualPresenca)) return "Freq. —";
+  return `Freq. ${f.percentualPresenca}%`;
+}
+
 /** "Média parcial" / "Média" (sem média não é "parcial": é só "—"). */
 export function rotuloMedia(m: MediaExibida, base = "Média"): string {
   return m.parcial ? `${base} parcial` : base;

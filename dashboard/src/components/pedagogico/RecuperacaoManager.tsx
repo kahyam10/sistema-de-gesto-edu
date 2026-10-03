@@ -30,7 +30,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTurmas, useDisciplinas, useCreateNota } from "@/hooks/useApi";
 import { useBoletinsDaTurma, useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
-import { comoSituacao, formatarMedia, type SituacaoApi } from "@/lib/medias";
+import {
+  comoSituacao,
+  formatarMedia,
+  limitesDaConfiguracao,
+  tomDaMedia,
+  type SituacaoApi,
+} from "@/lib/medias";
 import { CheckCircle, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -61,7 +67,10 @@ export function RecuperacaoManager() {
     disciplinaSelecionada ? turmaSelecionada : undefined
   );
   const { config } = useConfiguracaoDaTurma(turmaSelecionada);
-  const mediaMinima = config?.mediaMinima ?? null;
+  // Piso (nota mínima para recuperação) da mesma configuração: abaixo dele a
+  // situação da API já é REPROVADO direto
+  const { mediaMinima, notaMinimaRecuperacao } = limitesDaConfiguracao(config);
+  const rotuloPiso = notaMinimaRecuperacao !== null ? notaMinimaRecuperacao.toFixed(1) : null;
   const rotuloMinima = mediaMinima !== null ? mediaMinima.toFixed(1) : "não configurada";
   const abaixoDaMinima = mediaMinima !== null ? `abaixo de ${mediaMinima.toFixed(1)}` : "abaixo da média mínima da rede";
 
@@ -295,7 +304,16 @@ export function RecuperacaoManager() {
                         <TableRow key={aluno.matriculaId}>
                           <TableCell className="font-medium">{aluno.nomeAluno}</TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="destructive">{formatarMedia(aluno.mediaAtual, 2)}</Badge>
+                            {tomDaMedia(aluno.mediaAtual, mediaMinima, notaMinimaRecuperacao) === "reprovacao" ? (
+                              <div className="flex flex-col items-center gap-0.5">
+                                <Badge variant="destructive">{formatarMedia(aluno.mediaAtual, 2)}</Badge>
+                                <span className="text-[10px] text-muted-foreground">
+                                  abaixo de {rotuloPiso} (reprovação direta)
+                                </span>
+                              </div>
+                            ) : (
+                              <Badge variant="warning">{formatarMedia(aluno.mediaAtual, 2)}</Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Input
@@ -368,6 +386,12 @@ export function RecuperacaoManager() {
             • <strong>Recuperação Final:</strong> Realizada ao final do ano para alunos que não
             atingiram a média mínima ({rotuloMinima})
           </p>
+          {rotuloPiso !== null && (
+            <p>
+              • <strong>Nota mínima para recuperação:</strong> {rotuloPiso} — média final abaixo dela é
+              reprovação direta (configuração de avaliação da rede)
+            </p>
+          )}
           <p>
             • <strong>Cálculo da Média Final:</strong> (Média Atual + Nota Recuperação) / 2
           </p>

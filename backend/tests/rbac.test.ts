@@ -15,7 +15,9 @@ describe("autorizar — leituras", () => {
   it("leituras restritas de RH negam PROFESSOR/USER", () => {
     expect(autorizar("/api/licencas", "GET", u("PROFESSOR"))).toBe("NEGADO");
     expect(autorizar("/api/pontos", "GET", u("USER"))).toBe("NEGADO");
-    expect(autorizar("/api/licencas", "GET", u("SECRETARIA"))).toBe("OK");
+    // Decisão do usuário: RH (licenças/ponto) só ADMIN, SEMEC e COORDENADOR
+    expect(autorizar("/api/licencas", "GET", u("SECRETARIA"))).toBe("NEGADO");
+    expect(autorizar("/api/licencas", "GET", u("COORDENADOR"))).toBe("OK");
   });
 
   it("documentos da matrícula não são lidos por PROFESSOR (LGPD)", () => {
@@ -32,9 +34,10 @@ describe("autorizar — leituras", () => {
     expect(autorizar("/api/portal/semec/resumo", "GET", u("DIRETOR"))).toBe("NEGADO");
   });
 
-  it("exportadores oficiais restritos à equipe operacional (CPF/NIS)", () => {
+  it("exportadores oficiais restritos à gestão e coordenação (CPF/NIS)", () => {
     expect(autorizar("/api/exportacao/educacenso", "GET", u("PROFESSOR"))).toBe("NEGADO");
-    expect(autorizar("/api/exportacao/sistema-presenca", "GET", u("SECRETARIA"))).toBe("OK");
+    expect(autorizar("/api/exportacao/sistema-presenca", "GET", u("SECRETARIA"))).toBe("NEGADO");
+    expect(autorizar("/api/exportacao/sistema-presenca", "GET", u("COORDENADOR"))).toBe("OK");
   });
 });
 

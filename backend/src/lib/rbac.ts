@@ -23,6 +23,13 @@ export const OPERACAO = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR", "SECRETARIA
 export const PEDAGOGICO = [...OPERACAO, "PROFESSOR"];
 // Quem orienta o trabalho pedagógico da escola (sem a secretaria)
 export const COORDENACAO_PEDAGOGICA = ["ADMIN", "SEMEC", "DIRETOR", "COORDENADOR"];
+// Exportações oficiais (Educacenso/Sistema Presença), licenças e ponto:
+// decisão do usuário (out/2026) — só gestão da rede e coordenação. DIRETOR e
+// SECRETARIA não leem nem escrevem; PROFESSOR nunca teve acesso. O coordenador
+// fica restrito à própria escola pelo escopo da camada de dados (lib/escopo.ts:
+// Licenca/Ponto via profissional; exportadores consultam escola/matrícula com
+// o prisma com escopo). Espelhado no dashboard em hooks/use-papel.ts (usePodeRH).
+export const RH_EXPORTACAO = ["ADMIN", "SEMEC", "COORDENADOR"];
 // Ações pessoais (recibos de leitura) valem para qualquer autenticado
 export const TODOS = [...PEDAGOGICO, "USER", "RESPONSAVEL"];
 
@@ -131,8 +138,11 @@ export const REGRAS_ESCRITA: RegraEscrita[] = [
   },
   // Criação/exclusão de escolas
   { pattern: /^\/api\/escolas(\/|$)/, methods: ["POST", "DELETE"], roles: GESTAO },
-  // Exclusão de qualquer outro recurso
+  // Exclusão de qualquer outro recurso (inclui licenças e pontos: só gestão)
   { pattern: /^\/api\//, methods: ["DELETE"], roles: GESTAO },
+  // Licenças (criar, editar, aprovar, cancelar), ponto e exportadores: depois da
+  // regra de DELETE (excluir continua só da gestão) e antes da regra genérica
+  { pattern: /^\/api\/(licencas|pontos|exportacao)(\/|$)/, roles: RH_EXPORTACAO },
   // Demais escritas (matrículas, turmas, profissionais, update de escola)
   { pattern: /^\/api\//, roles: OPERACAO },
 ];
@@ -140,7 +150,7 @@ export const REGRAS_ESCRITA: RegraEscrita[] = [
 // Leituras restritas: dados sensíveis (RH, documentos de menores, exportadores
 // com CPF/NIS, resumos gerenciais) — não PROFESSOR/USER, salvo indicação.
 export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
-  { pattern: /^\/api\/(licencas|pontos)(\/|$)/, roles: OPERACAO },
+  { pattern: /^\/api\/(licencas|pontos)(\/|$)/, roles: RH_EXPORTACAO },
   // Módulo 4 — quadro de lotação (jornada, regime e carga de cada profissional)
   { pattern: /^\/api\/lotacao(\/|$)/, roles: OPERACAO },
   // Módulo 2 — acompanhamento de aprendizagens (notas e frequência da turma)
@@ -154,8 +164,8 @@ export const LEITURA_RESTRITA: Array<{ pattern: RegExp; roles: string[] }> = [
   { pattern: /^\/api\/portal\/(diretor|coordenacao)(\/|$)/, roles: OPERACAO },
   { pattern: /^\/api\/portal\/professor(\/|$)/, roles: PEDAGOGICO },
   { pattern: /^\/api\/portal\/semec(\/|$)/, roles: GESTAO },
-  // Exportadores oficiais (Educacenso/Sistema Presença): CPF/NIS — equipe operacional
-  { pattern: /^\/api\/exportacao(\/|$)/, roles: OPERACAO },
+  // Exportadores oficiais (Educacenso/Sistema Presença): CPF/NIS — gestão e coordenação
+  { pattern: /^\/api\/exportacao(\/|$)/, roles: RH_EXPORTACAO },
   // Notificações são pessoais: a lista geral e os relatórios só para a equipe
   // que as envia; cada usuário lê as suas em /usuario/:id (dono checado na rota)
   { pattern: /^\/api\/notificacoes(\/relatorios(\/|$)|\/?$)/, roles: OPERACAO },

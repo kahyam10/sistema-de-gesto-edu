@@ -171,7 +171,64 @@ export function frequenciaAbaixoDoMinimo(
   return presencas * 100 < minimoPercentual * totalAulas;
 }
 
+/** Frequência de UMA disciplina (chamadas por aula daquela disciplina). */
+export interface FrequenciaDisciplina {
+  totalAulas: number;
+  presencas: number;
+  /** FALTA + JUSTIFICADA (mesma conta da frequência geral do boletim). */
+  faltas: number;
+  percentualPresenca: number;
+}
+
+/**
+ * Chave de casamento entre o nome da disciplina (cadastro) e a cópia em
+ * `Frequencia.disciplina` (texto da grade no momento da chamada; a grade
+ * guarda o NOME da disciplina, sem id): sem acento, minúsculas, espaços
+ * internos colapsados e sem espaço nas pontas.
+ */
+export function chaveDisciplina(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** matriculaId → chaveDisciplina → frequência daquela disciplina. */
+export type FrequenciaPorDisciplina = Map<string, Map<string, FrequenciaDisciplina>>;
+
 export class FrequenciaService {
+  /**
+   * Frequência POR DISCIPLINA (só exibição) das matrículas pedidas na turma,
+   * numa consulta só. Conta apenas a chamada por aula (registro com
+   * disciplina); a chamada diária ("DIA", sem disciplina) fica de fora —
+   * ela continua valendo só na frequência geral.
+   */
+  async porDisciplina(turmaId: string, matriculaIds: string[]): Promise<FrequenciaPorDisciplina> {
+    const resultado: FrequenciaPorDisciplina = new Map();
+    if (matriculaIds.length === 0) return resultado;
+    const grupos = await prisma.frequencia.groupBy({
+      by: ["matriculaId", "disciplina", "status"],
+      where: { turmaId, matriculaId: { in: matriculaIds }, disciplina: { not: null } },
+      _count: true,
+    });
+    for (const g of grupos) {
+      if (!g.disciplina) continue;
+      const chave = chaveDisciplina(g.disciplina);
+      if (!chave) continue;
+      let doAluno = resultado.get(g.matriculaId);
+      if (!doAluno) resultado.set(g.matriculaId, (doAluno = new Map()));
+      const f = doAluno.get(chave) ?? { totalAulas: 0, presencas: 0, faltas: 0, percentualPresenca: 0 };
+      f.totalAulas += g._count;
+      if (g.status === "PRESENTE") f.presencas += g._count;
+      else if (g.status === "FALTA" || g.status === "JUSTIFICADA") f.faltas += g._count;
+      f.percentualPresenca = f.totalAulas > 0 ? Math.round((f.presencas / f.totalAulas) * 100) : 0;
+      doAluno.set(chave, f);
+    }
+    return resultado;
+  }
+
   /**
    * Lista frequências com filtros
    */

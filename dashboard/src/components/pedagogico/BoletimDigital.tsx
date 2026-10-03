@@ -34,7 +34,13 @@ import {
   useBoletim,
 } from "@/hooks/useApi";
 import { useConfiguracaoDaTurma } from "@/hooks/useAvaliacaoTurma";
-import { formatarMedia, mediaDasMedias, tomDaMedia } from "@/lib/medias";
+import {
+  formatarFrequenciaDisciplina,
+  formatarMedia,
+  limitesDaConfiguracao,
+  mediaDasMedias,
+  tomDaMedia,
+} from "@/lib/medias";
 import {
   Certificate,
   Printer,
@@ -58,12 +64,18 @@ function getSituacaoBadge(situacao: string, size: "sm" | "lg" = "sm") {
   }
 }
 
-/** Cor pela média mínima da configuração de avaliação da turma (sem limite fixo). */
-function getNotaColor(valor: number | null, mediaMinima: number | null) {
-  switch (tomDaMedia(valor, mediaMinima)) {
+/**
+ * Cor pelos limites da configuração de avaliação da turma (sem número fixo):
+ * verde = atinge a média mínima; âmbar = faixa de recuperação; vermelho =
+ * abaixo da nota mínima para recuperação (reprovado direto).
+ */
+function getNotaColor(valor: number | null, mediaMinima: number | null, piso: number | null) {
+  switch (tomDaMedia(valor, mediaMinima, piso)) {
     case "ok":
       return "text-green-600 font-semibold";
     case "abaixo":
+      return "text-amber-600 font-semibold";
+    case "reprovacao":
       return "text-red-600 font-semibold";
     default:
       return valor === null ? "text-muted-foreground" : "font-semibold";
@@ -89,8 +101,8 @@ export function BoletimDigital() {
     turmaSelecionada?.matriculas?.filter((m) => m.status === "ATIVA") || [];
 
   const { config } = useConfiguracaoDaTurma(turmaSelecionada);
-  const mediaMinima = config?.mediaMinima ?? null;
-  const cor = (valor: number | null) => getNotaColor(valor, mediaMinima);
+  const { mediaMinima, notaMinimaRecuperacao } = limitesDaConfiguracao(config);
+  const cor = (valor: number | null) => getNotaColor(valor, mediaMinima, notaMinimaRecuperacao);
 
   // A API não devolve média geral: é a média simples das médias finais (da
   // API) das disciplinas que têm média — null não entra como 0.
@@ -279,6 +291,12 @@ export function BoletimDigital() {
                         <TableHead className="text-center">3º Bim</TableHead>
                         <TableHead className="text-center">4º Bim</TableHead>
                         <TableHead className="text-center">Média Final</TableHead>
+                        <TableHead
+                          className="text-center"
+                          title="Presença nas aulas desta disciplina (chamada por aula). A situação segue a frequência geral."
+                        >
+                          Freq.
+                        </TableHead>
                         <TableHead className="text-center">Situação</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -309,6 +327,16 @@ export function BoletimDigital() {
                               <span className="block text-[10px] font-normal text-muted-foreground">parcial</span>
                             )}
                           </TableCell>
+                          <TableCell
+                            className="text-center text-xs text-muted-foreground tabular-nums"
+                            title={
+                              disc.frequencia
+                                ? `${disc.frequencia.presencas} presença(s) em ${disc.frequencia.totalAulas} aula(s)`
+                                : "Sem aula registrada desta disciplina"
+                            }
+                          >
+                            {formatarFrequenciaDisciplina(disc.frequencia)}
+                          </TableCell>
                           <TableCell className="text-center">
                             {getSituacaoBadge(disc.situacao)}
                           </TableCell>
@@ -334,6 +362,14 @@ export function BoletimDigital() {
                             <span className="block text-[10px] font-normal text-muted-foreground">parcial</span>
                           )}
                         </TableCell>
+                        <TableCell
+                          className="text-center text-xs text-muted-foreground tabular-nums"
+                          title="Frequência geral (vale para a situação)"
+                        >
+                          {boletim.frequencia && boletim.frequencia.totalAulas > 0
+                            ? `${boletim.frequencia.percentualPresenca}%`
+                            : "—"}
+                        </TableCell>
                         <TableCell className="text-center">
                           {boletim.situacaoGeral
                             ? getSituacaoBadge(boletim.situacaoGeral)
@@ -343,6 +379,21 @@ export function BoletimDigital() {
                     </TableFooter>
                   </Table>
                 </div>
+                {mediaMinima !== null && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    <span className="text-green-600 font-semibold">Verde</span>: média ≥ {mediaMinima.toFixed(1)}
+                    {" · "}
+                    <span className="text-amber-600 font-semibold">Âmbar</span>: recuperação
+                    {notaMinimaRecuperacao !== null && (
+                      <>
+                        {" · "}
+                        <span className="text-red-600 font-semibold">Vermelho</span>: abaixo de{" "}
+                        {notaMinimaRecuperacao.toFixed(1)} (reprovação direta)
+                      </>
+                    )}
+                    {" · "}Freq. = presença nas aulas da disciplina; a situação segue a frequência geral.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ) : (

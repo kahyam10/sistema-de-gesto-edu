@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyWidget } from "@/components/ui/empty-state";
 import { usePortalBoletimAluno } from "@/hooks/useApi";
+import { formatarFrequenciaDisciplina } from "@/lib/medias";
 
 const SITUACAO_BADGE: Record<string, { variant: "success" | "warning" | "danger" | "info"; label: string }> = {
   APROVADO: { variant: "success", label: "Aprovado" },
@@ -74,6 +75,12 @@ export function BoletimAluno({ matriculaId }: { matriculaId: string }) {
                   <TableHead className="text-center">3º Bim</TableHead>
                   <TableHead className="text-center">4º Bim</TableHead>
                   <TableHead className="text-center">Média final</TableHead>
+                  <TableHead
+                    className="text-center"
+                    title="Presença nas aulas desta disciplina. A situação segue a frequência geral."
+                  >
+                    Freq.
+                  </TableHead>
                   <TableHead>Situação</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,6 +111,9 @@ export function BoletimAluno({ matriculaId }: { matriculaId: string }) {
                               maximumFractionDigits: 1,
                             })
                           : "—"}
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-[12px] text-ink-muted">
+                        {formatarFrequenciaDisciplina(d.frequencia)}
                       </TableCell>
                       <TableCell>
                         <SituacaoBadge situacao={d.situacao} />

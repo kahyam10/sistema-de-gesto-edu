@@ -4,6 +4,7 @@ import { configuracaoAvaliacaoService } from "./configuracao-avaliacao.service.j
 import { frequenciaAbaixoDoMinimo } from "./frequencia.service.js";
 import { mediaDasAvaliacoes } from "../lib/media.js";
 import { hojeNaRede } from "../lib/datas.js";
+import { NOTA_MINIMA_RECUPERACAO_PADRAO } from "../schemas/index.js";
 
 type Nota = { matriculaId: string; valor: number };
 type Av = { id: string; disciplinaId: string; bimestre: number; data: Date; peso: number; valorMaximo: number; notas: Nota[] };
@@ -12,7 +13,7 @@ type TurmaInfo = {
   escola: { nome: string };
   serie: { nome: string; nivel: { etapaId: string } };
 };
-type Regra = { mediaMinima: number; frequenciaMinima: number; origem: string };
+type Regra = { mediaMinima: number; notaMinimaRecuperacao: number; frequenciaMinima: number; origem: string };
 type Disc = { id: string; nome: string };
 type Aluno = { id: string; nomeAluno: string; numeroMatricula: string };
 type FreqAgrupada = { matriculaId: string; status: string; _count: number };
@@ -48,6 +49,8 @@ async function regraVigente(anoLetivo: number, escolaId: string, etapaId: string
   const cfg = await configuracaoAvaliacaoService.findByAnoLetivo(anoLetivo, escolaId, etapaId);
   return {
     mediaMinima: cfg?.mediaMinima ?? 6,
+    // Piso de recuperação da mesma configuração (informativo; padrão 3,0)
+    notaMinimaRecuperacao: cfg?.notaMinimaRecuperacao ?? NOTA_MINIMA_RECUPERACAO_PADRAO,
     frequenciaMinima: cfg?.percentualFrequenciaMinima ?? 75,
     origem: cfg ? "CONFIGURACAO" : "PADRAO",
   };

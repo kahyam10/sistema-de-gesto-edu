@@ -1837,6 +1837,8 @@ export interface ConfiguracaoAvaliacao {
   sistemaAvaliacao: string;
   numeroPeriodos: number;
   mediaMinima: number;
+  /** Piso entre recuperação e reprovação: abaixo dele, reprovado direto (padrão 3). */
+  notaMinimaRecuperacao: number;
   percentualFrequenciaMinima: number;
   recuperacaoParalela: boolean;
   recuperacaoFinal: boolean;
@@ -1871,6 +1873,7 @@ export const configuracaoAvaliacaoApi = {
     sistemaAvaliacao?: string;
     numeroPeriodos?: number;
     mediaMinima?: number;
+    notaMinimaRecuperacao?: number;
     percentualFrequenciaMinima?: number;
     recuperacaoParalela?: boolean;
     recuperacaoFinal?: boolean;
@@ -1888,6 +1891,7 @@ export const configuracaoAvaliacaoApi = {
       sistemaAvaliacao: string;
       numeroPeriodos: number;
       mediaMinima: number;
+      notaMinimaRecuperacao: number;
       percentualFrequenciaMinima: number;
       recuperacaoParalela: boolean;
       recuperacaoFinal: boolean;
@@ -2005,6 +2009,19 @@ export interface BoletimDisciplina {
   }[];
   mediaFinal: number | null;
   situacao: string;
+  /**
+   * Frequência só desta disciplina (chamada por aula) — exibição; a situação
+   * segue a frequência geral. null = nenhuma aula da disciplina registrada.
+   * Opcional: backend anterior à mudança não manda o campo.
+   */
+  frequencia?: FrequenciaDisciplina | null;
+}
+
+export interface FrequenciaDisciplina {
+  totalAulas: number;
+  presencas: number;
+  faltas: number;
+  percentualPresenca: number;
 }
 
 export interface Boletim {
@@ -3099,16 +3116,14 @@ export interface Ponto {
   tipoRegistro: string;
   observacoes?: string | null;
   justificativa?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
+  // latitude/longitude não voltam da API (geolocalização do servidor; ver PONTO_SELECT no backend)
   createdAt: string;
   updatedAt: string;
+  // Só nas listas e no detalhe; apenas identificação
   profissional?: {
     id: string;
     nome: string;
-    cpf: string;
     tipo: string;
-    matricula?: string | null;
   };
 }
 
@@ -3194,19 +3209,20 @@ export interface Licenca {
   justificativaRejeicao?: string | null;
   createdAt: string;
   updatedAt: string;
+  // Só nas listas, no detalhe e nas ativas; apenas identificação
   profissional?: {
     id: string;
     nome: string;
-    cpf: string;
     tipo: string;
-    matricula?: string | null;
-    email?: string | null;
-    telefone?: string | null;
   };
 }
 
 export interface RelatorioLicencas {
-  licencas: Licenca[];
+  // Resumo (LICENCA_RESUMO no backend): observações, documento e decisão ficam no detalhe
+  licencas: Pick<
+    Licenca,
+    "id" | "profissionalId" | "tipo" | "status" | "dataInicio" | "dataFim" | "diasCorridos" | "diasUteis" | "motivo"
+  >[];
   totalDias: number;
   porTipo: Record<string, number>;
 }

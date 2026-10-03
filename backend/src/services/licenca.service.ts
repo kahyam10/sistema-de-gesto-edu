@@ -1,5 +1,4 @@
 import type { Prisma } from "@prisma/client";
-import { Licenca } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../errors/index.js";
 import {
@@ -40,9 +39,56 @@ async function validarDocumentoPath(
 }
 
 
+/**
+ * O que sai nas respostas de licença (as rotas não têm schema de resposta: a
+ * saída é curada aqui). Coluna nova no modelo só aparece na API se for
+ * incluída aqui.
+ */
+const LICENCA_SELECT = {
+  id: true,
+  profissionalId: true,
+  tipo: true,
+  dataInicio: true,
+  dataFim: true,
+  diasCorridos: true,
+  diasUteis: true,
+  motivo: true,
+  observacoes: true,
+  status: true,
+  documentoPath: true,
+  aprovadaPor: true,
+  dataAprovacao: true,
+  justificativaRejeicao: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.LicencaSelect;
+
+/** Profissional na licença: só identificação (nada de CPF, contato ou dados bancários). */
+const LICENCA_COM_PROFISSIONAL = {
+  ...LICENCA_SELECT,
+  profissional: { select: { id: true, nome: true, tipo: true } },
+} satisfies Prisma.LicencaSelect;
+
+/** Relatório por profissional: só o resumo (observações, documento e decisão ficam no detalhe). */
+const LICENCA_RESUMO = {
+  id: true,
+  profissionalId: true,
+  tipo: true,
+  status: true,
+  dataInicio: true,
+  dataFim: true,
+  diasCorridos: true,
+  diasUteis: true,
+  motivo: true,
+} satisfies Prisma.LicencaSelect;
+
+export type LicencaResposta = Prisma.LicencaGetPayload<{ select: typeof LICENCA_SELECT }>;
+export type LicencaComProfissional = Prisma.LicencaGetPayload<{ select: typeof LICENCA_COM_PROFISSIONAL }>;
+export type LicencaResumo = Prisma.LicencaGetPayload<{ select: typeof LICENCA_RESUMO }>;
+
 export class LicencaService {
   // Cria uma solicitação de licença
-  async create(data: CreateLicencaInput): Promise<Licenca> {
+  async create(data: CreateLicencaInput): Promise<LicencaResposta> {
     await validarDocumentoPath(data.documentoPath, data.profissionalId);
     // Calcula dias corridos e úteis
     const diasCorridos = this.calcularDiasCorridos(
@@ -58,6 +104,7 @@ export class LicencaService {
         diasUteis,
         status: "PENDENTE",
       },
+      select: LICENCA_SELECT,
     });
   }
 
@@ -68,7 +115,7 @@ export class LicencaService {
     tipo?: string;
     dataInicio?: Date;
     dataFim?: Date;
-  }): Promise<Licenca[]> {
+  }): Promise<LicencaComProfissional[]> {
     const where: Prisma.LicencaWhereInput = {};
 
     if (filters?.profissionalId) where.profissionalId = filters.profissionalId;
@@ -83,16 +130,7 @@ export class LicencaService {
 
     return await prisma.licenca.findMany({
       where,
-      include: {
-        profissional: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-            matricula: true,
-          },
-        },
-      },
+      select: LICENCA_COM_PROFISSIONAL,
       orderBy: { createdAt: "desc" },
     });
   }
@@ -121,21 +159,10 @@ export class LicencaService {
       if (filters.dataFim) where.dataInicio.lte = filters.dataFim;
     }
 
-    const include = {
-      profissional: {
-        select: {
-          id: true,
-          nome: true,
-          tipo: true,
-          matricula: true,
-        },
-      },
-    };
-
     const [data, total] = await Promise.all([
       prisma.licenca.findMany({
         where,
-        include,
+        select: LICENCA_COM_PROFISSIONAL,
         orderBy: { createdAt: "desc" },
         skip,
         take: pagination.limit,
@@ -155,26 +182,15 @@ export class LicencaService {
   }
 
   // Busca licença por ID
-  async findById(id: string): Promise<Licenca | null> {
+  async findById(id: string): Promise<LicencaComProfissional | null> {
     return await prisma.licenca.findUnique({
       where: { id },
-      include: {
-        profissional: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-            matricula: true,
-            email: true,
-            telefone: true,
-          },
-        },
-      },
+      select: LICENCA_COM_PROFISSIONAL,
     });
   }
 
   // Atualiza licença (apenas se pendente)
-  async update(id: string, data: UpdateLicencaInput): Promise<Licenca> {
+  async update(id: string, data: UpdateLicencaInput): Promise<LicencaResposta> {
     const licenca = await prisma.licenca.findUnique({ where: { id } });
 
     if (licenca && licenca.status !== "PENDENTE") {
@@ -209,11 +225,12 @@ export class LicencaService {
     return await prisma.licenca.update({
       where: { id },
       data: updateData,
+      select: LICENCA_SELECT,
     });
   }
 
   // Aprova ou rejeita uma licença
-  async aprovar(id: string, data: AprovarLicencaInput): Promise<Licenca> {
+  async aprovar(id: string, data: AprovarLicencaInput): Promise<LicencaResposta> {
     const licenca = await prisma.licenca.findUnique({ where: { id } });
 
     if (!licenca) {
@@ -232,11 +249,12 @@ export class LicencaService {
         dataAprovacao: new Date(),
         justificativaRejeicao: data.justificativaRejeicao,
       },
+      select: LICENCA_SELECT,
     });
   }
 
   // Cancela uma licença
-  async cancelar(id: string): Promise<Licenca> {
+  async cancelar(id: string): Promise<LicencaResposta> {
     const licenca = await prisma.licenca.findUnique({ where: { id } });
 
     if (!licenca) {
@@ -250,6 +268,7 @@ export class LicencaService {
     return await prisma.licenca.update({
       where: { id },
       data: { status: "CANCELADA" },
+      select: LICENCA_SELECT,
     });
   }
 
@@ -267,7 +286,7 @@ export class LicencaService {
   }
 
   // Busca licenças ativas (aprovadas e dentro do período)
-  async findLicencasAtivas(): Promise<Licenca[]> {
+  async findLicencasAtivas(): Promise<LicencaComProfissional[]> {
     const hoje = hojeNaRede();
 
     return await prisma.licenca.findMany({
@@ -276,15 +295,7 @@ export class LicencaService {
         dataInicio: { lte: hoje },
         dataFim: { gte: hoje },
       },
-      include: {
-        profissional: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-          },
-        },
-      },
+      select: LICENCA_COM_PROFISSIONAL,
     });
   }
 
@@ -294,7 +305,7 @@ export class LicencaService {
     anoInicio?: number,
     anoFim?: number
   ): Promise<{
-    licencas: Licenca[];
+    licencas: LicencaResumo[];
     totalDias: number;
     porTipo: Record<string, number>;
   }> {
@@ -310,6 +321,7 @@ export class LicencaService {
 
     const licencas = await prisma.licenca.findMany({
       where,
+      select: LICENCA_RESUMO,
       orderBy: { dataInicio: "desc" },
     });
 

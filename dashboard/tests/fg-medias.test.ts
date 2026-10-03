@@ -15,6 +15,7 @@ const cfg = (p: Partial<ConfiguracaoAvaliacao>): ConfiguracaoAvaliacao => ({
   sistemaAvaliacao: "NOTA",
   numeroPeriodos: 4,
   mediaMinima: 6,
+  notaMinimaRecuperacao: 3,
   percentualFrequenciaMinima: 75,
   recuperacaoParalela: true,
   recuperacaoFinal: true,

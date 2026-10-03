@@ -510,11 +510,20 @@ export const updateDisciplinaSchema = createDisciplinaSchema.partial();
 
 // ==================== CONFIGURAÇÃO DE AVALIAÇÃO ====================
 
-export const createConfiguracaoAvaliacaoSchema = z.object({
+/** Piso padrão entre recuperação e reprovação (o 3,0 que era fixo no código). */
+export const NOTA_MINIMA_RECUPERACAO_PADRAO = 3;
+
+/** Mensagem quando o piso de recuperação passa da média mínima. */
+export const MSG_PISO_ACIMA_DA_MEDIA =
+  "A nota mínima para recuperação não pode ser maior que a média mínima de aprovação";
+
+const configuracaoAvaliacaoCampos = z.object({
   anoLetivo: z.number().int().min(2020).max(2100),
   sistemaAvaliacao: z.enum(["NOTA", "CONCEITO"]).default("NOTA"),
   numeroPeriodos: z.number().int().min(1).max(6).default(4),
   mediaMinima: z.number().min(0).max(10).default(6.0),
+  // Piso entre recuperação e reprovação: 0 ≤ piso ≤ mediaMinima
+  notaMinimaRecuperacao: z.number().min(0).max(10).optional(),
   percentualFrequenciaMinima: z.number().min(0).max(100).default(75),
   recuperacaoParalela: z.boolean().default(false),
   recuperacaoFinal: z.boolean().default(true),
@@ -522,8 +531,35 @@ export const createConfiguracaoAvaliacaoSchema = z.object({
   etapaId: z.string().max(MAX_TEXTO_CURTO).optional(),
 });
 
-export const updateConfiguracaoAvaliacaoSchema =
-  createConfiguracaoAvaliacaoSchema.partial();
+export const createConfiguracaoAvaliacaoSchema = configuracaoAvaliacaoCampos
+  .superRefine((d, ctx) => {
+    if (d.notaMinimaRecuperacao !== undefined && d.notaMinimaRecuperacao > d.mediaMinima) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["notaMinimaRecuperacao"], message: MSG_PISO_ACIMA_DA_MEDIA });
+    }
+  })
+  // Sem piso informado: 3,0 (comportamento de sempre). Com média mínima abaixo
+  // de 3, o piso vira a própria média — o resultado é o mesmo de antes (quem
+  // não atinge a média já ficava REPROVADO) e a configuração fica válida.
+  .transform((d) => ({
+    ...d,
+    notaMinimaRecuperacao: d.notaMinimaRecuperacao ?? Math.min(NOTA_MINIMA_RECUPERACAO_PADRAO, d.mediaMinima),
+  }));
+
+/**
+ * Atualização parcial. Quando só um dos dois limites vem no corpo, a rota
+ * confere o piso contra o valor já gravado do outro.
+ */
+export const updateConfiguracaoAvaliacaoSchema = configuracaoAvaliacaoCampos
+  .partial()
+  .superRefine((d, ctx) => {
+    if (
+      d.notaMinimaRecuperacao !== undefined &&
+      d.mediaMinima !== undefined &&
+      d.notaMinimaRecuperacao > d.mediaMinima
+    ) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["notaMinimaRecuperacao"], message: MSG_PISO_ACIMA_DA_MEDIA });
+    }
+  });
 
 // ==================== AVALIAÇÃO ====================
 

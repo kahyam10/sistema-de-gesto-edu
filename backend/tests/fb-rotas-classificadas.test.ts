@@ -66,7 +66,9 @@ describe("leitura nasce fechada para a equipe pedagógica", () => {
     expect(autorizar("/api/turmas/:id", "GET", u("PROFESSOR"))).toBe("OK");
     expect(autorizar("/api/comunicados/", "GET", u("PROFESSOR"))).toBe("OK");
     expect(autorizar("/api/licencas", "GET", u("PROFESSOR"))).toBe("NEGADO");
-    expect(autorizar("/api/licencas", "GET", u("SECRETARIA"))).toBe("OK");
+    // RH só ADMIN, SEMEC e COORDENADOR (decisão do usuário, frente J)
+    expect(autorizar("/api/licencas", "GET", u("SECRETARIA"))).toBe("NEGADO");
+    expect(autorizar("/api/licencas", "GET", u("COORDENADOR"))).toBe("OK");
   });
 
   it("responsável não lê as estatísticas gerais de comunicados", () => {

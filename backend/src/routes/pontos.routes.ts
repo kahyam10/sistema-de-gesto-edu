@@ -28,7 +28,7 @@ Lista todos os registros de ponto eletrônico do sistema.
 - \`escolaId\`: Filtrar por escola
 - \`dataInicio\`: Data inicial do período (formato: YYYY-MM-DD)
 - \`dataFim\`: Data final do período (formato: YYYY-MM-DD)
-- \`tipoRegistro\`: Tipo de registro (ENTRADA, SAIDA, FALTA, ATESTADO)
+- \`tipoRegistro\`: Tipo de registro (NORMAL, ATESTADO, FALTA, FALTA_JUSTIFICADA, FERIAS, LICENCA)
 
 **Paginação:**
 - Adicione \`page\` e \`limit\` para ativar paginação
@@ -66,7 +66,7 @@ Lista todos os registros de ponto eletrônico do sistema.
             },
             tipoRegistro: {
               type: "string",
-              enum: ["ENTRADA", "SAIDA", "FALTA", "ATESTADO"],
+              enum: ["NORMAL", "ATESTADO", "FALTA", "FALTA_JUSTIFICADA", "FERIAS", "LICENCA"],
               description: "Tipo de registro",
             },
             page: {
@@ -82,37 +82,8 @@ Lista todos os registros de ponto eletrônico do sistema.
           },
         },
         response: {
-          200: {
-            description: "Lista de registros de ponto",
-            type: "object",
-            properties: {
-              data: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    profissionalId: { type: "string" },
-                    escolaId: { type: "string" },
-                    data: { type: "string", format: "date-time" },
-                    tipoRegistro: { type: "string", example: "ENTRADA" },
-                    horario: { type: "string", example: "08:00" },
-                    localizacao: { type: "string", nullable: true },
-                    observacoes: { type: "string", nullable: true },
-                  },
-                },
-              },
-              pagination: {
-                    type: "object",
-                    properties: {
-                      page: { type: "integer" },
-                      limit: { type: "integer" },
-                      total: { type: "integer" },
-                      totalPages: { type: "integer" },
-                    },
-                  },
-            },
-          },          401: {
+          // 200 sem schema: a saída é curada pelo service (PONTO_SELECT; sem latitude/longitude)
+          401: {
             description: "Não autorizado",
             type: "object",
             properties: {
@@ -190,7 +161,8 @@ Cria um registro de ponto manual (uso administrativo).
         security: [{ bearerAuth: [] }],
         body: {
           type: "object",
-          required: ["profissionalId", "data", "tipoRegistro"],
+          // tipoRegistro é opcional: o zod (createPontoSchema) assume "NORMAL"
+          required: ["profissionalId", "data"],
           properties: {
             profissionalId: { type: "string", example: "clx1234567890" },
             escolaId: { type: "string", example: "clx0987654321", nullable: true },
@@ -202,6 +174,7 @@ Cria um registro de ponto manual (uso administrativo).
             tipoRegistro: {
               type: "string",
               enum: ["NORMAL", "ATESTADO", "FALTA", "FALTA_JUSTIFICADA", "FERIAS", "LICENCA"],
+              description: "Padrão: NORMAL",
               example: "NORMAL",
             },
             entrada: { type: "string", example: "08:00", nullable: true },
@@ -215,7 +188,7 @@ Cria um registro de ponto manual (uso administrativo).
           },
         },
         response: {
-          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 201 sem schema: a saída é curada pelo service (PONTO_SELECT; sem latitude/longitude)
           400: {
             description: "Requisição inválida",
             type: "object",
@@ -277,7 +250,10 @@ Registra entrada ou saída do profissional em tempo real.
         security: [{ bearerAuth: [] }],
         body: {
           type: "object",
-          required: ["profissionalId", "escolaId", "tipoRegistro"],
+          // Espelha registrarPontoSchema (zod). O schema antigo exigia
+          // "tipoRegistro" (ENTRADA/SAIDA) enquanto o zod exige "tipo" e
+          // "horario": o corpo que o dashboard manda (tipo/horario) levava 400.
+          required: ["profissionalId", "tipo", "horario"],
           properties: {
             profissionalId: {
               type: "string",
@@ -286,24 +262,23 @@ Registra entrada ou saída do profissional em tempo real.
             },
             escolaId: {
               type: "string",
-              description: "ID da escola onde está registrando",
+              nullable: true,
+              description: "ID da escola onde está registrando (coordenação: só a própria)",
               example: "clx0987654321",
             },
-            tipoRegistro: {
+            tipo: {
               type: "string",
-              enum: ["ENTRADA", "SAIDA"],
-              description: "Tipo de registro (entrada ou saída)",
+              enum: ["ENTRADA", "SAIDA", "ENTRADA2", "SAIDA2"],
+              description: "Tipo de registro",
               example: "ENTRADA",
             },
-            localizacao: {
-              type: "string",
-              description: "Coordenadas GPS (opcional)",
-              example: "lat: -14.123, lng: -39.456",
-            },
+            horario: { type: "string", description: "HH:MM", example: "07:30" },
+            latitude: { type: "number", nullable: true },
+            longitude: { type: "number", nullable: true },
           },
         },
         response: {
-          // 201 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 201 sem schema: a saída é curada pelo service (PONTO_SELECT; sem latitude/longitude)
           400: {
             description: "Erro de validação",
             type: "object",
@@ -326,7 +301,7 @@ Registra entrada ou saída do profissional em tempo real.
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         // Modelo administrativo: o registro de ponto é feito pela equipe
-        // operacional (guard global restringe leitura/escrita a OPERACAO).
+        // de RH (guard global: ADMIN, SEMEC e COORDENADOR — lib/rbac.ts).
         // Auto-registro pelo próprio profissional exigirá vínculo
         // User↔ProfissionalEducacao (não existe no schema atual).
         const body = registrarPontoSchema.parse(request.body);
@@ -368,37 +343,8 @@ Retorna os detalhes completos de um registro de ponto específico.
           },
         },
         response: {
-          200: {
-            description: "Dados do registro de ponto",
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              profissionalId: { type: "string" },
-              profissional: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  nome: { type: "string" },
-                  cargo: { type: "string" },
-                },
-              },
-              escolaId: { type: "string" },
-              escola: {
-                type: "object",
-                properties: {
-                  id: { type: "string" },
-                  nome: { type: "string" },
-                  codigo: { type: "string" },
-                },
-              },
-              data: { type: "string", format: "date-time" },
-              tipoRegistro: { type: "string" },
-              horario: { type: "string" },
-              localizacao: { type: "string", nullable: true },
-              observacoes: { type: "string", nullable: true },
-              createdAt: { type: "string", format: "date-time" },
-            },
-          },          404: {
+          // 200 sem schema: a saída é curada pelo service (PONTO_SELECT; sem latitude/longitude)
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {
@@ -466,19 +412,28 @@ Atualiza um registro de ponto existente.
             id: { type: "string", description: "ID do registro de ponto" },
           },
         },
+        // Espelha updatePontoSchema (zod): todos os campos de POST /, opcionais
         body: {
           type: "object",
           properties: {
-            horario: { type: "string", example: "08:30" },
-            localizacao: { type: "string", nullable: true },
-            observacoes: {
+            escolaId: { type: "string", nullable: true },
+            data: { type: "string", example: "2026-02-12" },
+            tipoRegistro: {
               type: "string",
-              example: "Ajuste aprovado pela direção",
+              enum: ["NORMAL", "ATESTADO", "FALTA", "FALTA_JUSTIFICADA", "FERIAS", "LICENCA"],
             },
+            entrada: { type: "string", example: "08:00", nullable: true },
+            saida: { type: "string", example: "12:00", nullable: true },
+            entrada2: { type: "string", nullable: true },
+            saida2: { type: "string", nullable: true },
+            observacoes: { type: "string", example: "Ajuste aprovado pela direção", nullable: true },
+            justificativa: { type: "string", nullable: true },
+            latitude: { type: "number", nullable: true },
+            longitude: { type: "number", nullable: true },
           },
         },
         response: {
-          // 200 sem schema: o antigo não batia com a resposta e o serializador descartava campos
+          // 200 sem schema: a saída é curada pelo service (PONTO_SELECT; sem latitude/longitude)
           404: {
             description: "Não encontrado",
             type: "object",
@@ -657,38 +612,8 @@ Gera relatório completo de ponto de um profissional em um mês específico.
           },
         },
         response: {
-          200: {
-            // Formato de PontoService.getRelatorioMensal. Latitude/longitude do
-            // registro ficam de fora (localização não é necessária no relatório).
-            description: "Relatório mensal de ponto",
-            type: "object",
-            properties: {
-              totalHoras: { type: "number", example: 160.5 },
-              diasTrabalhados: { type: "integer" },
-              faltas: { type: "integer" },
-              atrasos: { type: "integer" },
-              pontos: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    profissionalId: { type: "string" },
-                    escolaId: { type: ["string", "null"] },
-                    data: { type: "string", format: "date-time" },
-                    entrada: { type: ["string", "null"] },
-                    saida: { type: ["string", "null"] },
-                    entrada2: { type: ["string", "null"] },
-                    saida2: { type: ["string", "null"] },
-                    horasTrabalhadas: { type: ["number", "null"] },
-                    tipoRegistro: { type: "string" },
-                    observacoes: { type: ["string", "null"] },
-                    justificativa: { type: ["string", "null"] },
-                  },
-                },
-              },
-            },
-          },          404: {
+          // 200 sem schema: a saída é curada pelo service (PONTO_SELECT; sem latitude/longitude)
+          404: {
             description: "Não encontrado",
             type: "object",
             properties: {
